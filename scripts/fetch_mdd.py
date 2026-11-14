@@ -389,16 +389,28 @@ def _serialize_ohlc_rows(df_ohlc: pd.DataFrame) -> list[list[Any]]:
 
 
 def build_ohlc_payload(df_ohlc: pd.DataFrame, max_daily_bars: int = 1260) -> dict[str, list[list[Any]]]:
-    """Build compact daily (recent ~5Y) and weekly (all-time) OHLC arrays for charting."""
+    """Build compact daily (recent ~5Y), weekly (all-time), and yearly (all-time) OHLC arrays."""
     daily_df = df_ohlc.tail(max_daily_bars)
     weekly_df = (
         df_ohlc.resample("W-FRI")
         .agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"})
         .dropna()
     )
+    yearly_rows: list[list[Any]] = []
+    for _yr, grp in df_ohlc.groupby(df_ohlc.index.year):
+        yearly_rows.append(
+            [
+                grp.index[-1].strftime("%Y-%m-%d"),
+                round(float(grp["Open"].iloc[0]), 2),
+                round(float(grp["High"].max()), 2),
+                round(float(grp["Low"].min()), 2),
+                round(float(grp["Close"].iloc[-1]), 2),
+            ]
+        )
     return {
         "daily": _serialize_ohlc_rows(daily_df),
         "weekly": _serialize_ohlc_rows(weekly_df),
+        "yearly": yearly_rows,
     }
 
 

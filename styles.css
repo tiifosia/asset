@@ -825,6 +825,12 @@ body.modal-open {
 .echart-canvas {
   width: 100%;
   height: 100%;
+  cursor: grab;
+  user-select: none;
+}
+
+.echart-canvas.is-dragging {
+  cursor: grabbing;
 }
 
 .yaxis-zoom-zone {
