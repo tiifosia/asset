@@ -1,12 +1,12 @@
 {
-  "updated_at": "2026-11-14 16:00 UTC",
+  "updated_at": "2026-11-14 16:05 UTC",
   "is_demo": false,
   "usdkrw": 1336.18,
   "providers": {
     "gateio": {
-      "status": "error",
+      "status": "connected",
       "mode": "read_only",
-      "message": "Gate.io 조회 오류 (이전 값 유지): 500 Server Error: Internal Server Error for url: https://api.gateio.ws/api/v4/wallet/total_balance?currency=USDT"
+      "message": "Gate.io 읽기 전용 API v4 정상 동기화"
     },
     "toss": {
       "status": "connected",
@@ -15,10 +15,10 @@
     }
   },
   "summary": {
-    "total_krw": 13671288,
-    "total_usd": 10231.62,
-    "ath_krw": 13671288,
-    "ath_usd": 10231.62,
+    "total_krw": 13668845,
+    "total_usd": 10229.79,
+    "ath_krw": 13668845,
+    "ath_usd": 10229.79,
     "ath_date": "2026-11-15",
     "current_drawdown": 0.0,
     "current_dd_abs": 0.0,
@@ -31,15 +31,23 @@
     "daily_change_pct": 0.0,
     "total_return_pct": 0.0,
     "gateio": {
-      "total_usd": 6668.83,
-      "total_krw": 8910758,
-      "spot_usd": 657.89,
-      "spot_krw": 879060,
+      "total_usd": 6667.0,
+      "total_krw": 8908315,
+      "spot_usd": 657.57,
+      "spot_krw": 878637,
       "futures_usd": 4853.55,
       "futures_krw": 6485217,
       "margin_usd": 0.0,
-      "unrealized_pnl_usd": -730.75,
-      "unrealized_pnl_krw": -976415
+      "other_usd": 1155.88,
+      "other_krw": 1544461,
+      "details_breakdown": {
+        "event_contract": 0.01,
+        "finance": 1155.87,
+        "futures": 4853.55,
+        "spot": 657.57
+      },
+      "unrealized_pnl_usd": -734.89,
+      "unrealized_pnl_krw": -981942
     },
     "toss": {
       "total_krw": 4760530,
@@ -60,14 +68,14 @@
         "symbol": "NAS100_USDT",
         "name": "NAS100/USDT Perpetual",
         "quantity": 7841.0,
-        "price_usd": 27693.01,
+        "price_usd": 27687.52,
         "entry_price_usd": 28618.509694,
         "value_usd": 4508.35,
         "value_krw": 6023961,
-        "notional_usd": 21714.09,
-        "pnl_usd": -725.68,
-        "pnl_krw": -969645,
-        "pnl_pct": -16.1
+        "notional_usd": 21709.78,
+        "pnl_usd": -729.99,
+        "pnl_krw": -975397,
+        "pnl_pct": -16.19
       },
       {
         "exchange": "Gate.io",
@@ -75,14 +83,14 @@
         "symbol": "SPX500_USDT",
         "name": "SPX500/USDT Perpetual",
         "quantity": 221.0,
-        "price_usd": 7532.56,
+        "price_usd": 7533.32,
         "entry_price_usd": 7555.485068,
         "value_usd": 335.2,
         "value_krw": 447894,
-        "notional_usd": 1664.7,
-        "pnl_usd": -5.07,
-        "pnl_krw": -6770,
-        "pnl_pct": -1.51
+        "notional_usd": 1664.86,
+        "pnl_usd": -4.9,
+        "pnl_krw": -6545,
+        "pnl_pct": -1.46
       },
       {
         "exchange": "Gate.io",
@@ -90,9 +98,9 @@
         "symbol": "GTBTC",
         "name": "GTBTC (Spot)",
         "quantity": 0.00995823,
-        "price_usd": 65980.4,
-        "value_usd": 657.05,
-        "value_krw": 877934,
+        "price_usd": 65948.5,
+        "value_usd": 656.73,
+        "value_krw": 877510,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -114,9 +122,9 @@
         "symbol": "GT",
         "name": "GT (Spot)",
         "quantity": 0.04875776,
-        "price_usd": 8.12,
+        "price_usd": 8.13,
         "value_usd": 0.4,
-        "value_krw": 529,
+        "value_krw": 530,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -126,7 +134,7 @@
         "symbol": "BTC",
         "name": "BTC (Spot)",
         "quantity": 7.5e-07,
-        "price_usd": 65671.1,
+        "price_usd": 65611.3,
         "value_usd": 0.05,
         "value_krw": 66,
         "pnl_usd": null,
@@ -242,11 +250,11 @@
   "history": [
     {
       "date": "2026-11-15",
-      "total_krw": 13671288,
-      "total_usd": 10231.62,
-      "gate_krw": 8910758,
-      "gate_usd": 6668.83,
-      "gate_spot_usd": 657.89,
+      "total_krw": 13668845,
+      "total_usd": 10229.79,
+      "gate_krw": 8908315,
+      "gate_usd": 6667.0,
+      "gate_spot_usd": 657.57,
       "gate_futures_usd": 4853.55,
       "toss_krw": 4760530,
       "toss_usd": 3562.79,
