@@ -42,16 +42,63 @@ def _build_proxies(proxy_url: str) -> dict[str, str] | None:
     return {"http": cleaned, "https": cleaned}
 
 
+def _is_retryable_http_error(exc: Exception) -> bool:
+    """Retry network errors, 429 rate limits, and 5xx server errors; fail fast on other 4xx."""
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        code = exc.response.status_code
+        return code >= 500 or code == 429
+    return True
+
+
+def _run_with_retries(fn: Any, attempts: int = 2, delay: float = 1.2) -> Any:
+    """Execute ``fn`` up to ``attempts`` times on transient request errors."""
+    last_exc: Exception | None = None
+    for idx in range(max(1, attempts)):
+        try:
+            return fn()
+        except requests.RequestException as exc:
+            last_exc = exc
+            if idx + 1 >= attempts or not _is_retryable_http_error(exc):
+                raise
+            time.sleep(delay)
+    if last_exc is not None:
+        raise last_exc
+
+
+def _call_direct_then_proxy(
+    fn: Any,
+    proxies: dict[str, str] | None = None,
+    direct_attempts: int = 3,
+    delay: float = 1.5,
+) -> Any:
+    """Try direct connection (with retries) before falling back to ``proxies``."""
+    last_exc: Exception | None = None
+    for idx in range(max(1, direct_attempts)):
+        try:
+            return fn(None)
+        except requests.RequestException as exc:
+            last_exc = exc
+            if idx + 1 < direct_attempts and _is_retryable_http_error(exc):
+                time.sleep(delay)
+            else:
+                break
+    if proxies:
+        return fn(proxies)
+    if last_exc is not None:
+        raise last_exc
+
+
 def fetch_usdkrw(proxies: dict[str, str] | None = None, fallback: float = 1400.0) -> float:
-    """Fetch live USD/KRW exchange rate with yfinance & previous-value fallbacks."""
-    try:
-        resp = requests.get(EXCHANGE_RATE_URL, timeout=15, proxies=proxies)
-        resp.raise_for_status()
-        rate = _to_float(resp.json().get("rates", {}).get("KRW"), 0.0)
-        if rate > 500:
-            return round(rate, 2)
-    except Exception:
-        pass
+    """Fetch live USD/KRW exchange rate (direct first, proxy fallback, then yfinance)."""
+    for proxy_cfg in ([None, proxies] if proxies else [None]):
+        try:
+            resp = requests.get(EXCHANGE_RATE_URL, timeout=15, proxies=proxy_cfg)
+            resp.raise_for_status()
+            rate = _to_float(resp.json().get("rates", {}).get("KRW"), 0.0)
+            if rate > 500:
+                return round(rate, 2)
+        except Exception:
+            pass
 
     try:
         import yfinance as yf
@@ -102,11 +149,16 @@ def _gate_get(
     proxies: dict[str, str] | None = None,
 ) -> Any:
     path = f"{GATE_PREFIX}{endpoint}"
-    headers = _gate_sign_headers(api_key, api_secret, "GET", path, query_string)
     url = f"{GATE_BASE_URL}{path}" + (f"?{query_string}" if query_string else "")
-    resp = requests.get(url, headers=headers, timeout=20, proxies=proxies)
-    resp.raise_for_status()
-    return resp.json()
+
+    def _do(proxy_cfg: dict[str, str] | None) -> Any:
+        # Recompute Timestamp + HMAC signature per attempt so retries never use a stale signature.
+        headers = _gate_sign_headers(api_key, api_secret, "GET", path, query_string)
+        resp = requests.get(url, headers=headers, timeout=20, proxies=proxy_cfg)
+        resp.raise_for_status()
+        return resp.json()
+
+    return _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=3, delay=1.5)
 
 
 def _fetch_gate_spot_prices(proxies: dict[str, str] | None = None) -> dict[str, float]:
@@ -118,10 +170,14 @@ def _fetch_gate_spot_prices(proxies: dict[str, str] | None = None) -> dict[str, 
         "USD": 1.0,
         "DAI": 1.0,
     }
-    try:
-        resp = requests.get(f"{GATE_BASE_URL}{GATE_PREFIX}/spot/tickers", timeout=20, proxies=proxies)
+    def _do(proxy_cfg: dict[str, str] | None) -> list[dict[str, Any]]:
+        resp = requests.get(f"{GATE_BASE_URL}{GATE_PREFIX}/spot/tickers", timeout=20, proxies=proxy_cfg)
         resp.raise_for_status()
-        for row in resp.json():
+        return resp.json()
+
+    try:
+        rows = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=3, delay=1.5)
+        for row in rows:
             pair = str(row.get("currency_pair", ""))
             if pair.endswith("_USDT"):
                 base = pair[:-5]
@@ -255,19 +311,22 @@ def _toss_issue_token(
     client_secret: str,
     proxies: dict[str, str] | None = None,
 ) -> str:
-    resp = requests.post(
-        f"{TOSS_BASE_URL}/oauth2/token",
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        data={
-            "grant_type": "client_credentials",
-            "client_id": client_id,
-            "client_secret": client_secret,
-        },
-        timeout=20,
-        proxies=proxies,
-    )
-    resp.raise_for_status()
-    payload = resp.json()
+    def _do() -> dict[str, Any]:
+        resp = requests.post(
+            f"{TOSS_BASE_URL}/oauth2/token",
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+            timeout=20,
+            proxies=proxies,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    payload = _run_with_retries(_do, attempts=2, delay=1.2)
     token = payload.get("access_token") or (payload.get("result") or {}).get("access_token")
     if not token:
         raise RuntimeError("Toss Open API did not return an access_token")
@@ -286,9 +345,13 @@ def _toss_get(
     }
     if account_seq is not None:
         headers["X-Tossinvest-Account"] = str(account_seq)
-    resp = requests.get(f"{TOSS_BASE_URL}{path}", headers=headers, timeout=20, proxies=proxies)
-    resp.raise_for_status()
-    return resp.json()
+
+    def _do() -> Any:
+        resp = requests.get(f"{TOSS_BASE_URL}{path}", headers=headers, timeout=20, proxies=proxies)
+        resp.raise_for_status()
+        return resp.json()
+
+    return _run_with_retries(_do, attempts=2, delay=1.2)
 
 
 def _extract_list(payload: Any, keys: tuple[str, ...]) -> list[dict[str, Any]]:
