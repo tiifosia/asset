@@ -767,28 +767,40 @@ function renderPortfolioStatusBanner() {
   fxEl.textContent = `적용 환율 ₩${fxStr} / $1 · 매일 06:30 KST 자동 갱신`;
 }
 
-function buildAccountSummaryCardHtml({ title, totalMain, subLineHtml, leftLabel, leftVal, rightLabel, rightVal }) {
+function getPnlColorClass(val) {
+  const num = Number(val || 0);
+  if (num > 0) return "is-plus";
+  if (num < 0) return "is-minus";
+  return "is-neutral";
+}
+
+function buildAccountSummaryCardHtml({ title, tag, totalMain, totalAlt, isTotal = false, stats = [] }) {
+  const rowsHtml = stats
+    .map(
+      ({ label, value, colorClass = "" }) => `
+        <div class="pf-stat-row">
+          <span class="pf-stat-label">${escapeHtml(label)}</span>
+          <span class="pf-stat-val${colorClass ? ` ${colorClass}` : ""}">${escapeHtml(value)}</span>
+        </div>
+      `
+    )
+    .join("");
+
   return `
-    <article class="portfolio-card">
+    <article class="portfolio-card${isTotal ? " portfolio-card-total" : ""}">
       <div>
         <div class="pf-card-head">
           <div class="pf-card-title">${escapeHtml(title)}</div>
+          ${tag ? `<span class="pf-card-tag">${escapeHtml(tag)}</span>` : ""}
         </div>
-        <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
-        <div class="pf-sub-value tabular">${subLineHtml}</div>
+        <div class="pf-hero-block">
+          <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
+          <div class="pf-sub-value tabular">${escapeHtml(totalAlt)}</div>
+        </div>
       </div>
 
-      <div>
-        <div class="pf-meta-grid tabular">
-          <div>
-            <div class="pf-meta-label">${escapeHtml(leftLabel)}</div>
-            <div class="pf-meta-val">${escapeHtml(leftVal)}</div>
-          </div>
-          <div>
-            <div class="pf-meta-label">${escapeHtml(rightLabel)}</div>
-            <div class="pf-meta-val">${escapeHtml(rightVal)}</div>
-          </div>
-        </div>
+      <div class="pf-stat-list tabular">
+        ${rowsHtml}
       </div>
     </article>
   `;
@@ -808,12 +820,14 @@ function renderPortfolioSummaryCards() {
 
   const totalMain = formatMoney(cur === "krw" ? s.total_krw : s.total_usd, cur);
   const totalAlt = formatMoney(alt === "krw" ? s.total_krw : s.total_usd, alt);
-  const dailyDelta = formatSignedMoney(cur === "krw" ? s.daily_change_krw : s.daily_change_usd, cur);
+  const dailyDeltaNum = cur === "krw" ? Number(s.daily_change_krw || 0) : Number(s.daily_change_usd || 0);
+  const dailyDelta = formatSignedMoney(dailyDeltaNum, cur);
+  const dailyPctNum = Number(s.daily_change_pct || 0);
 
   const gatePnlNum = cur === "krw" ? Number(s.gateio?.unrealized_pnl_krw || 0) : Number(s.gateio?.unrealized_pnl_usd || 0);
   const tossPnlNum = cur === "krw" ? Number(s.toss?.pnl_krw || 0) : Number(s.toss?.pnl_usd || 0);
   const kisPnlNum = cur === "krw" ? Number(s.kis?.pnl_krw || 0) : Number(s.kis?.pnl_usd || 0);
-  const totalPnlStr = formatSignedMoney(gatePnlNum + tossPnlNum + kisPnlNum, cur);
+  const totalPnlNum = gatePnlNum + tossPnlNum + kisPnlNum;
 
   const gateMain = formatMoney(cur === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, cur);
   const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, alt);
@@ -838,39 +852,48 @@ function renderPortfolioSummaryCards() {
   grid.innerHTML = [
     buildAccountSummaryCardHtml({
       title: "TOTAL",
+      tag: "전체 합산",
+      isTotal: true,
       totalMain,
-      subLineHtml: `${escapeHtml(totalAlt)} 환산`,
-      leftLabel: "전일 대비",
-      leftVal: `${dailyDelta} (${formatSignedPct(s.daily_change_pct)})`,
-      rightLabel: "총 평가손익",
-      rightVal: totalPnlStr,
+      totalAlt,
+      stats: [
+        { label: "총 평가손익", value: formatSignedMoney(totalPnlNum, cur), colorClass: getPnlColorClass(totalPnlNum) },
+        { label: "전일 대비", value: dailyDelta, colorClass: getPnlColorClass(dailyDeltaNum) },
+        { label: "전일 등락률", value: formatSignedPct(dailyPctNum), colorClass: getPnlColorClass(dailyPctNum) },
+      ],
     }),
     buildAccountSummaryCardHtml({
-      title: "Gate.io (해외 거래소)",
+      title: "Gate.io",
+      tag: "해외 거래소",
       totalMain: gateMain,
-      subLineHtml: `${escapeHtml(gateAlt)} · 미실현 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(gatePnlNum, cur))}</span>`,
-      leftLabel: gateSpotLabel,
-      leftVal: gateSpotVal,
-      rightLabel: "선물 (Futures)",
-      rightVal: gateFut,
+      totalAlt: gateAlt,
+      stats: [
+        { label: "미실현 손익", value: formatSignedMoney(gatePnlNum, cur), colorClass: getPnlColorClass(gatePnlNum) },
+        { label: gateSpotLabel, value: gateSpotVal },
+        { label: "선물 (Futures)", value: gateFut },
+      ],
     }),
     buildAccountSummaryCardHtml({
-      title: "토스증권 (국내 · 미국 주식)",
+      title: "토스증권",
+      tag: "국내 · 미국",
       totalMain: tossMain,
-      subLineHtml: `${escapeHtml(tossAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(tossPnlNum, cur))}</span>`,
-      leftLabel: "보유 주식 평가액",
-      leftVal: tossStocks,
-      rightLabel: "예수금 (KRW + USD)",
-      rightVal: tossCash,
+      totalAlt: tossAlt,
+      stats: [
+        { label: "평가 손익", value: formatSignedMoney(tossPnlNum, cur), colorClass: getPnlColorClass(tossPnlNum) },
+        { label: "보유 주식", value: tossStocks },
+        { label: "예수금 (KRW + USD)", value: tossCash },
+      ],
     }),
     buildAccountSummaryCardHtml({
-      title: "한국투자증권 (중개형 ISA)",
+      title: "한국투자증권",
+      tag: "중개형 ISA",
       totalMain: kisMain,
-      subLineHtml: `${escapeHtml(kisAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(kisPnlNum, cur))}</span>`,
-      leftLabel: "ISA 보유 종목",
-      leftVal: kisStocks,
-      rightLabel: "ISA 예수금 (KRW)",
-      rightVal: kisCash,
+      totalAlt: kisAlt,
+      stats: [
+        { label: "평가 손익", value: formatSignedMoney(kisPnlNum, cur), colorClass: getPnlColorClass(kisPnlNum) },
+        { label: "ISA 보유 종목", value: kisStocks },
+        { label: "ISA 예수금 (KRW)", value: kisCash },
+      ],
     }),
   ].join("");
 }
@@ -890,18 +913,21 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
   const cur = state.currency;
   listEl.innerHTML = rows
     .map((item) => {
+      const primaryName = getSliceDisplayName(item);
       const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
       const valSub = getSubText(item, cur);
+      const hasPnl = item.pnl_krw != null || item.pnl_usd != null;
+      const pnlColorClass = hasPnl ? getPnlColorClass(cur === "krw" ? item.pnl_krw : item.pnl_usd) : "";
+      const metaSub = `${item.symbol !== primaryName ? `${item.symbol} · ` : ""}수량 ${formatQuantity(item.quantity)}`;
       return `
         <div class="holding-row">
-          <div>
-            <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
-            <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+          <div class="holding-info">
+            <div class="holding-sym" title="${escapeHtml(item.name || item.symbol)}">${escapeHtml(primaryName)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
+            <div class="holding-sub tabular">${escapeHtml(metaSub)}</div>
           </div>
-          <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
           <div class="holding-val tabular">
             <div class="holding-val-main">${escapeHtml(valMain)}</div>
-            <div class="holding-val-sub">${escapeHtml(valSub)}</div>
+            <div class="holding-val-sub${pnlColorClass ? ` ${pnlColorClass}` : ""}">${escapeHtml(valSub)}</div>
           </div>
         </div>
       `;
