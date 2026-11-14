@@ -20,7 +20,7 @@ const PORTFOLIO_CHART_GRID = { left: 14, right: 102, top: 44, bottom: 30 };
 
 // Portfolio interactive trend chart state
 let pfChartInstance = null;
-let pfSeriesMode = "total"; // "total" | "gate" | "toss"
+let pfSeriesMode = "total"; // "total" | "gate" | "toss" | "kis"
 let pfInterval = "daily"; // "daily" | "weekly" | "yearly"
 let pfScaleMode = "linear"; // "linear" | "log"
 let pfRows = [];
@@ -606,7 +606,7 @@ function updateHeaderForView() {
   if (isPortfolio) {
     eyebrowEl.textContent = "PERSONAL ASSET TRACKER";
     titleEl.textContent = "내 개인 자산 추이";
-    subtitleEl.textContent = "Gate.io (현물 · 선물) 및 토스증권 (국내 · 미국 주식 · 예수금) 일별 통합 자산 추이 대시보드";
+    subtitleEl.textContent = "Gate.io (현물 · 선물) · 토스증권 · 한국투자증권 (중개형 ISA) 일별 통합 자산 추이 대시보드";
     toggleBtn.textContent = "미국 시총 Top 100 & 지수 MDD 보기 →";
     updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
   } else {
@@ -640,7 +640,7 @@ function switchMainView(nextView) {
 
 function getPortfolioProviderLabel(statusObj) {
   if (!statusObj || statusObj.status === "not_configured") {
-    return { text: "미연결 (샘플)", cls: "is-demo" };
+    return { text: "미연결", cls: "is-demo" };
   }
   if (statusObj.status === "connected") {
     return { text: "읽기전용 동기화", cls: "is-live" };
@@ -652,6 +652,7 @@ function getSelectedSeriesVal(row) {
   const cur = state.currency;
   if (pfSeriesMode === "gate") return cur === "krw" ? Number(row.gate_krw || 0) : Number(row.gate_usd || 0);
   if (pfSeriesMode === "toss") return cur === "krw" ? Number(row.toss_krw || 0) : Number(row.toss_usd || 0);
+  if (pfSeriesMode === "kis") return cur === "krw" ? Number(row.kis_krw || 0) : Number(row.kis_usd || 0);
   return cur === "krw" ? Number(row.total_krw || 0) : Number(row.total_usd || 0);
 }
 
@@ -691,6 +692,8 @@ function getPortfolioIntervalRows(history, interval) {
       cur.gate_usd = r.gate_usd;
       cur.toss_krw = r.toss_krw;
       cur.toss_usd = r.toss_usd;
+      cur.kis_krw = r.kis_krw;
+      cur.kis_usd = r.kis_usd;
       cur.usdkrw = r.usdkrw;
       cur.val = r.val;
       cur.lowVal = Math.min(cur.lowVal, r.lowVal);
@@ -711,6 +714,7 @@ function updatePortfolioHoverBar(idx) {
   const totalTxt = formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur);
   const gateTxt = formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur);
   const tossTxt = formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur);
+  const kisTxt = formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur);
   const fx = Number(r.usdkrw || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
   barEl.innerHTML = `
@@ -718,6 +722,7 @@ function updatePortfolioHoverBar(idx) {
     <span>합계 ${escapeHtml(totalTxt)}</span>
     <span>Gate ${escapeHtml(gateTxt)}</span>
     <span>토스 ${escapeHtml(tossTxt)}</span>
+    <span>한투ISA ${escapeHtml(kisTxt)}</span>
     <span>환율 ₩${escapeHtml(fx)}</span>
   `;
 }
@@ -741,22 +746,74 @@ function renderPortfolioStatusBanner() {
   const providers = data.providers || {};
   const gateStatus = providers.gateio?.status;
   const tossStatus = providers.toss?.status;
+  const kisStatus = providers.kis?.status;
 
   badge.classList.remove("is-live", "is-demo", "is-error");
   if (data.is_demo) {
     badge.classList.add("is-demo");
     badge.textContent = "샘플 데이터 표시 중";
     msgEl.textContent =
-      "Gate.io 및 토스증권 읽기 전용 API 키를 연결하면 웹사이트 접속 없이도 매일 실제 자산 추이가 누적됩니다.";
-  } else if (gateStatus === "error" || tossStatus === "error") {
+      "Gate.io · 토스증권 · 한국투자증권 ISA 읽기 전용 API 키를 연결하면 웹사이트 접속 없이도 매일 실제 자산 추이가 누적됩니다.";
+  } else if (gateStatus === "error" || tossStatus === "error" || kisStatus === "error") {
     badge.classList.add("is-error");
     badge.textContent = "일부 조회 점검 필요";
-    msgEl.textContent = [providers.gateio?.message, providers.toss?.message].filter(Boolean).join(" · ");
+    msgEl.textContent = [providers.gateio?.message, providers.toss?.message, providers.kis?.message]
+      .filter(Boolean)
+      .join(" · ");
   } else {
     badge.classList.add("is-live");
     badge.textContent = "읽기 전용 실계좌 연동";
-    msgEl.textContent = "Gate.io(API v4 Read-Only) + 토스증권(Open API 조회 전용) 실계좌 잔고가 자동 기록되고 있습니다.";
+    const connectedNames = [
+      gateStatus === "connected" ? "Gate.io" : null,
+      tossStatus === "connected" ? "토스증권" : null,
+      kisStatus === "connected" ? "한국투자증권 ISA" : null,
+    ].filter(Boolean);
+    const pendingSuffix = kisStatus === "not_configured" ? " (한국투자증권 ISA 키 등록 대기 중)" : "";
+    msgEl.textContent = `${connectedNames.join(" + ")} 실계좌 잔고가 매일 조회 전용으로 자동 기록되고 있습니다.${pendingSuffix}`;
   }
+}
+
+function buildBrokerSummaryCardHtml({ title, share, dataObj, providerStatus, stockLabel, cashLabel, cur, alt }) {
+  const safe = dataObj || {};
+  const lbl = getPortfolioProviderLabel(providerStatus);
+  const totalMain = formatMoney(cur === "krw" ? safe.total_krw || 0 : safe.total_usd || 0, cur);
+  const totalAlt = formatMoney(alt === "krw" ? safe.total_krw || 0 : safe.total_usd || 0, alt);
+  const stocksVal = formatMoney(cur === "krw" ? safe.stocks_krw || 0 : safe.stocks_usd || 0, cur);
+  const cashVal = formatMoney(cur === "krw" ? safe.cash_krw || 0 : safe.cash_usd || 0, cur);
+  const pnlVal = formatSignedMoney(cur === "krw" ? safe.pnl_krw || 0 : safe.pnl_usd || 0, cur);
+
+  return `
+    <article class="portfolio-card">
+      <div>
+        <div class="pf-card-head">
+          <div>
+            <div class="pf-card-title">${escapeHtml(title)}</div>
+            <div class="pf-card-sub">총자산 비중 ${share.toFixed(1)}% · 조회 전용</div>
+          </div>
+          <span class="provider-pill ${lbl.cls}">${escapeHtml(lbl.text)}</span>
+        </div>
+
+        <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
+        <div class="pf-sub-value tabular">${escapeHtml(totalAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(pnlVal)}</span></div>
+      </div>
+
+      <div>
+        <div class="pf-weight-track" aria-hidden="true">
+          <div class="pf-weight-fill" style="width: ${share.toFixed(1)}%;"></div>
+        </div>
+        <div class="pf-meta-grid tabular">
+          <div>
+            <div class="pf-meta-label">${escapeHtml(stockLabel)}</div>
+            <div class="pf-meta-val">${escapeHtml(stocksVal)}</div>
+          </div>
+          <div>
+            <div class="pf-meta-label">${escapeHtml(cashLabel)}</div>
+            <div class="pf-meta-val">${escapeHtml(cashVal)}</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
 }
 
 function renderPortfolioSummaryCards() {
@@ -779,26 +836,25 @@ function renderPortfolioSummaryCards() {
   const totalNum = cur === "krw" ? Number(s.total_krw || 0) : Number(s.total_usd || 0);
   const gateNum = cur === "krw" ? Number(s.gateio?.total_krw || 0) : Number(s.gateio?.total_usd || 0);
   const tossNum = cur === "krw" ? Number(s.toss?.total_krw || 0) : Number(s.toss?.total_usd || 0);
+  const kisNum = cur === "krw" ? Number(s.kis?.total_krw || 0) : Number(s.kis?.total_usd || 0);
+
   const gateShare = totalNum > 0 ? Math.max(0, Math.min(100, (gateNum / totalNum) * 100)) : 0;
   const tossShare = totalNum > 0 ? Math.max(0, Math.min(100, (tossNum / totalNum) * 100)) : 0;
+  const kisShare = totalNum > 0 ? Math.max(0, Math.min(100, (kisNum / totalNum) * 100)) : 0;
 
   const gateMain = formatMoney(gateNum, cur);
   const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw : s.gateio?.total_usd, alt);
-  const gateSpot = formatMoney(cur === "krw" ? s.gateio?.spot_krw : s.gateio?.spot_usd, cur);
+  const gateSpotRaw = cur === "krw" ? Number(s.gateio?.spot_krw || 0) : Number(s.gateio?.spot_usd || 0);
+  const gateOtherRaw = cur === "krw" ? Number(s.gateio?.other_krw || 0) : Number(s.gateio?.other_usd || 0);
+  const gateSpotLabel = gateOtherRaw > 0 ? "현물 · 기타(Earn)" : "현물 (Spot)";
+  const gateSpotVal = formatMoney(gateSpotRaw + gateOtherRaw, cur);
   const gateFut = formatMoney(cur === "krw" ? s.gateio?.futures_krw : s.gateio?.futures_usd, cur);
   const gateUpnl = formatSignedMoney(
     cur === "krw" ? s.gateio?.unrealized_pnl_krw : s.gateio?.unrealized_pnl_usd,
     cur
   );
 
-  const tossMain = formatMoney(tossNum, cur);
-  const tossAlt = formatMoney(alt === "krw" ? s.toss?.total_krw : s.toss?.total_usd, alt);
-  const tossStocks = formatMoney(cur === "krw" ? s.toss?.stocks_krw : s.toss?.stocks_usd, cur);
-  const tossCash = formatMoney(cur === "krw" ? s.toss?.cash_krw : s.toss?.cash_usd, cur);
-  const tossPnl = formatSignedMoney(cur === "krw" ? s.toss?.pnl_krw : s.toss?.pnl_usd, cur);
-
   const gateLbl = getPortfolioProviderLabel(data.providers?.gateio);
-  const tossLbl = getPortfolioProviderLabel(data.providers?.toss);
 
   const ddObj = {
     current_dd_abs: s.current_dd_abs,
@@ -864,8 +920,8 @@ function renderPortfolioSummaryCards() {
         </div>
         <div class="pf-meta-grid tabular">
           <div>
-            <div class="pf-meta-label">현물 (Spot)</div>
-            <div class="pf-meta-val">${escapeHtml(gateSpot)}</div>
+            <div class="pf-meta-label">${gateSpotLabel}</div>
+            <div class="pf-meta-val">${escapeHtml(gateSpotVal)}</div>
           </div>
           <div>
             <div class="pf-meta-label">선물 (Futures)</div>
@@ -875,112 +931,105 @@ function renderPortfolioSummaryCards() {
       </div>
     </article>
 
-    <article class="portfolio-card">
-      <div>
-        <div class="pf-card-head">
-          <div>
-            <div class="pf-card-title">토스증권 (국내 · 미국 주식)</div>
-            <div class="pf-card-sub">총자산 비중 ${tossShare.toFixed(1)}% · 조회 전용</div>
-          </div>
-          <span class="provider-pill ${tossLbl.cls}">${escapeHtml(tossLbl.text)}</span>
-        </div>
+    ${buildBrokerSummaryCardHtml({
+      title: "토스증권 (국내 · 미국 주식)",
+      share: tossShare,
+      dataObj: s.toss,
+      providerStatus: data.providers?.toss,
+      stockLabel: "보유 주식 평가액",
+      cashLabel: "예수금 (KRW + USD)",
+      cur,
+      alt,
+    })}
 
-        <div class="pf-big-value tabular">${escapeHtml(tossMain)}</div>
-        <div class="pf-sub-value tabular">${escapeHtml(tossAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(tossPnl)}</span></div>
-      </div>
-
-      <div>
-        <div class="pf-weight-track" aria-hidden="true">
-          <div class="pf-weight-fill" style="width: ${tossShare.toFixed(1)}%;"></div>
-        </div>
-        <div class="pf-meta-grid tabular">
-          <div>
-            <div class="pf-meta-label">보유 주식 평가액</div>
-            <div class="pf-meta-val">${escapeHtml(tossStocks)}</div>
-          </div>
-          <div>
-            <div class="pf-meta-label">예수금 (KRW + USD)</div>
-            <div class="pf-meta-val">${escapeHtml(tossCash)}</div>
-          </div>
-        </div>
-      </div>
-    </article>
+    ${buildBrokerSummaryCardHtml({
+      title: "한국투자증권 (중개형 ISA)",
+      share: kisShare,
+      dataObj: s.kis,
+      providerStatus: data.providers?.kis,
+      stockLabel: "ISA 보유 종목",
+      cashLabel: "ISA 예수금 (KRW)",
+      cur,
+      alt,
+    })}
   `;
+}
+
+function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessage, getSubText) {
+  const badgeEl = document.getElementById(badgeId);
+  const listEl = document.getElementById(listId);
+  if (!badgeEl || !listEl) return;
+
+  const lbl = getPortfolioProviderLabel(providerStatus);
+  badgeEl.className = `provider-pill ${lbl.cls}`;
+  badgeEl.textContent = lbl.text;
+
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) {
+    listEl.innerHTML = `<div class="empty-state">${escapeHtml(emptyMessage)}</div>`;
+    return;
+  }
+
+  const cur = state.currency;
+  listEl.innerHTML = rows
+    .map((item) => {
+      const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
+      const valSub = getSubText(item, cur);
+      return `
+        <div class="holding-row">
+          <div>
+            <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
+            <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+          </div>
+          <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
+          <div class="holding-val tabular">
+            <div class="holding-val-main">${escapeHtml(valMain)}</div>
+            <div class="holding-val-sub">${escapeHtml(valSub)}</div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function renderPortfolioHoldings() {
   const data = state.portfolio;
-  const cur = state.currency;
-  const gateBadge = document.getElementById("gate-provider-badge");
-  const tossBadge = document.getElementById("toss-provider-badge");
-  const gateList = document.getElementById("gate-holdings-list");
-  const tossList = document.getElementById("toss-holdings-list");
-
   if (!data) return;
 
-  const gateLbl = getPortfolioProviderLabel(data.providers?.gateio);
-  gateBadge.className = `provider-pill ${gateLbl.cls}`;
-  gateBadge.textContent = gateLbl.text;
+  renderHoldingsPanel(
+    "gate-provider-badge",
+    "gate-holdings-list",
+    data.providers?.gateio,
+    data.holdings?.gateio,
+    "표시할 Gate.io 보유 자산 또는 포지션이 없습니다.",
+    (item, cur) =>
+      item.pnl_usd != null
+        ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+        : `단가 ${formatMoney(item.price_usd, "usd")}`
+  );
 
-  const tossLbl = getPortfolioProviderLabel(data.providers?.toss);
-  tossBadge.className = `provider-pill ${tossLbl.cls}`;
-  tossBadge.textContent = tossLbl.text;
+  const stockSubFormatter = (item, cur) =>
+    item.pnl_krw != null
+      ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+      : `${item.currency || "KRW"} 현금성 잔고`;
 
-  const gateItems = Array.isArray(data.holdings?.gateio) ? data.holdings.gateio : [];
-  if (!gateItems.length) {
-    gateList.innerHTML = `<div class="empty-state">표시할 Gate.io 보유 자산 또는 포지션이 없습니다.</div>`;
-  } else {
-    gateList.innerHTML = gateItems
-      .map((item) => {
-        const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
-        const valSub =
-          item.pnl_usd != null
-            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
-            : `단가 ${formatMoney(item.price_usd, "usd")}`;
-        return `
-          <div class="holding-row">
-            <div>
-              <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
-              <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
-            </div>
-            <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
-            <div class="holding-val tabular">
-              <div class="holding-val-main">${escapeHtml(valMain)}</div>
-              <div class="holding-val-sub">${escapeHtml(valSub)}</div>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-  }
+  renderHoldingsPanel(
+    "toss-provider-badge",
+    "toss-holdings-list",
+    data.providers?.toss,
+    data.holdings?.toss,
+    "표시할 토스증권 보유 종목 또는 예수금이 없습니다.",
+    stockSubFormatter
+  );
 
-  const tossItems = Array.isArray(data.holdings?.toss) ? data.holdings.toss : [];
-  if (!tossItems.length) {
-    tossList.innerHTML = `<div class="empty-state">표시할 토스증권 보유 종목 또는 예수금이 없습니다.</div>`;
-  } else {
-    tossList.innerHTML = tossItems
-      .map((item) => {
-        const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
-        const valSub =
-          item.pnl_krw != null
-            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
-            : `${escapeHtml(item.currency || "KRW")} 현금성 잔고`;
-        return `
-          <div class="holding-row">
-            <div>
-              <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
-              <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
-            </div>
-            <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
-            <div class="holding-val tabular">
-              <div class="holding-val-main">${escapeHtml(valMain)}</div>
-              <div class="holding-val-sub">${escapeHtml(valSub)}</div>
-            </div>
-          </div>
-        `;
-      })
-      .join("");
-  }
+  renderHoldingsPanel(
+    "kis-provider-badge",
+    "kis-holdings-list",
+    data.providers?.kis,
+    data.holdings?.kis,
+    "표시할 한국투자증권 ISA 보유 종목 또는 예수금이 없습니다.",
+    stockSubFormatter
+  );
 }
 
 function renderPortfolioHistoryLog() {
@@ -1002,6 +1051,7 @@ function renderPortfolioHistoryLog() {
       const totalVal = cur === "krw" ? Number(row.total_krw || 0) : Number(row.total_usd || 0);
       const gateVal = cur === "krw" ? Number(row.gate_krw || 0) : Number(row.gate_usd || 0);
       const tossVal = cur === "krw" ? Number(row.toss_krw || 0) : Number(row.toss_usd || 0);
+      const kisVal = cur === "krw" ? Number(row.kis_krw || 0) : Number(row.kis_usd || 0);
 
       let deltaHtml = `<span class="history-sub">-</span>`;
       if (prev) {
@@ -1020,6 +1070,7 @@ function renderPortfolioHistoryLog() {
           <div class="text-right"><strong>${escapeHtml(formatMoney(totalVal, cur))}</strong></div>
           <div class="text-right">${escapeHtml(formatMoney(gateVal, cur))}<span class="history-sub">현 ${escapeHtml(gateSpot)} / 선 ${escapeHtml(gateFut)}</span></div>
           <div class="text-right">${escapeHtml(formatMoney(tossVal, cur))}</div>
+          <div class="text-right">${escapeHtml(formatMoney(kisVal, cur))}</div>
           <div class="text-right">${deltaHtml}</div>
         </div>
       `;
@@ -1229,27 +1280,26 @@ function renderApiGuideStatus() {
     return;
   }
 
-  const gate = providers.gateio || {};
-  const toss = providers.toss || {};
-  const gateBadge = getPortfolioProviderLabel(gate);
-  const tossBadge = getPortfolioProviderLabel(toss);
+  const cards = [
+    { title: "Gate.io (API v4 · Read-Only)", obj: providers.gateio || {} },
+    { title: "토스증권 (Open API · 조회 전용)", obj: providers.toss || {} },
+    { title: "한국투자증권 (중개형 ISA · 조회 전용)", obj: providers.kis || {} },
+  ];
 
-  container.innerHTML = `
-    <div class="guide-status-card">
-      <div class="guide-status-title">
-        <span>Gate.io (API v4 · Read-Only)</span>
-        <span class="provider-pill ${gateBadge.cls}">${escapeHtml(gateBadge.text)}</span>
-      </div>
-      <div class="guide-status-msg">${escapeHtml(gate.message || "-")}</div>
-    </div>
-    <div class="guide-status-card">
-      <div class="guide-status-title">
-        <span>토스증권 (Open API · 조회 전용)</span>
-        <span class="provider-pill ${tossBadge.cls}">${escapeHtml(tossBadge.text)}</span>
-      </div>
-      <div class="guide-status-msg">${escapeHtml(toss.message || "-")}</div>
-    </div>
-  `;
+  container.innerHTML = cards
+    .map(({ title, obj }) => {
+      const badge = getPortfolioProviderLabel(obj);
+      return `
+        <div class="guide-status-card">
+          <div class="guide-status-title">
+            <span>${escapeHtml(title)}</span>
+            <span class="provider-pill ${badge.cls}">${escapeHtml(badge.text)}</span>
+          </div>
+          <div class="guide-status-msg">${escapeHtml(obj.message || "-")}</div>
+        </div>
+      `;
+    })
+    .join("");
 }
 
 /* ---------- Existing MDD View Rendering ---------- */
@@ -1924,6 +1974,7 @@ async function init() {
     document.getElementById("portfolio-summary-grid").innerHTML = `<div class="error-state">${msg}</div>`;
     document.getElementById("gate-holdings-list").innerHTML = `<div class="error-state">${msg}</div>`;
     document.getElementById("toss-holdings-list").innerHTML = `<div class="error-state">${msg}</div>`;
+    document.getElementById("kis-holdings-list").innerHTML = `<div class="error-state">${msg}</div>`;
     document.getElementById("portfolio-history-list").innerHTML = `<div class="error-state">${msg}</div>`;
   }
 

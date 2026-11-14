@@ -1040,6 +1040,10 @@ body.modal-open {
   color: var(--text);
 }
 
+.portfolio-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .portfolio-card {
   background-color: var(--bg);
   border: 1px solid var(--surface);
@@ -1157,7 +1161,7 @@ body.modal-open {
 /* Holdings & Daily Log */
 .holdings-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1250,7 +1254,7 @@ body.modal-open {
 .history-table-header,
 .history-row {
   display: grid;
-  grid-template-columns: 120px repeat(4, minmax(110px, 1fr));
+  grid-template-columns: 120px repeat(5, minmax(100px, 1fr));
   align-items: center;
   gap: 14px;
 }
@@ -1292,13 +1296,13 @@ body.modal-open {
 
 /* API Setup Guide Modal */
 .guide-dialog {
-  max-width: 780px;
+  max-width: 880px;
   overflow-y: auto;
 }
 
 .guide-status-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1363,7 +1367,13 @@ body.modal-open {
   margin-top: 8px;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1120px) {
+  .portfolio-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1040px) {
   .holdings-grid,
   .guide-status-grid {
     grid-template-columns: 1fr;
@@ -1388,5 +1398,11 @@ body.modal-open {
 
   .portfolio-chart-card .chart-stage {
     height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .portfolio-summary-grid {
+    grid-template-columns: 1fr;
   }
 }

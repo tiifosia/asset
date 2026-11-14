@@ -21,6 +21,7 @@ KST = timezone(timedelta(hours=9))
 GATE_BASE_URL = "https://api.gateio.ws"
 GATE_PREFIX = "/api/v4"
 TOSS_BASE_URL = "https://openapi.tossinvest.com"
+KIS_BASE_URL = os.getenv("KIS_BASE_URL", "https://openapi.koreainvestment.com:9443").rstrip("/")
 
 EXCHANGE_RATE_URL = "https://open.er-api.com/v6/latest/USD"
 
@@ -590,6 +591,203 @@ def fetch_toss_readonly(
     }
 
 
+# ---------------- Korea Investment & Securities (ISA Read-Only) ---------------- #
+
+
+def _parse_kis_account(account_no: str) -> tuple[str, str]:
+    """Split KIS account string into 8-digit CANO and 2-digit ACNT_PRDT_CD."""
+    cleaned = account_no.strip()
+    if "-" in cleaned:
+        part1, part2 = cleaned.split("-", 1)
+        cano = "".join(ch for ch in part1 if ch.isdigit())[:8]
+        acnt_prdt_cd = "".join(ch for ch in part2 if ch.isdigit())[:2] or "01"
+    else:
+        digits = "".join(ch for ch in cleaned if ch.isdigit())
+        if len(digits) >= 10:
+            cano = digits[:8]
+            acnt_prdt_cd = digits[8:10]
+        elif len(digits) == 8:
+            cano = digits
+            acnt_prdt_cd = "01"
+        else:
+            cano, acnt_prdt_cd = "", ""
+    if len(cano) != 8 or len(acnt_prdt_cd) != 2:
+        raise ValueError("KIS_ACCOUNT_NO must be 8-digit CANO + 2-digit product code (e.g. 12345678-01)")
+    return cano, acnt_prdt_cd
+
+
+def _kis_issue_token(
+    app_key: str,
+    app_secret: str,
+    proxies: dict[str, str] | None = None,
+) -> str:
+    """Issue a KIS Open API OAuth access token via direct connection with proxy fallback."""
+
+    def _do(proxy_cfg: dict[str, str] | None) -> dict[str, Any]:
+        resp = requests.post(
+            f"{KIS_BASE_URL}/oauth2/tokenP",
+            headers={"content-type": "application/json; charset=utf-8"},
+            json={
+                "grant_type": "client_credentials",
+                "appkey": app_key,
+                "appsecret": app_secret,
+            },
+            timeout=20,
+            proxies=proxy_cfg,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    payload = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=2, delay=2.0)
+    token = payload.get("access_token") if isinstance(payload, dict) else None
+    if not token:
+        raise RuntimeError("KIS Open API did not return an access_token")
+    return str(token)
+
+
+def fetch_kis_isa_readonly(
+    app_key: str,
+    app_secret: str,
+    account_no: str,
+    usdkrw: float,
+    proxies: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Fetch Korea Investment & Securities ISA balance and holdings strictly read-only."""
+    cano, acnt_prdt_cd = _parse_kis_account(account_no)
+    token = _kis_issue_token(app_key, app_secret, proxies)
+
+    headers = {
+        "content-type": "application/json; charset=utf-8",
+        "authorization": f"Bearer {token}",
+        "appkey": app_key,
+        "appsecret": app_secret,
+        "tr_id": "TTTC8434R",
+        "custtype": "P",
+    }
+    params = {
+        "CANO": cano,
+        "ACNT_PRDT_CD": acnt_prdt_cd,
+        "AFHR_FLPR_YN": "N",
+        "OFL_YN": "",
+        "INQR_DVSN": "02",
+        "UNPR_DVSN": "01",
+        "FUND_STTL_ICLD_YN": "N",
+        "FNCG_AMT_AUTO_RDPT_YN": "N",
+        "PRCS_DVSN": "00",
+        "CTX_AREA_FK100": "",
+        "CTX_AREA_NK100": "",
+    }
+
+    def _do(proxy_cfg: dict[str, str] | None) -> dict[str, Any]:
+        resp = requests.get(
+            f"{KIS_BASE_URL}/uapi/domestic-stock/v1/trading/inquire-balance",
+            headers=headers,
+            params=params,
+            timeout=20,
+            proxies=proxy_cfg,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    payload = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=2, delay=1.5)
+    if str(payload.get("rt_cd", "0")) != "0":
+        raise RuntimeError(f"KIS API ({payload.get('msg_cd')}): {payload.get('msg1')}")
+
+    output1 = payload.get("output1") or []
+    output2 = payload.get("output2") or []
+
+    holdings: list[dict[str, Any]] = []
+    item_sum_krw = 0.0
+    item_pnl_sum_krw = 0.0
+
+    for item in output1:
+        if not isinstance(item, dict):
+            continue
+        qty = _to_float(item.get("hldg_qty") or item.get("ord_psbl_qty"), 0.0)
+        if qty <= 0:
+            continue
+
+        symbol = str(item.get("pdno") or "-")
+        name = str(item.get("prdt_name") or symbol)
+        cur_price = _to_float(item.get("prpr"), 0.0)
+        avg_price = _to_float(item.get("pchs_avg_pric"), 0.0)
+        eval_amt = _to_float(item.get("evlu_amt"), qty * cur_price)
+        pnl_amt = _to_float(
+            item.get("evlu_pfls_amt"),
+            (cur_price - avg_price) * qty if cur_price and avg_price else 0.0,
+        )
+        pnl_rate = _to_float(item.get("evlu_pfls_rt"), 0.0)
+
+        item_sum_krw += eval_amt
+        item_pnl_sum_krw += pnl_amt
+
+        holdings.append(
+            {
+                "exchange": "한국투자증권 ISA",
+                "category": "ISA 국내주식/ETF",
+                "symbol": symbol,
+                "name": name,
+                "currency": "KRW",
+                "quantity": round(qty, 6),
+                "price_native": round(cur_price, 2),
+                "avg_price_native": round(avg_price, 2),
+                "value_krw": round(eval_amt),
+                "value_usd": round(eval_amt / usdkrw, 2) if usdkrw > 0 else 0.0,
+                "pnl_krw": round(pnl_amt),
+                "pnl_usd": round(pnl_amt / usdkrw, 2) if usdkrw > 0 else 0.0,
+                "pnl_pct": round(pnl_rate, 2),
+            }
+        )
+
+    out2 = output2[0] if isinstance(output2, list) and output2 and isinstance(output2[0], dict) else {}
+    stocks_krw = _to_float(out2.get("scts_evlu_amt"), item_sum_krw)
+    if stocks_krw <= 0 and item_sum_krw > 0:
+        stocks_krw = item_sum_krw
+
+    tot_evlu_krw = _to_float(out2.get("tot_evlu_amt"), 0.0)
+    d2_cash_krw = _to_float(out2.get("prvs_rcdl_excc_amt") or out2.get("dnca_tot_amt"), 0.0)
+    if tot_evlu_krw > 0:
+        total_krw = tot_evlu_krw
+        cash_krw = max(0.0, tot_evlu_krw - stocks_krw)
+    else:
+        cash_krw = max(0.0, d2_cash_krw)
+        total_krw = stocks_krw + cash_krw
+
+    pnl_krw = _to_float(out2.get("evlu_pfls_smtl_amt"), item_pnl_sum_krw)
+
+    if cash_krw > 0:
+        holdings.append(
+            {
+                "exchange": "한국투자증권 ISA",
+                "category": "예수금",
+                "symbol": "KRW",
+                "name": "ISA 원화 예수금",
+                "currency": "KRW",
+                "quantity": round(cash_krw),
+                "price_native": 1.0,
+                "value_krw": round(cash_krw),
+                "value_usd": round(cash_krw / usdkrw, 2) if usdkrw > 0 else 0.0,
+                "pnl_krw": None,
+                "pnl_usd": None,
+                "pnl_pct": None,
+            }
+        )
+
+    holdings.sort(key=lambda h: -_to_float(h.get("value_krw"), 0.0))
+
+    return {
+        "total_krw": round(total_krw),
+        "total_usd": round(total_krw / usdkrw, 2) if usdkrw > 0 else 0.0,
+        "stocks_krw": round(stocks_krw),
+        "stocks_usd": round(stocks_krw / usdkrw, 2) if usdkrw > 0 else 0.0,
+        "cash_krw": round(cash_krw),
+        "cash_usd": round(cash_krw / usdkrw, 2) if usdkrw > 0 else 0.0,
+        "pnl_krw": round(pnl_krw),
+        "pnl_usd": round(pnl_krw / usdkrw, 2) if usdkrw > 0 else 0.0,
+        "holdings": holdings,
+    }
+
+
 # ---------------- Portfolio Drawdown & Demo Payload ---------------- #
 
 
@@ -877,11 +1075,15 @@ def main() -> None:
     gate_secret = os.getenv("GATE_API_SECRET", "").strip()
     toss_id = os.getenv("TOSS_CLIENT_ID", "").strip()
     toss_secret = os.getenv("TOSS_CLIENT_SECRET", "").strip()
+    kis_key = os.getenv("KIS_APP_KEY", "").strip()
+    kis_secret = os.getenv("KIS_APP_SECRET", "").strip()
+    kis_account = os.getenv("KIS_ACCOUNT_NO", "").strip()
 
     has_gate_creds = bool(gate_key and gate_secret)
     has_toss_creds = bool(toss_id and toss_secret)
+    has_kis_creds = bool(kis_key and kis_secret and kis_account)
 
-    if not has_gate_creds and not has_toss_creds:
+    if not has_gate_creds and not has_toss_creds and not has_kis_creds:
         if existing:
             print("No API keys configured; keeping existing portfolio.json without overwriting.")
             return
@@ -987,11 +1189,66 @@ def main() -> None:
             "message": "TOSS_CLIENT_ID / TOSS_CLIENT_SECRET 미설정",
         }
 
+    # 3) Korea Investment & Securities (ISA) Read-Only Fetch
+    if has_kis_creds:
+        try:
+            kis_data = fetch_kis_isa_readonly(kis_key, kis_secret, kis_account, usdkrw, proxies)
+            providers_status["kis"] = {
+                "status": "connected",
+                "mode": "read_only",
+                "message": "한국투자증권 중개형 ISA 조회 전용 Open API 정상 동기화",
+            }
+        except Exception as exc:
+            print(f"[warn] KIS ISA fetch failed: {exc}")
+            kis_data = dict(prev_summary.get("kis") or {
+                "total_krw": 0,
+                "total_usd": 0.0,
+                "stocks_krw": 0,
+                "stocks_usd": 0.0,
+                "cash_krw": 0,
+                "cash_usd": 0.0,
+                "pnl_krw": 0,
+                "pnl_usd": 0.0,
+            })
+            kis_data["holdings"] = list(prev_holdings.get("kis") or [])
+            providers_status["kis"] = {
+                "status": "error",
+                "mode": "read_only",
+                "message": f"한국투자증권 ISA 조회 오류 (이전 값 유지): {exc}",
+            }
+    else:
+        kis_data = {
+            "total_krw": 0,
+            "total_usd": 0.0,
+            "stocks_krw": 0,
+            "stocks_usd": 0.0,
+            "cash_krw": 0,
+            "cash_usd": 0.0,
+            "pnl_krw": 0,
+            "pnl_usd": 0.0,
+            "holdings": [],
+        }
+        providers_status["kis"] = {
+            "status": "not_configured",
+            "mode": "read_only",
+            "message": "KIS_APP_KEY / KIS_APP_SECRET / KIS_ACCOUNT_NO 미설정",
+        }
+
     gate_holdings = gate_data.pop("holdings", [])
     toss_holdings = toss_data.pop("holdings", [])
+    kis_holdings = kis_data.pop("holdings", [])
 
-    total_krw = round(_to_float(gate_data.get("total_krw"), 0.0) + _to_float(toss_data.get("total_krw"), 0.0))
-    total_usd = round(_to_float(gate_data.get("total_usd"), 0.0) + _to_float(toss_data.get("total_usd"), 0.0), 2)
+    total_krw = round(
+        _to_float(gate_data.get("total_krw"), 0.0)
+        + _to_float(toss_data.get("total_krw"), 0.0)
+        + _to_float(kis_data.get("total_krw"), 0.0)
+    )
+    total_usd = round(
+        _to_float(gate_data.get("total_usd"), 0.0)
+        + _to_float(toss_data.get("total_usd"), 0.0)
+        + _to_float(kis_data.get("total_usd"), 0.0),
+        2,
+    )
 
     today_str = datetime.now(KST).strftime("%Y-%m-%d")
     today_entry = {
@@ -1004,6 +1261,8 @@ def main() -> None:
         "gate_futures_usd": gate_data["futures_usd"],
         "toss_krw": toss_data["total_krw"],
         "toss_usd": toss_data["total_usd"],
+        "kis_krw": kis_data["total_krw"],
+        "kis_usd": kis_data["total_usd"],
         "usdkrw": usdkrw,
     }
 
@@ -1025,10 +1284,12 @@ def main() -> None:
             **metrics,
             "gateio": gate_data,
             "toss": toss_data,
+            "kis": kis_data,
         },
         "holdings": {
             "gateio": gate_holdings,
             "toss": toss_holdings,
+            "kis": kis_holdings,
         },
         "history": sorted_history,
     }

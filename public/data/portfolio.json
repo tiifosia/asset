@@ -12,6 +12,11 @@
       "status": "connected",
       "mode": "read_only",
       "message": "토스증권 조회 전용 Open API 정상 동기화"
+    },
+    "kis": {
+      "status": "not_configured",
+      "mode": "read_only",
+      "message": "KIS_APP_KEY / KIS_APP_SECRET / KIS_ACCOUNT_NO 미설정"
     }
   },
   "summary": {
@@ -58,6 +63,16 @@
       "cash_usd": 32.68,
       "pnl_krw": -1421892,
       "pnl_usd": -1064.15
+    },
+    "kis": {
+      "total_krw": 0,
+      "total_usd": 0.0,
+      "stocks_krw": 0,
+      "stocks_usd": 0.0,
+      "cash_krw": 0,
+      "cash_usd": 0.0,
+      "pnl_krw": 0,
+      "pnl_usd": 0.0
     }
   },
   "holdings": {
@@ -245,7 +260,8 @@
         "pnl_usd": null,
         "pnl_pct": null
       }
-    ]
+    ],
+    "kis": []
   },
   "history": [
     {
@@ -258,6 +274,8 @@
       "gate_futures_usd": 4853.55,
       "toss_krw": 4760530,
       "toss_usd": 3562.79,
+      "kis_krw": 0,
+      "kis_usd": 0.0,
       "usdkrw": 1336.18
     }
   ]
