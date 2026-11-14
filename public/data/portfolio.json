@@ -1,12 +1,13 @@
 {
-  "updated_at": "2026-11-14 16:26 UTC",
+  "updated_at": "2026-11-14 16:59 UTC",
   "is_demo": false,
   "usdkrw": 1336.18,
+  "usdt_krw": 1378.0,
   "providers": {
     "gateio": {
       "status": "connected",
       "mode": "read_only",
-      "message": "Gate.io 읽기 전용 API v4 정상 동기화"
+      "message": "Gate.io 읽기 전용 API v4 정상 동기화 (업비트 USDT 시세 적용)"
     },
     "toss": {
       "status": "connected",
@@ -20,10 +21,10 @@
     }
   },
   "summary": {
-    "total_krw": 14334525,
-    "total_usd": 10727.99,
-    "ath_krw": 14334525,
-    "ath_usd": 10727.99,
+    "total_krw": 14624198,
+    "total_usd": 10735.99,
+    "ath_krw": 14624198,
+    "ath_usd": 10735.99,
     "ath_date": "2026-11-15",
     "current_drawdown": 0.0,
     "current_dd_abs": 0.0,
@@ -36,23 +37,23 @@
     "daily_change_pct": 0.0,
     "total_return_pct": 0.0,
     "gateio": {
-      "total_usd": 6663.06,
-      "total_krw": 8903045,
-      "spot_usd": 655.67,
-      "spot_krw": 876094,
-      "futures_usd": 4853.55,
-      "futures_krw": 6485217,
+      "usdt_krw": 1378.0,
+      "total_usd": 6671.06,
+      "total_krw": 9192718,
+      "spot_usd": 655.41,
+      "spot_krw": 903154,
+      "futures_usd": 4863.5,
+      "futures_krw": 6701905,
       "margin_usd": 0.0,
-      "other_usd": 1153.84,
-      "other_krw": 1541735,
+      "other_usd": 1152.15,
+      "other_krw": 1587659,
       "details_breakdown": {
-        "event_contract": 0.01,
-        "finance": 1153.83,
-        "futures": 4853.55,
-        "spot": 655.67
+        "finance": 1152.15,
+        "futures": 4863.5,
+        "spot": 655.41
       },
-      "unrealized_pnl_usd": -760.36,
-      "unrealized_pnl_krw": -1015980
+      "unrealized_pnl_usd": -788.71,
+      "unrealized_pnl_krw": -1086839
     },
     "toss": {
       "total_krw": 4760530,
@@ -83,14 +84,14 @@
         "symbol": "NAS100_USDT",
         "name": "NAS100/USDT Perpetual",
         "quantity": 7841.0,
-        "price_usd": 27660.02,
+        "price_usd": 27623.88,
         "entry_price_usd": 28618.509694,
         "value_usd": 4508.35,
-        "value_krw": 6023961,
-        "notional_usd": 21688.22,
-        "pnl_usd": -751.55,
-        "pnl_krw": -1004208,
-        "pnl_pct": -16.67
+        "value_krw": 6212500,
+        "notional_usd": 21659.88,
+        "pnl_usd": -779.89,
+        "pnl_krw": -1074687,
+        "pnl_pct": -17.3
       },
       {
         "exchange": "Gate.io",
@@ -98,14 +99,29 @@
         "symbol": "SPX500_USDT",
         "name": "SPX500/USDT Perpetual",
         "quantity": 221.0,
-        "price_usd": 7515.62,
+        "price_usd": 7515.95,
         "entry_price_usd": 7555.485068,
         "value_usd": 335.2,
-        "value_krw": 447894,
-        "notional_usd": 1660.95,
-        "pnl_usd": -8.81,
-        "pnl_krw": -11772,
-        "pnl_pct": -2.63
+        "value_krw": 461912,
+        "notional_usd": 1661.02,
+        "pnl_usd": -8.74,
+        "pnl_krw": -12040,
+        "pnl_pct": -2.61
+      },
+      {
+        "exchange": "Gate.io",
+        "category": "선물 LONG 10x",
+        "symbol": "BTC_USDT",
+        "name": "BTC/USDT Perpetual",
+        "quantity": 15.0,
+        "price_usd": 65350.77,
+        "entry_price_usd": 65404.7,
+        "value_usd": 9.95,
+        "value_krw": 13712,
+        "notional_usd": 98.03,
+        "pnl_usd": -0.08,
+        "pnl_krw": -111,
+        "pnl_pct": -0.81
       },
       {
         "exchange": "Gate.io",
@@ -113,9 +129,9 @@
         "symbol": "GTBTC",
         "name": "GTBTC (Spot)",
         "quantity": 0.00995823,
-        "price_usd": 65757.7,
-        "value_usd": 654.83,
-        "value_krw": 874971,
+        "price_usd": 65731.9,
+        "value_usd": 654.57,
+        "value_krw": 902002,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -127,7 +143,7 @@
         "quantity": 0.39756018,
         "price_usd": 1.0,
         "value_usd": 0.4,
-        "value_krw": 531,
+        "value_krw": 548,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -137,9 +153,9 @@
         "symbol": "GT",
         "name": "GT (Spot)",
         "quantity": 0.04875776,
-        "price_usd": 8.07,
+        "price_usd": 8.0,
         "value_usd": 0.39,
-        "value_krw": 526,
+        "value_krw": 538,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -149,9 +165,9 @@
         "symbol": "BTC",
         "name": "BTC (Spot)",
         "quantity": 7.5e-07,
-        "price_usd": 65488.4,
+        "price_usd": 65425.0,
         "value_usd": 0.05,
-        "value_krw": 66,
+        "value_krw": 68,
         "pnl_usd": null,
         "pnl_pct": null
       }
@@ -282,17 +298,18 @@
   "history": [
     {
       "date": "2026-11-15",
-      "total_krw": 14334525,
-      "total_usd": 10727.99,
-      "gate_krw": 8903045,
-      "gate_usd": 6663.06,
-      "gate_spot_usd": 655.67,
-      "gate_futures_usd": 4853.55,
+      "total_krw": 14624198,
+      "total_usd": 10735.99,
+      "gate_krw": 9192718,
+      "gate_usd": 6671.06,
+      "gate_spot_usd": 655.41,
+      "gate_futures_usd": 4863.5,
       "toss_krw": 4760530,
       "toss_usd": 3562.79,
       "kis_krw": 670950,
       "kis_usd": 502.14,
-      "usdkrw": 1336.18
+      "usdkrw": 1336.18,
+      "usdt_krw": 1378.0
     }
   ]
 }
