@@ -1,0 +1,616 @@
+:root {
+  --bg: #111111;
+  --surface: #333333;
+  --muted: #8d8d8d;
+  --text: #F5F5F5;
+  --accent: #C3BDFF;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 36px 20px 64px;
+}
+
+/* Header */
+.site-header {
+  border-bottom: 1px solid var(--surface);
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.brand-block h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.meta-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.updated-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--surface);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.pill-label {
+  color: var(--muted);
+}
+
+.pill-value {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-swatch {
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.legend-fill {
+  width: 16px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: var(--accent);
+}
+
+.legend-dashed {
+  width: 0;
+  height: 14px;
+  border-left: 2px dashed var(--text);
+}
+
+/* Sections */
+.section {
+  margin-bottom: 44px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.section-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Benchmarks Grid */
+.benchmarks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.benchmark-card {
+  background-color: var(--bg);
+  border: 1px solid var(--surface);
+  border-radius: 10px;
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.benchmark-card:hover {
+  border-color: var(--accent);
+}
+
+.benchmark-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.benchmark-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.benchmark-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.benchmark-ticker {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.benchmark-prices {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.benchmark-current-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.benchmark-ath-price {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.benchmark-gauge-area {
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.benchmark-gauge-area .gauge-track {
+  height: 22px;
+  flex: 1;
+}
+
+.benchmark-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 6px;
+}
+
+/* Shared Right-to-Left Gauge */
+.gauge-track {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  background-color: var(--surface);
+  border-radius: 3px;
+  overflow: visible;
+}
+
+.gauge-track::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background-color: var(--bg);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gauge-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--cur-dd, 0%);
+  background-color: var(--accent);
+  transition: width 0.35s ease;
+}
+
+.gauge-mdd-marker {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  right: clamp(0px, var(--max-dd, 0%), calc(100% - 2px));
+  width: 0;
+  border-left: 2px dashed var(--text);
+  z-index: 3;
+}
+
+.gauge-mdd-tag {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--surface);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.gauge-mdd-tag.tag-align-left {
+  left: 0;
+  transform: none;
+}
+
+.gauge-mdd-tag.tag-align-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.stock-row .gauge-mdd-tag {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.stock-row:hover .gauge-mdd-tag {
+  opacity: 1;
+}
+
+.gauge-value {
+  flex-shrink: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cur-dd-pct {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.cur-dd-pct.at-ath {
+  color: var(--text);
+}
+
+.max-dd-pct {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.search-box {
+  flex: 1 1 260px;
+  max-width: 380px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-box input::placeholder {
+  color: var(--muted);
+}
+
+.search-box input:focus {
+  border-color: var(--accent);
+}
+
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sort-btn {
+  appearance: none;
+  background-color: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--surface);
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sort-btn:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.sort-btn.active {
+  background-color: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+/* Table Header & Rows */
+.table-header,
+.stock-row {
+  display: grid;
+  grid-template-columns: 58px minmax(190px, 1.3fr) minmax(150px, 1fr) minmax(240px, 2fr) 128px;
+  align-items: center;
+  gap: 16px;
+}
+
+.table-header {
+  padding: 10px 16px;
+  border-top: 1px solid var(--surface);
+  border-bottom: 1px solid var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.table-header .col-price,
+.table-header .col-pct {
+  text-align: right;
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+.stocks-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.stock-row {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--surface);
+  transition: box-shadow 0.15s ease;
+}
+
+.stock-row:hover {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row-rank {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-asset {
+  min-width: 0;
+}
+
+.row-asset-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.row-ticker {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.row-mcap {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-name {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-price {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.row-current-price {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.row-ath-price {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.row-gauge {
+  display: flex;
+  align-items: center;
+}
+
+.row-pct {
+  text-align: right;
+}
+
+.loading-state,
+.empty-state,
+.error-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--surface);
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.error-state {
+  color: var(--accent);
+}
+
+/* Footer */
+.site-footer {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--surface);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 980px) {
+  .benchmarks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .meta-block {
+    align-items: flex-start;
+  }
+
+  .table-header {
+    display: none;
+  }
+
+  .stock-row {
+    grid-template-columns: 44px 1fr auto;
+    grid-template-areas:
+      "rank asset price"
+      "gauge gauge pct";
+    gap: 10px 12px;
+    padding: 14px 12px;
+  }
+
+  .row-rank {
+    grid-area: rank;
+  }
+
+  .row-asset {
+    grid-area: asset;
+  }
+
+  .row-price {
+    grid-area: price;
+  }
+
+  .row-gauge {
+    grid-area: gauge;
+  }
+
+  .row-pct {
+    grid-area: pct;
+  }
+}

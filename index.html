@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASSET MDD TRACKER | 미국 시총 Top 100 &amp; 주요 지수 낙폭</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <div class="header-top">
+        <div class="brand-block">
+          <span class="eyebrow">US MARKET DRAWDOWN DASHBOARD</span>
+          <h1>ASSET MDD TRACKER</h1>
+          <p class="subtitle">
+            미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)
+          </p>
+        </div>
+        <div class="meta-block">
+          <div class="updated-pill">
+            <span class="pill-label">마지막 업데이트</span>
+            <span id="updated-at" class="pill-value">불러오는 중...</span>
+          </div>
+          <div class="legend" aria-label="차트 범례">
+            <div class="legend-item">
+              <span class="legend-swatch legend-fill"></span>
+              <span>현재 낙폭 (우측 0% → 좌측 -100%)</span>
+            </div>
+            <div class="legend-item">
+              <span class="legend-swatch legend-dashed"></span>
+              <span>역대 최대 낙폭 (MDD 점선)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" aria-labelledby="benchmarks-heading">
+        <div class="section-header">
+          <h2 id="benchmarks-heading">주요 3대 지수 · 자산</h2>
+          <span class="section-note">S&amp;P 500 · NASDAQ 100 · Bitcoin (ATH 기준)</span>
+        </div>
+        <div id="benchmarks-grid" class="benchmarks-grid">
+          <div class="loading-state">데이터를 불러오는 중입니다...</div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="stocks-heading">
+        <div class="section-header">
+          <div class="section-title-group">
+            <h2 id="stocks-heading">미국 시가총액 상위 100 기업</h2>
+            <span id="stock-count" class="count-badge">100개 종목</span>
+          </div>
+          <span class="section-note">매일 시가총액 순위 자동 갱신 · 수정종가(분할반영) 기준</span>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <input
+              id="search-input"
+              type="search"
+              placeholder="티커 또는 기업명 검색 (예: NVDA, Apple, Microsoft)"
+              aria-label="종목 검색"
+              autocomplete="off"
+            />
+          </div>
+          <div class="sort-group" role="group" aria-label="정렬 기준">
+            <button type="button" class="sort-btn active" data-sort="rank">시총순 (기본)</button>
+            <button type="button" class="sort-btn" data-sort="dd_desc">현재 낙폭 큰 순</button>
+            <button type="button" class="sort-btn" data-sort="dd_asc">고점 근접 순</button>
+            <button type="button" class="sort-btn" data-sort="mdd_desc">역대 MDD 큰 순</button>
+          </div>
+        </div>
+
+        <div class="table-header" aria-hidden="true">
+          <div class="col-rank">순위</div>
+          <div class="col-asset">종목 / 시가총액</div>
+          <div class="col-price">현재가 / 전고점(ATH)</div>
+          <div class="col-gauge">
+            <div class="scale-labels">
+              <span>-100%</span>
+              <span>-50%</span>
+              <span>0%</span>
+            </div>
+          </div>
+          <div class="col-pct">현재 낙폭 / MDD</div>
+        </div>
+
+        <div id="stocks-list" class="stocks-list">
+          <div class="loading-state">종목 목록을 불러오는 중입니다...</div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        전고점(ATH) 대비 일봉 종가 기준으로 계산되며, 점선은 해당 자산의 역대 최대 낙폭(MDD) 위치를 나타냅니다.
+        본 사이트는 정보 제공 목적이며 투자 권유가 아닙니다.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
