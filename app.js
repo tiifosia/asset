@@ -779,7 +779,7 @@ function getPnlColorClass(val) {
   return "is-neutral";
 }
 
-function buildAccountSummaryCardHtml({ title, tag, totalMain, totalAlt, isTotal = false, stats = [] }) {
+function buildAccountSummaryCardHtml({ title, linkUrl = "", totalMain, totalAlt, isTotal = false, stats = [] }) {
   const rowsHtml = stats
     .map(
       ({ label, value, colorClass = "" }) => `
@@ -796,7 +796,7 @@ function buildAccountSummaryCardHtml({ title, tag, totalMain, totalAlt, isTotal 
       <div>
         <div class="pf-card-head">
           <div class="pf-card-title">${escapeHtml(title)}</div>
-          ${tag ? `<span class="pf-card-tag">${escapeHtml(tag)}</span>` : ""}
+          ${linkUrl ? `<a class="pf-card-link" href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer">바로 가기</a>` : ""}
         </div>
         <div class="pf-hero-block">
           <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
@@ -857,7 +857,6 @@ function renderPortfolioSummaryCards() {
   grid.innerHTML = [
     buildAccountSummaryCardHtml({
       title: "TOTAL",
-      tag: "전체 합산",
       isTotal: true,
       totalMain,
       totalAlt,
@@ -869,7 +868,7 @@ function renderPortfolioSummaryCards() {
     }),
     buildAccountSummaryCardHtml({
       title: "Gate.io",
-      tag: "해외 거래소",
+      linkUrl: "https://www.gate.io",
       totalMain: gateMain,
       totalAlt: gateAlt,
       stats: [
@@ -880,7 +879,7 @@ function renderPortfolioSummaryCards() {
     }),
     buildAccountSummaryCardHtml({
       title: "토스증권",
-      tag: "국내 · 미국",
+      linkUrl: "https://www.tossinvest.com",
       totalMain: tossMain,
       totalAlt: tossAlt,
       stats: [
@@ -891,7 +890,6 @@ function renderPortfolioSummaryCards() {
     }),
     buildAccountSummaryCardHtml({
       title: "한국투자증권",
-      tag: "중개형 ISA",
       totalMain: kisMain,
       totalAlt: kisAlt,
       stats: [
