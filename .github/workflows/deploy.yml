@@ -1,0 +1,74 @@
+name: Update MDD Data & Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    # Run daily at 21:30 UTC (06:30 KST, after US market close)
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: pip install -r requirements.txt
+
+      - name: Fetch daily market cap and MDD data
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python scripts/fetch_mdd.py
+
+      - name: Commit updated data
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/mdd.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(data): update daily market cap and MDD data"
+            git push origin HEAD:main
+          fi
+
+      - name: Prepare static site bundle
+        run: |
+          mkdir -p _site/public/data
+          cp index.html styles.css app.js _site/
+          cp public/data/mdd.json _site/public/data/mdd.json
+          touch _site/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
