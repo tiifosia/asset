@@ -744,6 +744,7 @@ function updatePortfolioHoverBar(idx) {
   const tossTxt = formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur);
   const kisTxt = formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur);
   const fx = Number(r.usdkrw || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const usdtFx = r.usdt_krw ? Number(r.usdt_krw).toLocaleString("en-US", { maximumFractionDigits: 2 }) : null;
 
   barEl.innerHTML = `
     <span class="ohlc-date">${escapeHtml(r.date)}</span>
@@ -751,7 +752,7 @@ function updatePortfolioHoverBar(idx) {
     <span>Gate ${escapeHtml(gateTxt)}</span>
     <span>토스 ${escapeHtml(tossTxt)}</span>
     <span>한투ISA ${escapeHtml(kisTxt)}</span>
-    <span>환율 ₩${escapeHtml(fx)}</span>
+    <span>환율 ₩${escapeHtml(fx)}${usdtFx ? ` · 테더 ₩${escapeHtml(usdtFx)}` : ""}</span>
   `;
 }
 
@@ -764,7 +765,11 @@ function renderPortfolioStatusBanner() {
   if (!data) return;
 
   const fxStr = Number(data.usdkrw || 1400).toLocaleString("en-US", { maximumFractionDigits: 2 });
-  fxEl.textContent = `적용 환율 ₩${fxStr} / $1 · 매일 06:30 KST 자동 갱신`;
+  const usdtVal = data.usdt_krw || data.summary?.gateio?.usdt_krw;
+  const usdtPart = usdtVal
+    ? ` · 업비트 테더(USDT) ₩${Number(usdtVal).toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+    : "";
+  fxEl.textContent = `적용 환율 ₩${fxStr} / $1${usdtPart} · 매일 06:30 KST 자동 갱신`;
 }
 
 function getPnlColorClass(val) {
@@ -1006,10 +1011,12 @@ function renderPortfolioHistoryLog() {
 
       const gateSpot = formatMoney(row.gate_spot_usd || 0, "usd");
       const gateFut = formatMoney(row.gate_futures_usd || 0, "usd");
+      const fxTxt = `₩${Number(row.usdkrw || 1400).toLocaleString("en-US")}`;
+      const usdtTxt = row.usdt_krw ? ` · USDT ₩${Number(row.usdt_krw).toLocaleString("en-US")}` : "";
 
       return `
         <div class="history-row tabular">
-          <div class="history-date">${escapeHtml(row.date)}<span class="history-sub">₩${Number(row.usdkrw || 1400).toLocaleString("en-US")}</span></div>
+          <div class="history-date">${escapeHtml(row.date)}<span class="history-sub">${escapeHtml(fxTxt + usdtTxt)}</span></div>
           <div class="text-right"><strong>${escapeHtml(formatMoney(totalVal, cur))}</strong></div>
           <div class="text-right">${escapeHtml(formatMoney(gateVal, cur))}<span class="history-sub">현 ${escapeHtml(gateSpot)} / 선 ${escapeHtml(gateFut)}</span></div>
           <div class="text-right">${escapeHtml(formatMoney(tossVal, cur))}</div>

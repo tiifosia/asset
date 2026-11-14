@@ -24,6 +24,7 @@ TOSS_BASE_URL = "https://openapi.tossinvest.com"
 KIS_BASE_URL = os.getenv("KIS_BASE_URL", "https://openapi.koreainvestment.com:9443").rstrip("/")
 
 EXCHANGE_RATE_URL = "https://open.er-api.com/v6/latest/USD"
+UPBIT_USDT_TICKER_URL = "https://api.upbit.com/v1/ticker?markets=KRW-USDT"
 
 
 def _to_float(val: Any, default: float = 0.0) -> float:
@@ -113,6 +114,27 @@ def fetch_usdkrw(proxies: dict[str, str] | None = None, fallback: float = 1400.0
         pass
 
     return fallback
+
+
+def fetch_upbit_usdt_krw(proxies: dict[str, str] | None = None, fallback: float = 1400.0) -> float:
+    """Fetch live Upbit KRW-USDT trade_price (public API, no API key required)."""
+    for proxy_cfg in ([None, proxies] if proxies else [None]):
+        try:
+            resp = requests.get(
+                UPBIT_USDT_TICKER_URL,
+                headers={"Accept": "application/json"},
+                timeout=15,
+                proxies=proxy_cfg,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if isinstance(data, list) and data:
+                rate = _to_float(data[0].get("trade_price"), 0.0)
+                if rate > 500:
+                    return round(rate, 2)
+        except Exception:
+            pass
+    return round(fallback, 2)
 
 
 # ---------------- Gate.io (Read-Only API v4) ---------------- #
@@ -288,6 +310,7 @@ def fetch_gateio_readonly(
     holdings.sort(key=lambda h: (0 if "선물" in h["category"] else 1, -_to_float(h.get("value_usd"), 0.0)))
 
     return {
+        "usdt_krw": round(usdkrw, 2),
         "total_usd": round(total_usd, 2),
         "total_krw": round(total_usd * usdkrw),
         "spot_usd": round(spot_usd, 2),
@@ -1070,6 +1093,10 @@ def main() -> None:
 
     proxies = _build_proxies(os.getenv("PORTFOLIO_PROXY_URL", ""))
     usdkrw = fetch_usdkrw(proxies=proxies, fallback=_to_float(existing.get("usdkrw"), 1400.0))
+    usdt_krw = fetch_upbit_usdt_krw(
+        proxies=proxies,
+        fallback=_to_float(existing.get("usdt_krw"), usdkrw),
+    )
 
     gate_key = os.getenv("GATE_API_KEY", "").strip()
     gate_secret = os.getenv("GATE_API_SECRET", "").strip()
@@ -1099,14 +1126,14 @@ def main() -> None:
 
     providers_status: dict[str, Any] = {}
 
-    # 1) Gate.io Read-Only Fetch
+    # 1) Gate.io Read-Only Fetch (valued in KRW via Upbit KRW-USDT market price)
     if has_gate_creds:
         try:
-            gate_data = fetch_gateio_readonly(gate_key, gate_secret, usdkrw, proxies)
+            gate_data = fetch_gateio_readonly(gate_key, gate_secret, usdt_krw, proxies)
             providers_status["gateio"] = {
                 "status": "connected",
                 "mode": "read_only",
-                "message": "Gate.io 읽기 전용 API v4 정상 동기화",
+                "message": "Gate.io 읽기 전용 API v4 정상 동기화 (업비트 USDT 시세 적용)",
             }
         except Exception as exc:
             print(f"[warn] Gate.io fetch failed: {exc}")
@@ -1264,6 +1291,7 @@ def main() -> None:
         "kis_krw": kis_data["total_krw"],
         "kis_usd": kis_data["total_usd"],
         "usdkrw": usdkrw,
+        "usdt_krw": usdt_krw,
     }
 
     by_date = {row["date"]: row for row in history if isinstance(row, dict) and row.get("date")}
@@ -1277,6 +1305,7 @@ def main() -> None:
         "updated_at": now_utc,
         "is_demo": False,
         "usdkrw": usdkrw,
+        "usdt_krw": usdt_krw,
         "providers": providers_status,
         "summary": {
             "total_krw": total_krw,
