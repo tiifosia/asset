@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   update-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -43,6 +43,16 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/fetch_mdd.py
 
+      - name: Fetch daily personal portfolio data
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GATE_API_KEY: ${{ secrets.GATE_API_KEY }}
+          GATE_API_SECRET: ${{ secrets.GATE_API_SECRET }}
+          TOSS_CLIENT_ID: ${{ secrets.TOSS_CLIENT_ID }}
+          TOSS_CLIENT_SECRET: ${{ secrets.TOSS_CLIENT_SECRET }}
+          PORTFOLIO_PROXY_URL: ${{ secrets.PORTFOLIO_PROXY_URL }}
+        run: python scripts/fetch_portfolio.py
+
       - name: Commit updated data
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
@@ -50,7 +60,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A public/data/
           if ! git diff --staged --quiet; then
-            git commit -m "chore(data): update daily market cap and MDD data"
+            git commit -m "chore(data): update daily portfolio and MDD data"
             git push origin HEAD:main
           fi
 

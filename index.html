@@ -3,35 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ASSET MDD TRACKER | 미국 시총 Top 100 &amp; 주요 지수 낙폭</title>
-  <link rel="stylesheet" href="./styles.css?v=20261114-5" />
+  <title>PERSONAL ASSET TRACKER | 내 자산 추이 · Gate.io &amp; 토스증권</title>
+  <link rel="stylesheet" href="./styles.css?v=20261115-1" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js?v=20261114-5" defer></script>
+  <script src="./app.js?v=20261115-1" defer></script>
 </head>
 <body>
   <div class="container">
     <header class="site-header">
       <div class="header-top">
         <div class="brand-block">
-          <span class="eyebrow">US MARKET DRAWDOWN DASHBOARD</span>
-          <h1>ASSET MDD TRACKER</h1>
-          <p class="subtitle">
-            미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)
+          <span id="header-eyebrow" class="eyebrow">PERSONAL ASSET TRACKER</span>
+          <h1 id="header-title">내 개인 자산 추이</h1>
+          <p id="header-subtitle" class="subtitle">
+            Gate.io (현물 · 선물) 및 토스증권 (국내 · 미국 주식 · 예수금) 일별 통합 자산 추이 대시보드
           </p>
         </div>
+
         <div class="meta-block">
-          <div class="updated-pill">
-            <span class="pill-label">마지막 업데이트</span>
-            <span id="updated-at" class="pill-value">불러오는 중...</span>
-          </div>
-          <div class="legend" aria-label="차트 범례">
-            <div class="legend-item">
-              <span class="legend-swatch legend-fill"></span>
-              <span>현재 낙폭 (우측 0% → 좌측 -100%)</span>
+          <div class="header-actions">
+            <div class="currency-group" role="group" aria-label="표시 통화">
+              <button id="currency-krw-btn" type="button" class="currency-btn active" data-currency="krw">KRW ₩</button>
+              <button id="currency-usd-btn" type="button" class="currency-btn" data-currency="usd">USD $</button>
             </div>
-            <div class="legend-item">
-              <span class="legend-swatch legend-dashed"></span>
-              <span>역대 최대 낙폭 (MDD 점선)</span>
+            <button id="open-api-guide-btn" type="button" class="header-secondary-btn">
+              API 자동연동 설정
+            </button>
+            <button id="nav-toggle-view-btn" type="button" class="nav-switch-btn">
+              미국 시총 Top 100 &amp; 지수 MDD 보기 →
+            </button>
+          </div>
+
+          <div class="meta-bottom-row">
+            <div class="updated-pill">
+              <span class="pill-label">마지막 업데이트</span>
+              <span id="updated-at" class="pill-value">불러오는 중...</span>
+            </div>
+            <div class="legend" aria-label="낙폭 게이지 범례">
+              <div class="legend-item">
+                <span class="legend-swatch legend-fill"></span>
+                <span>현재 낙폭 (우측 0% → 좌측 -100%)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-swatch legend-dashed"></span>
+                <span>역대 최대 낙폭 (MDD 점선)</span>
+              </div>
             </div>
           </div>
         </div>
@@ -39,72 +55,195 @@
     </header>
 
     <main>
-      <section class="section" aria-labelledby="benchmarks-heading">
-        <div class="section-header">
-          <h2 id="benchmarks-heading">주요 3대 지수 · 자산</h2>
-          <span class="section-note">S&amp;P 500 · NASDAQ 100 · Bitcoin (ATH 기준)</span>
-        </div>
-        <div id="benchmarks-grid" class="benchmarks-grid">
-          <div class="loading-state">데이터를 불러오는 중입니다...</div>
-        </div>
-      </section>
-
-      <section class="section" aria-labelledby="stocks-heading">
-        <div class="section-header">
-          <div class="section-title-group">
-            <h2 id="stocks-heading">미국 시가총액 상위 100 기업</h2>
-            <span id="stock-count" class="count-badge">100개 종목</span>
+      <!-- MAIN VIEW 1: Personal Asset Tracker (Gate.io + Toss Securities) -->
+      <div id="portfolio-view">
+        <div id="portfolio-status-banner" class="status-banner hidden">
+          <div class="status-banner-text">
+            <span id="portfolio-status-badge" class="status-badge">확인 중</span>
+            <span id="portfolio-status-message">자산 데이터를 확인하고 있습니다.</span>
           </div>
-          <span class="section-note">매일 시가총액 순위 자동 갱신 · 수정종가(분할반영) 기준</span>
+          <button id="banner-open-guide-btn" type="button" class="status-action-btn">연동 방법 보기</button>
         </div>
 
-        <div class="toolbar">
-          <div class="search-box">
-            <input
-              id="search-input"
-              type="search"
-              placeholder="티커 또는 기업명 검색 (예: NVDA, Apple, Microsoft)"
-              aria-label="종목 검색"
-              autocomplete="off"
-            />
+        <section class="section" aria-labelledby="portfolio-summary-heading">
+          <div class="section-header">
+            <h2 id="portfolio-summary-heading">통합 자산 현황 (읽기 · 조회 전용)</h2>
+            <span id="portfolio-fx-note" class="section-note">적용 환율 불러오는 중...</span>
           </div>
-          <div class="sort-group" role="group" aria-label="정렬 기준">
-            <button type="button" class="sort-btn active" data-sort="rank">시총순 (기본)</button>
-            <button type="button" class="sort-btn" data-sort="dd_desc">현재 낙폭 큰 순</button>
-            <button type="button" class="sort-btn" data-sort="dd_asc">고점 근접 순</button>
-            <button type="button" class="sort-btn" data-sort="mdd_desc">역대 MDD 큰 순</button>
+          <div id="portfolio-summary-grid" class="benchmarks-grid">
+            <div class="loading-state">개인 자산 데이터를 불러오는 중입니다...</div>
           </div>
-        </div>
+        </section>
 
-        <div class="table-header" aria-hidden="true">
-          <div class="col-rank">순위</div>
-          <div class="col-asset">종목 / 시가총액</div>
-          <div class="col-price">현재가 / 전고점(ATH)</div>
-          <div class="col-gauge">
-            <div class="scale-labels">
-              <span>-100%</span>
-              <span>-50%</span>
-              <span>0%</span>
+        <section class="section" aria-labelledby="portfolio-chart-heading">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 id="portfolio-chart-heading">일별 개인 자산 추이 차트</h2>
+              <span id="portfolio-point-count" class="count-badge">0일</span>
+            </div>
+            <span class="section-note">매일 자동 누적 기록 · 좌클릭 드래그(상하좌우) &amp; 휠 확대/축소 지원</span>
+          </div>
+
+          <div class="portfolio-chart-card">
+            <div class="modal-toolbar">
+              <div class="toolbar-controls">
+                <div class="pf-series-group" role="group" aria-label="자산 선택">
+                  <button type="button" class="pf-series-btn active" data-series="total">전체 총자산</button>
+                  <button type="button" class="pf-series-btn" data-series="gate">Gate.io</button>
+                  <button type="button" class="pf-series-btn" data-series="toss">토스증권</button>
+                </div>
+                <div class="pf-interval-group" role="group" aria-label="차트 기간 단위">
+                  <button type="button" class="pf-interval-btn active" data-pf-interval="daily">일별</button>
+                  <button type="button" class="pf-interval-btn" data-pf-interval="weekly">주별</button>
+                  <button type="button" class="pf-interval-btn" data-pf-interval="yearly">연별</button>
+                </div>
+                <div class="pf-scale-group" role="group" aria-label="차트 가격 축 스케일">
+                  <button type="button" class="pf-scale-btn active" data-pf-scale="linear">리니어</button>
+                  <button type="button" class="pf-scale-btn" data-pf-scale="log">로그</button>
+                </div>
+              </div>
+              <div id="portfolio-hover-bar" class="chart-ohlc-bar tabular"></div>
+            </div>
+
+            <div id="portfolio-chart-stage" class="chart-stage">
+              <div id="portfolio-echart-canvas" class="echart-canvas"></div>
+              <div
+                id="portfolio-yaxis-zoom-zone"
+                class="yaxis-zoom-zone"
+                title="마우스 휠/상하 드래그: 가격축 확대·축소 · 더블클릭: 초기화"
+              ></div>
+              <div id="portfolio-peak-callout" class="chart-callout chart-callout-peak hidden"></div>
+              <div id="portfolio-trough-callout" class="chart-callout chart-callout-trough hidden"></div>
+              <div id="portfolio-chart-loading" class="chart-loading hidden">자산 추이 데이터를 불러오는 중입니다...</div>
+            </div>
+
+            <div class="modal-footer-hint">
+              <span>좌클릭 드래그: 상하좌우 이동 · 차트 위 휠: 좌우 확대/축소 · 우측 가격축 휠/드래그: 상하 확대/축소 (더블클릭 초기화)</span>
             </div>
           </div>
-          <div class="col-pct">현재 낙폭 / MDD</div>
+        </section>
+
+        <section class="section" aria-labelledby="holdings-heading">
+          <div class="section-header">
+            <h2 id="holdings-heading">거래소 · 증권사별 보유 현황</h2>
+            <span class="section-note">Gate.io 현물·선물 포지션 및 토스증권 보유 주식·예수금 (조회 전용)</span>
+          </div>
+
+          <div class="holdings-grid">
+            <div class="holding-panel">
+              <div class="holding-panel-head">
+                <div class="holding-panel-title">Gate.io (현물 · 선물)</div>
+                <span id="gate-provider-badge" class="provider-pill">-</span>
+              </div>
+              <div id="gate-holdings-list" class="holding-list">
+                <div class="loading-state">불러오는 중...</div>
+              </div>
+            </div>
+
+            <div class="holding-panel">
+              <div class="holding-panel-head">
+                <div class="holding-panel-title">토스증권 (국내 · 미국 주식 · 예수금)</div>
+                <span id="toss-provider-badge" class="provider-pill">-</span>
+              </div>
+              <div id="toss-holdings-list" class="holding-list">
+                <div class="loading-state">불러오는 중...</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="portfolio-history-heading">
+          <div class="section-header">
+            <h2 id="portfolio-history-heading">일별 누적 기록 로그</h2>
+            <span class="section-note">최근 기록 순 (매일 자동 스냅샷 저장)</span>
+          </div>
+          <div class="history-table-header" aria-hidden="true">
+            <div>날짜</div>
+            <div class="text-right">총자산</div>
+            <div class="text-right">Gate.io (현물/선물)</div>
+            <div class="text-right">토스증권 (주식/예수금)</div>
+            <div class="text-right">전일 대비</div>
+          </div>
+          <div id="portfolio-history-list" class="history-list">
+            <div class="loading-state">기록을 불러오는 중입니다...</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- SECONDARY VIEW 2: Existing US Market & Top 100 MDD Tracker -->
+      <div id="mdd-view" class="hidden">
+        <div class="subview-banner">
+          <span>현재 <strong>미국 시장 &amp; 시총 Top 100 MDD 트래커</strong> 화면을 보고 있습니다.</span>
+          <button id="mdd-back-btn" type="button" class="status-action-btn">← 내 개인 자산 추이 메인으로 돌아가기</button>
         </div>
 
-        <div id="stocks-list" class="stocks-list">
-          <div class="loading-state">종목 목록을 불러오는 중입니다...</div>
-        </div>
-      </section>
+        <section class="section" aria-labelledby="benchmarks-heading">
+          <div class="section-header">
+            <h2 id="benchmarks-heading">주요 3대 지수 · 자산</h2>
+            <span class="section-note">S&amp;P 500 · NASDAQ 100 · Bitcoin (ATH 기준)</span>
+          </div>
+          <div id="benchmarks-grid" class="benchmarks-grid">
+            <div class="loading-state">데이터를 불러오는 중입니다...</div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="stocks-heading">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 id="stocks-heading">미국 시가총액 상위 100 기업</h2>
+              <span id="stock-count" class="count-badge">100개 종목</span>
+            </div>
+            <span class="section-note">매일 시가총액 순위 자동 갱신 · 수정종가(분할반영) 기준</span>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-box">
+              <input
+                id="search-input"
+                type="search"
+                placeholder="티커 또는 기업명 검색 (예: NVDA, Apple, Microsoft)"
+                aria-label="종목 검색"
+                autocomplete="off"
+              />
+            </div>
+            <div class="sort-group" role="group" aria-label="정렬 기준">
+              <button type="button" class="sort-btn active" data-sort="rank">시총순 (기본)</button>
+              <button type="button" class="sort-btn" data-sort="dd_desc">현재 낙폭 큰 순</button>
+              <button type="button" class="sort-btn" data-sort="dd_asc">고점 근접 순</button>
+              <button type="button" class="sort-btn" data-sort="mdd_desc">역대 MDD 큰 순</button>
+            </div>
+          </div>
+
+          <div class="table-header" aria-hidden="true">
+            <div class="col-rank">순위</div>
+            <div class="col-asset">종목 / 시가총액</div>
+            <div class="col-price">현재가 / 전고점(ATH)</div>
+            <div class="col-gauge">
+              <div class="scale-labels">
+                <span>-100%</span>
+                <span>-50%</span>
+                <span>0%</span>
+              </div>
+            </div>
+            <div class="col-pct">현재 낙폭 / MDD</div>
+          </div>
+
+          <div id="stocks-list" class="stocks-list">
+            <div class="loading-state">종목 목록을 불러오는 중입니다...</div>
+          </div>
+        </section>
+      </div>
     </main>
 
     <footer class="site-footer">
       <p>
-        전고점(ATH) 대비 일봉 종가 기준으로 계산되며, 점선은 해당 자산의 역대 최대 낙폭(MDD) 위치를 나타냅니다.
-        본 사이트는 정보 제공 목적이며 투자 권유가 아닙니다.
+        개인 자산 추이는 읽기·조회 전용 API로 매일 자동 수집되며 매매·출금 권한을 사용하지 않습니다.
+        MDD 지표는 전고점(ATH) 대비 일봉 종가 기준입니다.
       </p>
     </footer>
   </div>
 
-  <!-- Asset Candlestick & MA Chart Modal -->
+  <!-- Stock/Benchmark Candlestick Chart Modal -->
   <div id="chart-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -137,7 +276,7 @@
         <div id="chart-ohlc-bar" class="chart-ohlc-bar tabular"></div>
       </div>
 
-      <div class="chart-stage">
+      <div id="modal-chart-stage" class="chart-stage">
         <div id="echart-canvas" class="echart-canvas"></div>
         <div
           id="yaxis-zoom-zone"
@@ -151,6 +290,64 @@
 
       <div class="modal-footer-hint">
         <span>좌클릭 드래그: 상하좌우 이동 · 차트 위 휠: 좌우 확대/축소 · 우측 가격축 휠/드래그: 상하 확대/축소 (더블클릭 초기화)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Read-Only API & Choice 2 Static-IP Automation Guide Modal -->
+  <div id="api-guide-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="api-guide-title">
+    <div class="modal-dialog guide-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 id="api-guide-title" class="modal-title">Gate.io · 토스증권 읽기 전용 매일 자동화 설정 가이드</h3>
+          <span class="section-note">웹사이트에 접속하지 않아도 하루 1회 자동으로 잔고를 조회·누적합니다 (매매/출금 불가 · 100% 조회 전용)</span>
+        </div>
+        <button id="api-guide-close-btn" type="button" class="modal-close-btn" aria-label="설정 가이드 닫기">✕</button>
+      </div>
+
+      <div id="api-status-detail" class="guide-status-grid"></div>
+
+      <div class="guide-steps">
+        <div class="guide-step">
+          <h4>1. Gate.io 읽기 전용 API v4 키 발급</h4>
+          <p>
+            Gate.io PC 웹 → 프로필 → <strong>API 관리(API Management)</strong> → <strong>API v4 키 생성</strong>에서
+            권한을 <code>Wallet · Spot · Perpetual Futures = Read Only</code>로만 체크하고,
+            <strong>Trade(거래) 및 Withdraw(출금)는 반드시 해제</strong>하세요.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h4>2. 토스증권 Open API 발급 및 고정 IP 등록</h4>
+          <p>
+            토스증권 PC 웹(WTS) → 우측 하단 <strong>설정 &gt; Open API</strong>에서 <code>client_id</code>와 <code>client_secret</code>을 발급받은 뒤,
+            <strong>허용 IP 관리</strong>에 실행할 고정 IP(선택지 2 클라우드 서버 IP 등)를 등록하세요.
+            본 프로젝트의 수집 스크립트(<code>scripts/fetch_portfolio.py</code>)는 조회(<code>GET</code>) 엔드포인트만 호출하며 주문 API를 전혀 사용하지 않습니다.
+          </p>
+        </div>
+
+        <div class="guide-step">
+          <h4>3. GitHub Secrets에 키 등록 (안전한 암호화 저장)</h4>
+          <p>
+            GitHub 저장소 <strong>Settings → Secrets and variables → Actions → Repository secrets</strong>에 아래 4개 값을 추가하세요:
+          </p>
+          <div class="code-pills">
+            <code>GATE_API_KEY</code>
+            <code>GATE_API_SECRET</code>
+            <code>TOSS_CLIENT_ID</code>
+            <code>TOSS_CLIENT_SECRET</code>
+          </div>
+        </div>
+
+        <div class="guide-step">
+          <h4>4. 선택지 2: 내 PC를 꺼둬도 365일 자동 실행 (무료 고정 IP 러너)</h4>
+          <p>
+            토스증권의 IP 허용 제한 때문에 무료 고정 IP 서버(예: Oracle Cloud Always Free VM 등)에
+            <strong>GitHub Self-Hosted Runner</strong>를 1회 설치한 뒤,
+            GitHub 저장소 <strong>Variables</strong>에 <code>RUNNER_LABEL = self-hosted</code>를 설정하면
+            매일 06:30 KST(<code>30 21 * * * UTC</code>)에 고정 IP에서 자동으로 잔고를 조회해 페이지에 누적 반영합니다.
+          </p>
+        </div>
       </div>
     </div>
   </div>

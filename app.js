@@ -1,6 +1,12 @@
-const DATA_URL = "./public/data/mdd.json";
+const PORTFOLIO_DATA_URL = "./public/data/portfolio.json";
+const MDD_DATA_URL = "./public/data/mdd.json";
 
 const state = {
+  activeView: "portfolio", // "portfolio" | "mdd"
+  currency: "krw", // "krw" | "usd"
+  portfolio: null,
+  portfolioUpdatedAt: "",
+  mddUpdatedAt: "",
   benchmarks: [],
   stocks: [],
   searchQuery: "",
@@ -8,26 +14,31 @@ const state = {
 };
 
 const historyCache = new Map();
-let chartInstance = null;
+
+const MDD_CHART_GRID = { left: 14, right: 86, top: 42, bottom: 30 };
+const PORTFOLIO_CHART_GRID = { left: 14, right: 102, top: 44, bottom: 30 };
+
+// Portfolio interactive trend chart state
+let pfChartInstance = null;
+let pfSeriesMode = "total"; // "total" | "gate" | "toss"
+let pfInterval = "daily"; // "daily" | "weekly" | "yearly"
+let pfScaleMode = "linear"; // "linear" | "log"
+let pfRows = [];
+let pfPadLeft = 0;
+let pfTotalCats = 0;
+
+// MDD modal candlestick chart state
+let modalChartInstance = null;
 let modalAsset = null;
 let modalHistory = null;
 let modalInterval = "daily";
 let modalScaleMode = "linear";
 let modalRows = [];
 let modalPadLeft = 0;
-let modalPadRight = 0;
 let modalTotalCats = 0;
-let viewState = {
-  xStart: 0,
-  xEnd: 0,
-  yMin: 0,
-  yMax: 1,
-  yAutoFit: true,
-};
-let calloutRafId = null;
-let viewRafId = null;
 
-const CHART_GRID = { left: 14, right: 86, top: 42, bottom: 30 };
+let pfViewport = null;
+let modalViewport = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -44,6 +55,16 @@ function clampPct(value) {
   return Math.max(0, Math.min(100, num));
 }
 
+function toChartY(price, scaleMode) {
+  const safe = Number(price);
+  if (!Number.isFinite(safe)) return 0;
+  return scaleMode === "log" ? Math.log(Math.max(safe, 1e-6)) : safe;
+}
+
+function fromChartY(val, scaleMode) {
+  return scaleMode === "log" ? Math.exp(val) : val;
+}
+
 function formatPrice(value, isIndex = false) {
   const num = Number(value);
   if (!Number.isFinite(num)) return "-";
@@ -57,12 +78,48 @@ function formatPrice(value, isIndex = false) {
 function formatAxisPrice(value, isIndex = false) {
   const num = Number(value);
   if (!Number.isFinite(num)) return "-";
-  const decimals = num >= 1000 ? 0 : 2;
+  const decimals = Math.abs(num) >= 1000 ? 0 : 2;
   const formatted = num.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
   return isIndex ? formatted : `$${formatted}`;
+}
+
+function formatMoney(value, currency = state.currency) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "-";
+  if (currency === "krw") {
+    const abs = Math.round(Math.abs(num)).toLocaleString("en-US");
+    return num < 0 ? `-₩${abs}` : `₩${abs}`;
+  }
+  const abs = Math.abs(num).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return num < 0 ? `-$${abs}` : `$${abs}`;
+}
+
+function formatSignedMoney(value, currency = state.currency) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "-";
+  if (num > 0) return `+${formatMoney(num, currency)}`;
+  return formatMoney(num, currency);
+}
+
+function formatPortfolioAxisMoney(value, currency = state.currency) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "-";
+  if (currency === "krw") {
+    const abs = Math.round(Math.abs(num)).toLocaleString("en-US");
+    return num < 0 ? `-${abs}` : `${abs}`;
+  }
+  const decimals = Math.abs(num) >= 1000 ? 0 : 2;
+  const abs = Math.abs(num).toLocaleString("en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return num < 0 ? `-$${abs}` : `$${abs}`;
 }
 
 function formatMarketCap(value) {
@@ -111,6 +168,15 @@ function formatUpdatedAt(utcString) {
   );
 }
 
+function formatQuantity(qty) {
+  const num = Number(qty);
+  if (!Number.isFinite(num)) return "-";
+  if (Number.isInteger(num) || Math.abs(num) >= 1000) {
+    return num.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  }
+  return num.toLocaleString("en-US", { maximumFractionDigits: 6 });
+}
+
 function buildGaugeHtml(item, showFloatingTag = true) {
   const curAbs = clampPct(item.current_dd_abs);
   const maxAbs = clampPct(item.max_dd_abs);
@@ -129,6 +195,1064 @@ function buildGaugeHtml(item, showFloatingTag = true) {
     </div>
   `;
 }
+
+/* ---------- Shared Interactive Chart Viewport Controller ---------- */
+
+function createChartViewportController(cfg) {
+  const viewState = {
+    xStart: 0,
+    xEnd: 0,
+    yMin: 0,
+    yMax: 1,
+    yAutoFit: true,
+  };
+  let calloutRafId = null;
+  let viewRafId = null;
+  let panActive = false;
+  let panLastX = 0;
+  let panLastY = 0;
+  let yDragActive = false;
+  let yDragStartY = 0;
+  let yDragStartMin = 0;
+  let yDragStartMax = 1;
+
+  const getVisibleRealRange = () => {
+    const n = cfg.getRowsLength();
+    if (!n) return [0, 0];
+    const padLeft = cfg.getPadLeft();
+    const maxRealIdx = n - 1;
+    const s = Math.max(0, Math.min(maxRealIdx, Math.round(viewState.xStart - padLeft)));
+    const e = Math.max(s, Math.min(maxRealIdx, Math.round(viewState.xEnd - padLeft)));
+    return [s, e];
+  };
+
+  const clampXWindow = (nextStart, nextEnd) => {
+    const n = cfg.getRowsLength();
+    const padLeft = cfg.getPadLeft();
+    const maxCatIdx = Math.max(1, cfg.getTotalCats() - 1);
+    if (!n) return { start: 0, end: maxCatIdx };
+
+    const span = Math.max(1, nextEnd - nextStart);
+    const minReal = Math.min(2, n);
+    const minAllowedEnd = padLeft + minReal - 1;
+    const maxAllowedStart = padLeft + n - minReal;
+
+    let start = nextStart;
+    let end = nextEnd;
+
+    if (end < minAllowedEnd) {
+      end = minAllowedEnd;
+      start = end - span;
+    }
+    if (start > maxAllowedStart) {
+      start = maxAllowedStart;
+      end = start + span;
+    }
+    if (start < 0) {
+      start = 0;
+      end = Math.min(maxCatIdx, span);
+    }
+    if (end > maxCatIdx) {
+      end = maxCatIdx;
+      start = Math.max(0, maxCatIdx - span);
+    }
+    return { start, end };
+  };
+
+  const getDataZoomRangePct = () => {
+    const maxCatIdx = Math.max(1, cfg.getTotalCats() - 1);
+    const start = Math.max(0, Math.min(100, (viewState.xStart / maxCatIdx) * 100));
+    const end = Math.max(start, Math.min(100, (viewState.xEnd / maxCatIdx) * 100));
+    return { start, end };
+  };
+
+  const computeAutoYBounds = (catStart, catEnd) => {
+    const n = cfg.getRowsLength();
+    if (!n) return { min: 0, max: 1 };
+    const padLeft = cfg.getPadLeft();
+    const maxRealIdx = n - 1;
+    const s = Math.max(0, Math.min(maxRealIdx, Math.floor(catStart - padLeft)));
+    const e = Math.max(s, Math.min(maxRealIdx, Math.ceil(catEnd - padLeft)));
+    let visLow = Infinity;
+    let visHigh = -Infinity;
+    for (let i = s; i <= e; i += 1) {
+      const [lowY, highY] = cfg.getRowHighLowY(i);
+      if (Number.isFinite(lowY) && lowY < visLow) visLow = lowY;
+      if (Number.isFinite(highY) && highY > visHigh) visHigh = highY;
+    }
+    if (!Number.isFinite(visLow) || !Number.isFinite(visHigh)) {
+      return { min: 0, max: 1 };
+    }
+    const mid = (visLow + visHigh) / 2;
+    const isLog = cfg.isLogScale();
+    const minSpan = isLog ? 0.02 : Math.max(Math.abs(mid) * 0.01, 0.01);
+    const span = Math.max(visHigh - visLow, minSpan);
+    const halfSpan = (span / 2) * 1.36;
+    return {
+      min: mid - halfSpan,
+      max: mid + halfSpan,
+    };
+  };
+
+  const updateCallouts = () => {
+    const chart = cfg.getChart();
+    const n = cfg.getRowsLength();
+    if (!chart || !n) {
+      cfg.peakEl.classList.add("hidden");
+      cfg.troughEl.classList.add("hidden");
+      return;
+    }
+
+    const [startIdx, endIdx] = getVisibleRealRange();
+    let peakIdx = startIdx;
+    let troughIdx = startIdx;
+    let peakPrice = -Infinity;
+    let troughPrice = Infinity;
+    let peakAnchor = null;
+    let troughAnchor = null;
+
+    for (let i = startIdx; i <= endIdx; i += 1) {
+      const info = cfg.getCalloutInfo(i);
+      if (info.highPrice > peakPrice) {
+        peakPrice = info.highPrice;
+        peakIdx = i;
+        peakAnchor = info;
+      }
+      if (info.lowPrice < troughPrice) {
+        troughPrice = info.lowPrice;
+        troughIdx = i;
+        troughAnchor = info;
+      }
+    }
+
+    if (!peakAnchor || !troughAnchor) {
+      cfg.peakEl.classList.add("hidden");
+      cfg.troughEl.classList.add("hidden");
+      return;
+    }
+
+    const refPrice = cfg.getRefPrice();
+    const peakPct = peakPrice > 0 ? ((refPrice - peakPrice) / peakPrice) * 100 : 0;
+    const troughPct = troughPrice > 0 ? ((refPrice - troughPrice) / troughPrice) * 100 : 0;
+    const padLeft = cfg.getPadLeft();
+
+    const peakPx = chart.convertToPixel({ seriesIndex: 0 }, [peakIdx + padLeft, peakAnchor.highY]);
+    const troughPx = chart.convertToPixel({ seriesIndex: 0 }, [troughIdx + padLeft, troughAnchor.lowY]);
+
+    const stageWidth = cfg.stageEl.clientWidth;
+    const stageHeight = cfg.stageEl.clientHeight;
+    const grid = cfg.getGrid();
+    const plotMaxX = stageWidth - grid.right - 4;
+
+    if (
+      Array.isArray(peakPx) &&
+      Number.isFinite(peakPx[0]) &&
+      Number.isFinite(peakPx[1]) &&
+      peakPx[1] >= 18 &&
+      peakPx[1] <= stageHeight - grid.bottom - 4
+    ) {
+      const peakDate = formatShortDate(peakAnchor.date);
+      cfg.peakEl.innerHTML = `${cfg.formatCalloutPrice(peakPrice)} (${formatSignedPct(peakPct)}, ${peakDate})<br>↓`;
+      cfg.peakEl.classList.remove("hidden");
+      const w = cfg.peakEl.offsetWidth;
+      const h = cfg.peakEl.offsetHeight;
+      const left = Math.max(8, Math.min(plotMaxX - w, peakPx[0] - w / 2));
+      const top = Math.max(6, peakPx[1] - h - 4);
+      cfg.peakEl.style.left = `${left}px`;
+      cfg.peakEl.style.top = `${top}px`;
+    } else {
+      cfg.peakEl.classList.add("hidden");
+    }
+
+    if (
+      Array.isArray(troughPx) &&
+      Number.isFinite(troughPx[0]) &&
+      Number.isFinite(troughPx[1]) &&
+      troughPx[1] >= 18 &&
+      troughPx[1] <= stageHeight - grid.bottom - 4
+    ) {
+      const troughDate = formatShortDate(troughAnchor.date);
+      cfg.troughEl.innerHTML = `↑<br>${cfg.formatCalloutPrice(troughPrice)} (${formatSignedPct(troughPct)}, ${troughDate})`;
+      cfg.troughEl.classList.remove("hidden");
+      const w = cfg.troughEl.offsetWidth;
+      const h = cfg.troughEl.offsetHeight;
+      const left = Math.max(8, Math.min(plotMaxX - w, troughPx[0] - w / 2));
+      const top = Math.min(stageHeight - h - 6, troughPx[1] + 4);
+      cfg.troughEl.style.left = `${left}px`;
+      cfg.troughEl.style.top = `${top}px`;
+    } else {
+      cfg.troughEl.classList.add("hidden");
+    }
+  };
+
+  const scheduleCalloutsUpdate = () => {
+    if (calloutRafId) cancelAnimationFrame(calloutRafId);
+    calloutRafId = requestAnimationFrame(() => {
+      calloutRafId = null;
+      updateCallouts();
+    });
+  };
+
+  const applyViewState = () => {
+    const chart = cfg.getChart();
+    if (!chart || !cfg.getRowsLength()) return;
+    const { start, end } = getDataZoomRangePct();
+    chart.setOption({
+      dataZoom: [{ start, end }],
+      yAxis: { min: viewState.yMin, max: viewState.yMax },
+    });
+    updateCallouts();
+  };
+
+  const scheduleViewUpdate = () => {
+    if (viewRafId) cancelAnimationFrame(viewRafId);
+    viewRafId = requestAnimationFrame(() => {
+      viewRafId = null;
+      applyViewState();
+    });
+  };
+
+  const zoomYByFactor = (factor) => {
+    if (!cfg.getChart() || !cfg.getRowsLength()) return;
+    viewState.yAutoFit = false;
+    const midY = (viewState.yMin + viewState.yMax) / 2;
+    const spanY = Math.max(1e-6, viewState.yMax - viewState.yMin);
+    const isLog = cfg.isLogScale();
+    const minSpanY = isLog ? 0.005 : Math.max(Math.abs(midY) * 0.002, 0.002);
+    const maxSpanY = isLog ? 15.0 : Math.max(Math.abs(midY) * 20, 100);
+    const nextSpanY = Math.max(minSpanY, Math.min(maxSpanY, spanY * factor));
+    viewState.yMin = midY - nextSpanY / 2;
+    viewState.yMax = midY + nextSpanY / 2;
+    scheduleViewUpdate();
+  };
+
+  const resetAutoYFit = () => {
+    if (!cfg.getChart() || !cfg.getRowsLength()) return;
+    viewState.yAutoFit = true;
+    const bounds = computeAutoYBounds(viewState.xStart, viewState.xEnd);
+    viewState.yMin = bounds.min;
+    viewState.yMax = bounds.max;
+    scheduleViewUpdate();
+  };
+
+  // Capture-phase mouse & wheel listeners so ECharts ZRender cannot swallow 2D drags
+  cfg.canvasEl.addEventListener(
+    "mousedown",
+    (e) => {
+      if (e.button !== 0 || !cfg.getChart() || !cfg.getRowsLength()) return;
+      panActive = true;
+      panLastX = e.clientX;
+      panLastY = e.clientY;
+      cfg.canvasEl.classList.add("is-dragging");
+      e.preventDefault();
+    },
+    { capture: true }
+  );
+
+  cfg.canvasEl.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      if (!cfg.getChart() || !cfg.getRowsLength()) return;
+      const grid = cfg.getGrid();
+      const rect = cfg.canvasEl.getBoundingClientRect();
+      const plotWidth = Math.max(1, rect.width - grid.left - grid.right);
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left - grid.left) / plotWidth));
+      const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
+
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        const deltaBars = (e.deltaX / plotWidth) * spanX;
+        const clamped = clampXWindow(viewState.xStart + deltaBars, viewState.xEnd + deltaBars);
+        viewState.xStart = clamped.start;
+        viewState.xEnd = clamped.end;
+      } else {
+        const n = cfg.getRowsLength();
+        const minSpan = Math.min(Math.max(4, n), cfg.getMinZoomSpan());
+        const maxSpan = Math.max(n * 1.8, 30);
+        const factor = e.deltaY > 0 ? 1.15 : 0.87;
+        const nextSpan = Math.max(minSpan, Math.min(maxSpan, spanX * factor));
+
+        const anchor = viewState.xStart + ratio * spanX;
+        const rawStart = anchor - ratio * nextSpan;
+        const rawEnd = rawStart + nextSpan;
+        const clamped = clampXWindow(rawStart, rawEnd);
+        viewState.xStart = clamped.start;
+        viewState.xEnd = clamped.end;
+      }
+
+      if (viewState.yAutoFit) {
+        const bounds = computeAutoYBounds(viewState.xStart, viewState.xEnd);
+        viewState.yMin = bounds.min;
+        viewState.yMax = bounds.max;
+      }
+      scheduleViewUpdate();
+    },
+    { capture: true, passive: false }
+  );
+
+  cfg.canvasEl.addEventListener("dblclick", resetAutoYFit);
+
+  cfg.yAxisZoneEl.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      zoomYByFactor(e.deltaY > 0 ? 1.12 : 0.89);
+    },
+    { passive: false }
+  );
+
+  cfg.yAxisZoneEl.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || !cfg.getChart() || !cfg.getRowsLength()) return;
+    yDragActive = true;
+    yDragStartY = e.clientY;
+    yDragStartMin = viewState.yMin;
+    yDragStartMax = viewState.yMax;
+    e.preventDefault();
+  });
+
+  cfg.yAxisZoneEl.addEventListener("dblclick", resetAutoYFit);
+
+  window.addEventListener(
+    "mousemove",
+    (e) => {
+      if (panActive && cfg.getChart() && cfg.getRowsLength()) {
+        const dx = e.clientX - panLastX;
+        const dy = e.clientY - panLastY;
+        panLastX = e.clientX;
+        panLastY = e.clientY;
+
+        const grid = cfg.getGrid();
+        const plotWidth = Math.max(1, cfg.stageEl.clientWidth - grid.left - grid.right);
+        const plotHeight = Math.max(1, cfg.stageEl.clientHeight - grid.top - grid.bottom);
+
+        if (dx !== 0) {
+          const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
+          const deltaBars = -(dx / plotWidth) * spanX;
+          const clamped = clampXWindow(viewState.xStart + deltaBars, viewState.xEnd + deltaBars);
+          viewState.xStart = clamped.start;
+          viewState.xEnd = clamped.end;
+        }
+
+        if (dy !== 0) {
+          viewState.yAutoFit = false;
+          const spanY = Math.max(1e-6, viewState.yMax - viewState.yMin);
+          const deltaY = (dy / plotHeight) * spanY;
+          viewState.yMin += deltaY;
+          viewState.yMax += deltaY;
+        }
+
+        scheduleViewUpdate();
+        return;
+      }
+
+      if (yDragActive && cfg.getChart() && cfg.getRowsLength()) {
+        viewState.yAutoFit = false;
+        const dy = e.clientY - yDragStartY;
+        const midY = (yDragStartMin + yDragStartMax) / 2;
+        const startSpanY = Math.max(1e-6, yDragStartMax - yDragStartMin);
+        const isLog = cfg.isLogScale();
+        const minSpanY = isLog ? 0.005 : Math.max(Math.abs(midY) * 0.002, 0.002);
+        const maxSpanY = isLog ? 15.0 : Math.max(Math.abs(midY) * 20, 100);
+        const nextSpanY = Math.max(minSpanY, Math.min(maxSpanY, startSpanY * Math.exp(dy * 0.008)));
+        viewState.yMin = midY - nextSpanY / 2;
+        viewState.yMax = midY + nextSpanY / 2;
+        scheduleViewUpdate();
+      }
+    },
+    { capture: true }
+  );
+
+  window.addEventListener(
+    "mouseup",
+    () => {
+      if (panActive) {
+        panActive = false;
+        cfg.canvasEl.classList.remove("is-dragging");
+      }
+      yDragActive = false;
+    },
+    { capture: true }
+  );
+
+  return {
+    viewState,
+    initWindow(initStart, initEnd) {
+      viewState.xStart = initStart;
+      viewState.xEnd = initEnd;
+      viewState.yAutoFit = true;
+      const bounds = computeAutoYBounds(initStart, initEnd);
+      viewState.yMin = bounds.min;
+      viewState.yMax = bounds.max;
+      return getDataZoomRangePct();
+    },
+    scheduleCalloutsUpdate,
+  };
+}
+
+/* ---------- View Switcher (Portfolio Main <-> MDD Tracker) ---------- */
+
+function updateHeaderForView() {
+  const isPortfolio = state.activeView === "portfolio";
+  document.getElementById("portfolio-view").classList.toggle("hidden", !isPortfolio);
+  document.getElementById("mdd-view").classList.toggle("hidden", isPortfolio);
+
+  const eyebrowEl = document.getElementById("header-eyebrow");
+  const titleEl = document.getElementById("header-title");
+  const subtitleEl = document.getElementById("header-subtitle");
+  const toggleBtn = document.getElementById("nav-toggle-view-btn");
+  const updatedEl = document.getElementById("updated-at");
+
+  if (isPortfolio) {
+    eyebrowEl.textContent = "PERSONAL ASSET TRACKER";
+    titleEl.textContent = "내 개인 자산 추이";
+    subtitleEl.textContent = "Gate.io (현물 · 선물) 및 토스증권 (국내 · 미국 주식 · 예수금) 일별 통합 자산 추이 대시보드";
+    toggleBtn.textContent = "미국 시총 Top 100 & 지수 MDD 보기 →";
+    updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
+  } else {
+    eyebrowEl.textContent = "US MARKET DRAWDOWN DASHBOARD";
+    titleEl.textContent = "ASSET MDD TRACKER";
+    subtitleEl.textContent =
+      "미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)";
+    toggleBtn.textContent = "← 내 개인 자산 추이 메인으로";
+    updatedEl.textContent = state.mddUpdatedAt ? formatUpdatedAt(state.mddUpdatedAt) : "-";
+  }
+}
+
+function switchMainView(nextView) {
+  state.activeView = nextView === "mdd" ? "mdd" : "portfolio";
+  updateHeaderForView();
+  if (window.history && window.history.replaceState) {
+    const hash = state.activeView === "mdd" ? "#mdd" : "#portfolio";
+    if (window.location.hash !== hash) {
+      window.history.replaceState(null, "", hash);
+    }
+  }
+  if (state.activeView === "portfolio" && pfChartInstance) {
+    requestAnimationFrame(() => {
+      pfChartInstance.resize();
+      pfViewport?.scheduleCalloutsUpdate();
+    });
+  }
+}
+
+/* ---------- Portfolio View Rendering ---------- */
+
+function getPortfolioProviderLabel(statusObj) {
+  if (!statusObj || statusObj.status === "not_configured") {
+    return { text: "미연결 (샘플)", cls: "is-demo" };
+  }
+  if (statusObj.status === "connected") {
+    return { text: "읽기전용 동기화", cls: "is-live" };
+  }
+  return { text: "조회 오류", cls: "is-error" };
+}
+
+function getSelectedSeriesVal(row) {
+  const cur = state.currency;
+  if (pfSeriesMode === "gate") return cur === "krw" ? Number(row.gate_krw || 0) : Number(row.gate_usd || 0);
+  if (pfSeriesMode === "toss") return cur === "krw" ? Number(row.toss_krw || 0) : Number(row.toss_usd || 0);
+  return cur === "krw" ? Number(row.total_krw || 0) : Number(row.total_usd || 0);
+}
+
+function getPortfolioIntervalRows(history, interval) {
+  if (!Array.isArray(history) || !history.length) return [];
+  const baseRows = history.map((row) => ({
+    ...row,
+    val: getSelectedSeriesVal(row),
+    lowVal: getSelectedSeriesVal(row),
+    highVal: getSelectedSeriesVal(row),
+  }));
+
+  if (interval === "daily") return baseRows;
+
+  const grouped = new Map();
+  for (const r of baseRows) {
+    let key = r.date;
+    if (interval === "weekly") {
+      const dt = new Date(`${r.date}T00:00:00Z`);
+      const dayNum = dt.getUTCDay() || 7;
+      dt.setUTCDate(dt.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil(((dt - yearStart) / 86400000 + 1) / 7);
+      key = `${dt.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+    } else if (interval === "yearly") {
+      key = r.date.slice(0, 4);
+    }
+
+    if (!grouped.has(key)) {
+      grouped.set(key, { ...r });
+    } else {
+      const cur = grouped.get(key);
+      cur.date = r.date;
+      cur.total_krw = r.total_krw;
+      cur.total_usd = r.total_usd;
+      cur.gate_krw = r.gate_krw;
+      cur.gate_usd = r.gate_usd;
+      cur.toss_krw = r.toss_krw;
+      cur.toss_usd = r.toss_usd;
+      cur.usdkrw = r.usdkrw;
+      cur.val = r.val;
+      cur.lowVal = Math.min(cur.lowVal, r.lowVal);
+      cur.highVal = Math.max(cur.highVal, r.highVal);
+    }
+  }
+  return Array.from(grouped.values());
+}
+
+function updatePortfolioHoverBar(idx) {
+  const barEl = document.getElementById("portfolio-hover-bar");
+  if (!pfRows.length || idx < 0 || idx >= pfRows.length) {
+    barEl.innerHTML = "";
+    return;
+  }
+  const r = pfRows[idx];
+  const cur = state.currency;
+  const totalTxt = formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur);
+  const gateTxt = formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur);
+  const tossTxt = formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur);
+  const fx = Number(r.usdkrw || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+  barEl.innerHTML = `
+    <span class="ohlc-date">${escapeHtml(r.date)}</span>
+    <span>합계 ${escapeHtml(totalTxt)}</span>
+    <span>Gate ${escapeHtml(gateTxt)}</span>
+    <span>토스 ${escapeHtml(tossTxt)}</span>
+    <span>환율 ₩${escapeHtml(fx)}</span>
+  `;
+}
+
+function renderPortfolioStatusBanner() {
+  const data = state.portfolio;
+  const banner = document.getElementById("portfolio-status-banner");
+  if (!data) {
+    banner.classList.add("hidden");
+    return;
+  }
+  banner.classList.remove("hidden");
+
+  const badge = document.getElementById("portfolio-status-badge");
+  const msgEl = document.getElementById("portfolio-status-message");
+  const fxEl = document.getElementById("portfolio-fx-note");
+
+  const fxStr = Number(data.usdkrw || 1400).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  fxEl.textContent = `적용 환율 ₩${fxStr} / $1 · 매일 06:30 KST 자동 갱신`;
+
+  const providers = data.providers || {};
+  const gateStatus = providers.gateio?.status;
+  const tossStatus = providers.toss?.status;
+
+  badge.classList.remove("is-live", "is-demo", "is-error");
+  if (data.is_demo) {
+    badge.classList.add("is-demo");
+    badge.textContent = "샘플 데이터 표시 중";
+    msgEl.textContent =
+      "Gate.io 및 토스증권 읽기 전용 API 키를 연결하면 웹사이트 접속 없이도 매일 실제 자산 추이가 누적됩니다.";
+  } else if (gateStatus === "error" || tossStatus === "error") {
+    badge.classList.add("is-error");
+    badge.textContent = "일부 조회 점검 필요";
+    msgEl.textContent = [providers.gateio?.message, providers.toss?.message].filter(Boolean).join(" · ");
+  } else {
+    badge.classList.add("is-live");
+    badge.textContent = "읽기 전용 실계좌 연동";
+    msgEl.textContent = "Gate.io(API v4 Read-Only) + 토스증권(Open API 조회 전용) 실계좌 잔고가 자동 기록되고 있습니다.";
+  }
+}
+
+function renderPortfolioSummaryCards() {
+  const grid = document.getElementById("portfolio-summary-grid");
+  const data = state.portfolio;
+  if (!data || !data.summary) {
+    grid.innerHTML = `<div class="empty-state">자산 요약 데이터가 없습니다.</div>`;
+    return;
+  }
+
+  const s = data.summary;
+  const cur = state.currency;
+  const alt = cur === "krw" ? "usd" : "krw";
+
+  const totalMain = formatMoney(cur === "krw" ? s.total_krw : s.total_usd, cur);
+  const totalAlt = formatMoney(alt === "krw" ? s.total_krw : s.total_usd, alt);
+  const dailyDelta = formatSignedMoney(cur === "krw" ? s.daily_change_krw : s.daily_change_usd, cur);
+  const athVal = formatMoney(cur === "krw" ? s.ath_krw : s.ath_usd, cur);
+
+  const totalNum = cur === "krw" ? Number(s.total_krw || 0) : Number(s.total_usd || 0);
+  const gateNum = cur === "krw" ? Number(s.gateio?.total_krw || 0) : Number(s.gateio?.total_usd || 0);
+  const tossNum = cur === "krw" ? Number(s.toss?.total_krw || 0) : Number(s.toss?.total_usd || 0);
+  const gateShare = totalNum > 0 ? Math.max(0, Math.min(100, (gateNum / totalNum) * 100)) : 0;
+  const tossShare = totalNum > 0 ? Math.max(0, Math.min(100, (tossNum / totalNum) * 100)) : 0;
+
+  const gateMain = formatMoney(gateNum, cur);
+  const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw : s.gateio?.total_usd, alt);
+  const gateSpot = formatMoney(cur === "krw" ? s.gateio?.spot_krw : s.gateio?.spot_usd, cur);
+  const gateFut = formatMoney(cur === "krw" ? s.gateio?.futures_krw : s.gateio?.futures_usd, cur);
+  const gateUpnl = formatSignedMoney(
+    cur === "krw" ? s.gateio?.unrealized_pnl_krw : s.gateio?.unrealized_pnl_usd,
+    cur
+  );
+
+  const tossMain = formatMoney(tossNum, cur);
+  const tossAlt = formatMoney(alt === "krw" ? s.toss?.total_krw : s.toss?.total_usd, alt);
+  const tossStocks = formatMoney(cur === "krw" ? s.toss?.stocks_krw : s.toss?.stocks_usd, cur);
+  const tossCash = formatMoney(cur === "krw" ? s.toss?.cash_krw : s.toss?.cash_usd, cur);
+  const tossPnl = formatSignedMoney(cur === "krw" ? s.toss?.pnl_krw : s.toss?.pnl_usd, cur);
+
+  const gateLbl = getPortfolioProviderLabel(data.providers?.gateio);
+  const tossLbl = getPortfolioProviderLabel(data.providers?.toss);
+
+  const ddObj = {
+    current_dd_abs: s.current_dd_abs,
+    max_dd_abs: s.max_dd_abs,
+    max_drawdown: s.max_drawdown,
+    mdd_peak_date: s.mdd_peak_date,
+    mdd_trough_date: s.mdd_trough_date,
+  };
+
+  grid.innerHTML = `
+    <article class="portfolio-card">
+      <div>
+        <div class="pf-card-head">
+          <div>
+            <div class="pf-card-title">전체 통합 총자산</div>
+            <div class="pf-card-sub">ATH ${escapeHtml(athVal)} (${escapeHtml(s.ath_date || "-")})</div>
+          </div>
+          <span class="provider-pill ${data.is_demo ? "is-demo" : "is-live"}">${data.is_demo ? "DEMO" : "TOTAL"}</span>
+        </div>
+
+        <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
+        <div class="pf-sub-value tabular">${escapeHtml(totalAlt)} 환산</div>
+
+        <div class="pf-delta-row tabular">
+          <span>전일 대비 <strong class="pf-accent">${escapeHtml(dailyDelta)} (${formatSignedPct(s.daily_change_pct)})</strong></span>
+          <span>누적 <strong class="pf-primary">${formatSignedPct(s.total_return_pct)}</strong></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="benchmark-gauge-area">
+          ${buildGaugeHtml(ddObj, true)}
+          <div class="gauge-value">
+            <span class="cur-dd-pct">${formatDrawdownPct(s.current_drawdown)}</span>
+            <span class="max-dd-pct">MDD ${formatDrawdownPct(s.max_drawdown)}</span>
+          </div>
+        </div>
+        <div class="benchmark-scale" aria-hidden="true">
+          <span>-100%</span>
+          <span>-50%</span>
+          <span>0%</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="portfolio-card">
+      <div>
+        <div class="pf-card-head">
+          <div>
+            <div class="pf-card-title">Gate.io (해외 거래소)</div>
+            <div class="pf-card-sub">총자산 비중 ${gateShare.toFixed(1)}% · 읽기 전용</div>
+          </div>
+          <span class="provider-pill ${gateLbl.cls}">${escapeHtml(gateLbl.text)}</span>
+        </div>
+
+        <div class="pf-big-value tabular">${escapeHtml(gateMain)}</div>
+        <div class="pf-sub-value tabular">${escapeHtml(gateAlt)} · 미실현 손익 <span class="pf-accent">${escapeHtml(gateUpnl)}</span></div>
+      </div>
+
+      <div>
+        <div class="pf-weight-track" aria-hidden="true">
+          <div class="pf-weight-fill" style="width: ${gateShare.toFixed(1)}%;"></div>
+        </div>
+        <div class="pf-meta-grid tabular">
+          <div>
+            <div class="pf-meta-label">현물 (Spot)</div>
+            <div class="pf-meta-val">${escapeHtml(gateSpot)}</div>
+          </div>
+          <div>
+            <div class="pf-meta-label">선물 (Futures)</div>
+            <div class="pf-meta-val">${escapeHtml(gateFut)}</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="portfolio-card">
+      <div>
+        <div class="pf-card-head">
+          <div>
+            <div class="pf-card-title">토스증권 (국내 · 미국 주식)</div>
+            <div class="pf-card-sub">총자산 비중 ${tossShare.toFixed(1)}% · 조회 전용</div>
+          </div>
+          <span class="provider-pill ${tossLbl.cls}">${escapeHtml(tossLbl.text)}</span>
+        </div>
+
+        <div class="pf-big-value tabular">${escapeHtml(tossMain)}</div>
+        <div class="pf-sub-value tabular">${escapeHtml(tossAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(tossPnl)}</span></div>
+      </div>
+
+      <div>
+        <div class="pf-weight-track" aria-hidden="true">
+          <div class="pf-weight-fill" style="width: ${tossShare.toFixed(1)}%;"></div>
+        </div>
+        <div class="pf-meta-grid tabular">
+          <div>
+            <div class="pf-meta-label">보유 주식 평가액</div>
+            <div class="pf-meta-val">${escapeHtml(tossStocks)}</div>
+          </div>
+          <div>
+            <div class="pf-meta-label">예수금 (KRW + USD)</div>
+            <div class="pf-meta-val">${escapeHtml(tossCash)}</div>
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderPortfolioHoldings() {
+  const data = state.portfolio;
+  const cur = state.currency;
+  const gateBadge = document.getElementById("gate-provider-badge");
+  const tossBadge = document.getElementById("toss-provider-badge");
+  const gateList = document.getElementById("gate-holdings-list");
+  const tossList = document.getElementById("toss-holdings-list");
+
+  if (!data) return;
+
+  const gateLbl = getPortfolioProviderLabel(data.providers?.gateio);
+  gateBadge.className = `provider-pill ${gateLbl.cls}`;
+  gateBadge.textContent = gateLbl.text;
+
+  const tossLbl = getPortfolioProviderLabel(data.providers?.toss);
+  tossBadge.className = `provider-pill ${tossLbl.cls}`;
+  tossBadge.textContent = tossLbl.text;
+
+  const gateItems = Array.isArray(data.holdings?.gateio) ? data.holdings.gateio : [];
+  if (!gateItems.length) {
+    gateList.innerHTML = `<div class="empty-state">표시할 Gate.io 보유 자산 또는 포지션이 없습니다.</div>`;
+  } else {
+    gateList.innerHTML = gateItems
+      .map((item) => {
+        const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
+        const valSub =
+          item.pnl_usd != null
+            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+            : `단가 ${formatMoney(item.price_usd, "usd")}`;
+        return `
+          <div class="holding-row">
+            <div>
+              <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
+              <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+            </div>
+            <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
+            <div class="holding-val tabular">
+              <div class="holding-val-main">${escapeHtml(valMain)}</div>
+              <div class="holding-val-sub">${escapeHtml(valSub)}</div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  const tossItems = Array.isArray(data.holdings?.toss) ? data.holdings.toss : [];
+  if (!tossItems.length) {
+    tossList.innerHTML = `<div class="empty-state">표시할 토스증권 보유 종목 또는 예수금이 없습니다.</div>`;
+  } else {
+    tossList.innerHTML = tossItems
+      .map((item) => {
+        const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
+        const valSub =
+          item.pnl_krw != null
+            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+            : `${escapeHtml(item.currency || "KRW")} 현금성 잔고`;
+        return `
+          <div class="holding-row">
+            <div>
+              <div class="holding-sym">${escapeHtml(item.symbol)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
+              <div class="holding-sub" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+            </div>
+            <div class="holding-qty tabular">수량 ${formatQuantity(item.quantity)}</div>
+            <div class="holding-val tabular">
+              <div class="holding-val-main">${escapeHtml(valMain)}</div>
+              <div class="holding-val-sub">${escapeHtml(valSub)}</div>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+  }
+}
+
+function renderPortfolioHistoryLog() {
+  const listEl = document.getElementById("portfolio-history-list");
+  const history = Array.isArray(state.portfolio?.history) ? state.portfolio.history : [];
+  const cur = state.currency;
+
+  if (!history.length) {
+    listEl.innerHTML = `<div class="empty-state">누적된 일별 기록이 아직 없습니다.</div>`;
+    return;
+  }
+
+  const recent = history.slice(-60).reverse();
+  listEl.innerHTML = recent
+    .map((row, revIdx) => {
+      const origIdx = history.length - 1 - revIdx;
+      const prev = origIdx > 0 ? history[origIdx - 1] : null;
+
+      const totalVal = cur === "krw" ? Number(row.total_krw || 0) : Number(row.total_usd || 0);
+      const gateVal = cur === "krw" ? Number(row.gate_krw || 0) : Number(row.gate_usd || 0);
+      const tossVal = cur === "krw" ? Number(row.toss_krw || 0) : Number(row.toss_usd || 0);
+
+      let deltaHtml = `<span class="history-sub">-</span>`;
+      if (prev) {
+        const prevVal = cur === "krw" ? Number(prev.total_krw || 0) : Number(prev.total_usd || 0);
+        const diff = totalVal - prevVal;
+        const pct = prevVal > 0 ? (diff / prevVal) * 100 : 0;
+        deltaHtml = `<span class="pf-accent">${escapeHtml(formatSignedMoney(diff, cur))}</span><span class="history-sub">${formatSignedPct(pct)}</span>`;
+      }
+
+      const gateSpot = formatMoney(row.gate_spot_usd || 0, "usd");
+      const gateFut = formatMoney(row.gate_futures_usd || 0, "usd");
+
+      return `
+        <div class="history-row tabular">
+          <div class="history-date">${escapeHtml(row.date)}<span class="history-sub">₩${Number(row.usdkrw || 1400).toLocaleString("en-US")}</span></div>
+          <div class="text-right"><strong>${escapeHtml(formatMoney(totalVal, cur))}</strong></div>
+          <div class="text-right">${escapeHtml(formatMoney(gateVal, cur))}<span class="history-sub">현 ${escapeHtml(gateSpot)} / 선 ${escapeHtml(gateFut)}</span></div>
+          <div class="text-right">${escapeHtml(formatMoney(tossVal, cur))}</div>
+          <div class="text-right">${deltaHtml}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderPortfolioChart() {
+  const canvasEl = document.getElementById("portfolio-echart-canvas");
+  const loadingEl = document.getElementById("portfolio-chart-loading");
+  const data = state.portfolio;
+  if (!data || !Array.isArray(data.history)) return;
+
+  if (typeof window.echarts === "undefined") {
+    loadingEl.textContent = "차트 라이브러리(ECharts)를 불러오지 못했습니다.";
+    loadingEl.classList.remove("hidden");
+    return;
+  }
+
+  const rows = getPortfolioIntervalRows(data.history, pfInterval);
+  pfRows = rows;
+  document.getElementById("portfolio-point-count").textContent = `${rows.length}개 구간`;
+
+  if (!rows.length) {
+    loadingEl.textContent = "표시할 자산 추이 데이터가 없습니다.";
+    loadingEl.classList.remove("hidden");
+    return;
+  }
+  loadingEl.classList.add("hidden");
+
+  const n = rows.length;
+  pfPadLeft = Math.max(80, n);
+  const padRight = Math.max(80, n);
+  pfTotalCats = pfPadLeft + n + padRight;
+
+  const paddedDates = new Array(pfTotalCats).fill("");
+  const paddedValues = new Array(pfTotalCats).fill(null);
+
+  for (let i = 0; i < n; i += 1) {
+    const catIdx = pfPadLeft + i;
+    paddedDates[catIdx] = rows[i].date;
+    paddedValues[catIdx] = toChartY(rows[i].val, pfScaleMode);
+  }
+
+  let visibleBars = n;
+  if (pfInterval === "daily") visibleBars = Math.min(n, 120);
+  else if (pfInterval === "weekly") visibleBars = Math.min(n, 52);
+
+  const rightBuffer = Math.max(4, Math.round(visibleBars * 0.1));
+  const leftBuffer = pfInterval === "yearly" ? Math.max(2, Math.round(visibleBars * 0.1)) : 0;
+  const initStart = pfPadLeft + n - visibleBars - leftBuffer;
+  const initEnd = pfPadLeft + n - 1 + rightBuffer;
+
+  const latestVal = rows[n - 1].val;
+  const cur = state.currency;
+
+  if (!pfChartInstance) {
+    pfChartInstance = window.echarts.init(canvasEl);
+    pfChartInstance.on("finished", () => pfViewport?.scheduleCalloutsUpdate());
+    pfChartInstance.on("updateAxisPointer", (event) => {
+      const catIdx = event?.axesInfo?.[0]?.value;
+      if (typeof catIdx === "number") {
+        const realIdx = catIdx - pfPadLeft;
+        if (realIdx >= 0 && realIdx < pfRows.length) {
+          updatePortfolioHoverBar(realIdx);
+        }
+      }
+    });
+    canvasEl.addEventListener("mouseleave", () => {
+      if (pfRows.length) updatePortfolioHoverBar(pfRows.length - 1);
+    });
+  }
+
+  const { start: initZoomStart, end: initZoomEnd } = pfViewport.initWindow(initStart, initEnd);
+  const vs = pfViewport.viewState;
+
+  const option = {
+    animation: false,
+    backgroundColor: "#111111",
+    grid: {
+      left: PORTFOLIO_CHART_GRID.left,
+      right: PORTFOLIO_CHART_GRID.right,
+      top: PORTFOLIO_CHART_GRID.top,
+      bottom: PORTFOLIO_CHART_GRID.bottom,
+      containLabel: false,
+    },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "cross",
+        lineStyle: { color: "#8d8d8d", type: "dashed", width: 1 },
+        crossStyle: { color: "#8d8d8d", type: "dashed", width: 1 },
+        label: {
+          backgroundColor: "#C3BDFF",
+          color: "#111111",
+          fontSize: 11,
+          formatter: (params) => {
+            if (params.axisDimension === "y") {
+              return formatPortfolioAxisMoney(fromChartY(params.value, pfScaleMode), cur);
+            }
+            return params.value || "";
+          },
+        },
+      },
+      extraCssText: "display:none;",
+      formatter: () => "",
+    },
+    xAxis: {
+      type: "category",
+      data: paddedDates,
+      boundaryGap: false,
+      axisLine: { lineStyle: { color: "#333333" } },
+      axisTick: { show: false },
+      axisLabel: { color: "#8d8d8d", fontSize: 11 },
+      splitLine: {
+        show: true,
+        lineStyle: { color: "rgba(51, 51, 51, 0.35)" },
+      },
+    },
+    yAxis: {
+      type: "value",
+      position: "right",
+      scale: true,
+      min: vs.yMin,
+      max: vs.yMax,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: {
+        show: true,
+        lineStyle: { color: "rgba(51, 51, 51, 0.5)" },
+      },
+      axisLabel: {
+        color: "#8d8d8d",
+        fontSize: 11,
+        formatter: (value) => formatPortfolioAxisMoney(fromChartY(value, pfScaleMode), cur),
+      },
+    },
+    dataZoom: [
+      {
+        type: "inside",
+        xAxisIndex: 0,
+        filterMode: "none",
+        start: initZoomStart,
+        end: initZoomEnd,
+        zoomOnMouseWheel: false,
+        moveOnMouseMove: false,
+        moveOnMouseWheel: false,
+      },
+    ],
+    series: [
+      {
+        name: "개인 자산 추이",
+        type: "line",
+        data: paddedValues,
+        showSymbol: n <= 12,
+        symbolSize: 6,
+        lineStyle: { color: "#C3BDFF", width: 2 },
+        itemStyle: { color: "#C3BDFF" },
+        areaStyle: {
+          color: new window.echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: "rgba(195, 189, 255, 0.24)" },
+            { offset: 1, color: "rgba(195, 189, 255, 0.01)" },
+          ]),
+        },
+        markLine: {
+          symbol: ["none", "none"],
+          silent: true,
+          animation: false,
+          data: [{ yAxis: toChartY(latestVal, pfScaleMode) }],
+          lineStyle: { color: "#3182f6", type: "dotted", width: 1.5 },
+          label: {
+            show: true,
+            position: "end",
+            formatter: () => formatPortfolioAxisMoney(latestVal, cur),
+            backgroundColor: "#3182f6",
+            color: "#ffffff",
+            fontSize: 11,
+            fontWeight: 700,
+            padding: [4, 7],
+            borderRadius: 4,
+          },
+        },
+      },
+    ],
+  };
+
+  pfChartInstance.setOption(option, true);
+  pfChartInstance.resize();
+  updatePortfolioHoverBar(n - 1);
+  pfViewport.scheduleCalloutsUpdate();
+}
+
+function renderPortfolioDashboard() {
+  renderPortfolioStatusBanner();
+  renderPortfolioSummaryCards();
+  renderPortfolioHoldings();
+  renderPortfolioHistoryLog();
+  renderPortfolioChart();
+  renderApiGuideStatus();
+}
+
+function renderApiGuideStatus() {
+  const container = document.getElementById("api-status-detail");
+  const providers = state.portfolio?.providers;
+  if (!providers) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const gate = providers.gateio || {};
+  const toss = providers.toss || {};
+  const gateBadge = getPortfolioProviderLabel(gate);
+  const tossBadge = getPortfolioProviderLabel(toss);
+
+  container.innerHTML = `
+    <div class="guide-status-card">
+      <div class="guide-status-title">
+        <span>Gate.io (API v4 · Read-Only)</span>
+        <span class="provider-pill ${gateBadge.cls}">${escapeHtml(gateBadge.text)}</span>
+      </div>
+      <div class="guide-status-msg">${escapeHtml(gate.message || "-")}</div>
+    </div>
+    <div class="guide-status-card">
+      <div class="guide-status-title">
+        <span>토스증권 (Open API · 조회 전용)</span>
+        <span class="provider-pill ${tossBadge.cls}">${escapeHtml(tossBadge.text)}</span>
+      </div>
+      <div class="guide-status-msg">${escapeHtml(toss.message || "-")}</div>
+    </div>
+  `;
+}
+
+/* ---------- Existing MDD View Rendering ---------- */
 
 function renderBenchmarks() {
   const grid = document.getElementById("benchmarks-grid");
@@ -264,7 +1388,7 @@ function renderStocks() {
     .join("");
 }
 
-/* ---------- Modal & Candlestick Chart ---------- */
+/* ---------- MDD Asset Candlestick Modal Chart ---------- */
 
 function updateOhlcBar(index) {
   const barEl = document.getElementById("chart-ohlc-bar");
@@ -310,211 +1434,6 @@ function getIntervalRows(historyData, interval) {
   return Array.from(byYear.values());
 }
 
-function getVisibleRealRange() {
-  if (!modalRows.length) return [0, 0];
-  const maxRealIdx = modalRows.length - 1;
-  const rawStart = Math.round(viewState.xStart - modalPadLeft);
-  const rawEnd = Math.round(viewState.xEnd - modalPadLeft);
-  const s = Math.max(0, Math.min(maxRealIdx, rawStart));
-  const e = Math.max(s, Math.min(maxRealIdx, rawEnd));
-  return [s, e];
-}
-
-function clampXWindow(nextStart, nextEnd) {
-  const n = modalRows.length;
-  const maxCatIdx = Math.max(1, modalTotalCats - 1);
-  if (!n) {
-    return { start: 0, end: maxCatIdx };
-  }
-  const span = Math.max(1, nextEnd - nextStart);
-  const minReal = Math.min(2, n);
-  const minAllowedEnd = modalPadLeft + minReal - 1;
-  const maxAllowedStart = modalPadLeft + n - minReal;
-
-  let start = nextStart;
-  let end = nextEnd;
-
-  if (end < minAllowedEnd) {
-    end = minAllowedEnd;
-    start = end - span;
-  }
-  if (start > maxAllowedStart) {
-    start = maxAllowedStart;
-    end = start + span;
-  }
-  if (start < 0) {
-    start = 0;
-    end = Math.min(maxCatIdx, span);
-  }
-  if (end > maxCatIdx) {
-    end = maxCatIdx;
-    start = Math.max(0, maxCatIdx - span);
-  }
-  return { start, end };
-}
-
-function getDataZoomRangePct() {
-  const maxCatIdx = Math.max(1, modalTotalCats - 1);
-  const start = Math.max(0, Math.min(100, (viewState.xStart / maxCatIdx) * 100));
-  const end = Math.max(start, Math.min(100, (viewState.xEnd / maxCatIdx) * 100));
-  return { start, end };
-}
-
-function toChartY(price) {
-  return modalScaleMode === "log" ? Math.log(price) : price;
-}
-
-function fromChartY(val) {
-  return modalScaleMode === "log" ? Math.exp(val) : val;
-}
-
-function computeAutoYBounds(catStart, catEnd) {
-  if (!modalRows.length) return { min: 0, max: 1 };
-  const maxRealIdx = modalRows.length - 1;
-  const s = Math.max(0, Math.min(maxRealIdx, Math.floor(catStart - modalPadLeft)));
-  const e = Math.max(s, Math.min(maxRealIdx, Math.ceil(catEnd - modalPadLeft)));
-  let visLow = Infinity;
-  let visHigh = -Infinity;
-  for (let i = s; i <= e; i += 1) {
-    const l = toChartY(modalRows[i][3]);
-    const h = toChartY(modalRows[i][2]);
-    if (l < visLow) visLow = l;
-    if (h > visHigh) visHigh = h;
-  }
-  if (!Number.isFinite(visLow) || !Number.isFinite(visHigh)) {
-    return { min: 0, max: 1 };
-  }
-  const mid = (visLow + visHigh) / 2;
-  const minSpan = modalScaleMode === "log" ? 0.02 : Math.max(Math.abs(mid) * 0.01, 0.01);
-  const span = Math.max(visHigh - visLow, minSpan);
-  const halfSpan = (span / 2) * 1.36;
-  return {
-    min: mid - halfSpan,
-    max: mid + halfSpan,
-  };
-}
-
-function applyViewState() {
-  if (!chartInstance || !modalRows.length) return;
-  const { start, end } = getDataZoomRangePct();
-  chartInstance.setOption({
-    dataZoom: [
-      {
-        start,
-        end,
-      },
-    ],
-    yAxis: {
-      min: viewState.yMin,
-      max: viewState.yMax,
-    },
-  });
-  updateCallouts();
-}
-
-function scheduleViewUpdate() {
-  if (viewRafId) {
-    cancelAnimationFrame(viewRafId);
-  }
-  viewRafId = requestAnimationFrame(() => {
-    viewRafId = null;
-    applyViewState();
-  });
-}
-
-function updateCallouts() {
-  const peakEl = document.getElementById("chart-peak-callout");
-  const troughEl = document.getElementById("chart-trough-callout");
-
-  if (!chartInstance || !modalRows.length || !modalAsset) {
-    peakEl.classList.add("hidden");
-    troughEl.classList.add("hidden");
-    return;
-  }
-
-  const [startIdx, endIdx] = getVisibleRealRange();
-  let peakIdx = startIdx;
-  let troughIdx = startIdx;
-  let peakPrice = -Infinity;
-  let troughPrice = Infinity;
-
-  for (let i = startIdx; i <= endIdx; i += 1) {
-    const high = modalRows[i][2];
-    const low = modalRows[i][3];
-    if (high > peakPrice) {
-      peakPrice = high;
-      peakIdx = i;
-    }
-    if (low < troughPrice) {
-      troughPrice = low;
-      troughIdx = i;
-    }
-  }
-
-  const latestClose = modalRows[modalRows.length - 1][4];
-  const isIndex = modalAsset.ticker.startsWith("^");
-  const peakPct = peakPrice > 0 ? ((latestClose - peakPrice) / peakPrice) * 100 : 0;
-  const troughPct = troughPrice > 0 ? ((latestClose - troughPrice) / troughPrice) * 100 : 0;
-
-  const peakPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [peakIdx + modalPadLeft, toChartY(peakPrice)]);
-  const troughPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [troughIdx + modalPadLeft, toChartY(troughPrice)]);
-
-  const stageEl = document.querySelector(".chart-stage");
-  const stageWidth = stageEl.clientWidth;
-  const stageHeight = stageEl.clientHeight;
-  const plotMaxX = stageWidth - 90;
-
-  if (
-    Array.isArray(peakPx) &&
-    Number.isFinite(peakPx[0]) &&
-    Number.isFinite(peakPx[1]) &&
-    peakPx[1] >= 18 &&
-    peakPx[1] <= stageHeight - CHART_GRID.bottom - 4
-  ) {
-    const peakDate = formatShortDate(modalRows[peakIdx][0]);
-    peakEl.innerHTML = `${formatPrice(peakPrice, isIndex)} (${formatSignedPct(peakPct)}, ${peakDate})<br>↓`;
-    peakEl.classList.remove("hidden");
-    const w = peakEl.offsetWidth;
-    const h = peakEl.offsetHeight;
-    const left = Math.max(8, Math.min(plotMaxX - w, peakPx[0] - w / 2));
-    const top = Math.max(6, peakPx[1] - h - 4);
-    peakEl.style.left = `${left}px`;
-    peakEl.style.top = `${top}px`;
-  } else {
-    peakEl.classList.add("hidden");
-  }
-
-  if (
-    Array.isArray(troughPx) &&
-    Number.isFinite(troughPx[0]) &&
-    Number.isFinite(troughPx[1]) &&
-    troughPx[1] >= 18 &&
-    troughPx[1] <= stageHeight - CHART_GRID.bottom - 4
-  ) {
-    const troughDate = formatShortDate(modalRows[troughIdx][0]);
-    troughEl.innerHTML = `↑<br>${formatPrice(troughPrice, isIndex)} (${formatSignedPct(troughPct)}, ${troughDate})`;
-    troughEl.classList.remove("hidden");
-    const w = troughEl.offsetWidth;
-    const h = troughEl.offsetHeight;
-    const left = Math.max(8, Math.min(plotMaxX - w, troughPx[0] - w / 2));
-    const top = Math.min(stageHeight - h - 6, troughPx[1] + 4);
-    troughEl.style.left = `${left}px`;
-    troughEl.style.top = `${top}px`;
-  } else {
-    troughEl.classList.add("hidden");
-  }
-}
-
-function scheduleCalloutsUpdate() {
-  if (calloutRafId) {
-    cancelAnimationFrame(calloutRafId);
-  }
-  calloutRafId = requestAnimationFrame(() => {
-    calloutRafId = null;
-    updateCallouts();
-  });
-}
-
 function renderModalChart() {
   const canvasEl = document.getElementById("echart-canvas");
   if (!modalHistory || !modalAsset) return;
@@ -535,8 +1454,8 @@ function renderModalChart() {
 
   const n = rows.length;
   modalPadLeft = Math.max(80, n);
-  modalPadRight = Math.max(80, n);
-  modalTotalCats = modalPadLeft + n + modalPadRight;
+  const padRight = Math.max(80, n);
+  modalTotalCats = modalPadLeft + n + padRight;
 
   const paddedDates = new Array(modalTotalCats).fill("");
   const paddedCandles = new Array(modalTotalCats).fill(null).map(() => []);
@@ -545,11 +1464,11 @@ function renderModalChart() {
     const catIdx = modalPadLeft + i;
     paddedDates[catIdx] = r[0];
     paddedCandles[catIdx] = [
-      toChartY(r[1]),
-      toChartY(r[4]),
-      toChartY(r[3]),
-      toChartY(r[2]),
-    ]; // ECharts: [open, close, low, high]
+      toChartY(r[1], modalScaleMode),
+      toChartY(r[4], modalScaleMode),
+      toChartY(r[3], modalScaleMode),
+      toChartY(r[2], modalScaleMode),
+    ];
   }
 
   let visibleBars = n;
@@ -563,20 +1482,11 @@ function renderModalChart() {
   const initEnd = modalPadLeft + n - 1 + rightBuffer;
   const latestClose = rows[n - 1][4];
   const isIndex = modalAsset.ticker.startsWith("^");
-  const yBounds = computeAutoYBounds(initStart, initEnd);
 
-  viewState = {
-    xStart: initStart,
-    xEnd: initEnd,
-    yMin: yBounds.min,
-    yMax: yBounds.max,
-    yAutoFit: true,
-  };
-
-  if (!chartInstance) {
-    chartInstance = window.echarts.init(canvasEl);
-    chartInstance.on("finished", scheduleCalloutsUpdate);
-    chartInstance.on("updateAxisPointer", (event) => {
+  if (!modalChartInstance) {
+    modalChartInstance = window.echarts.init(canvasEl);
+    modalChartInstance.on("finished", () => modalViewport?.scheduleCalloutsUpdate());
+    modalChartInstance.on("updateAxisPointer", (event) => {
       const catIdx = event?.axesInfo?.[0]?.value;
       if (typeof catIdx === "number") {
         const realIdx = catIdx - modalPadLeft;
@@ -586,22 +1496,21 @@ function renderModalChart() {
       }
     });
     canvasEl.addEventListener("mouseleave", () => {
-      if (modalRows.length) {
-        updateOhlcBar(modalRows.length - 1);
-      }
+      if (modalRows.length) updateOhlcBar(modalRows.length - 1);
     });
   }
 
-  const { start: initZoomStart, end: initZoomEnd } = getDataZoomRangePct();
+  const { start: initZoomStart, end: initZoomEnd } = modalViewport.initWindow(initStart, initEnd);
+  const vs = modalViewport.viewState;
 
   const option = {
     animation: false,
     backgroundColor: "#111111",
     grid: {
-      left: CHART_GRID.left,
-      right: CHART_GRID.right,
-      top: CHART_GRID.top,
-      bottom: CHART_GRID.bottom,
+      left: MDD_CHART_GRID.left,
+      right: MDD_CHART_GRID.right,
+      top: MDD_CHART_GRID.top,
+      bottom: MDD_CHART_GRID.bottom,
       containLabel: false,
     },
     tooltip: {
@@ -616,7 +1525,7 @@ function renderModalChart() {
           fontSize: 11,
           formatter: (params) => {
             if (params.axisDimension === "y") {
-              return formatAxisPrice(fromChartY(params.value), isIndex);
+              return formatAxisPrice(fromChartY(params.value, modalScaleMode), isIndex);
             }
             return params.value || "";
           },
@@ -641,8 +1550,8 @@ function renderModalChart() {
       type: "value",
       position: "right",
       scale: true,
-      min: viewState.yMin,
-      max: viewState.yMax,
+      min: vs.yMin,
+      max: vs.yMax,
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: {
@@ -652,7 +1561,7 @@ function renderModalChart() {
       axisLabel: {
         color: "#8d8d8d",
         fontSize: 11,
-        formatter: (value) => formatAxisPrice(fromChartY(value), isIndex),
+        formatter: (value) => formatAxisPrice(fromChartY(value, modalScaleMode), isIndex),
       },
     },
     dataZoom: [
@@ -682,12 +1591,8 @@ function renderModalChart() {
           symbol: ["none", "none"],
           silent: true,
           animation: false,
-          data: [{ yAxis: toChartY(latestClose) }],
-          lineStyle: {
-            color: "#3182f6",
-            type: "dotted",
-            width: 1.5,
-          },
+          data: [{ yAxis: toChartY(latestClose, modalScaleMode) }],
+          lineStyle: { color: "#3182f6", type: "dotted", width: 1.5 },
           label: {
             show: true,
             position: "end",
@@ -704,10 +1609,10 @@ function renderModalChart() {
     ],
   };
 
-  chartInstance.setOption(option, true);
-  chartInstance.resize();
+  modalChartInstance.setOption(option, true);
+  modalChartInstance.resize();
   updateOhlcBar(n - 1);
-  scheduleCalloutsUpdate();
+  modalViewport.scheduleCalloutsUpdate();
 }
 
 async function openAssetModal(asset) {
@@ -750,7 +1655,7 @@ async function openAssetModal(asset) {
       historyCache.set(asset.history_file, historyData);
     }
 
-    if (modalAsset !== asset) return; // User switched or closed before fetch finished
+    if (modalAsset !== asset) return;
     modalHistory = historyData;
     loadingEl.classList.add("hidden");
     renderModalChart();
@@ -760,10 +1665,22 @@ async function openAssetModal(asset) {
 }
 
 function closeAssetModal() {
-  const modalEl = document.getElementById("chart-modal");
-  modalEl.classList.add("hidden");
+  document.getElementById("chart-modal").classList.add("hidden");
   document.body.classList.remove("modal-open");
   modalAsset = null;
+}
+
+function openApiGuideModal() {
+  renderApiGuideStatus();
+  document.getElementById("api-guide-modal").classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function closeApiGuideModal() {
+  document.getElementById("api-guide-modal").classList.add("hidden");
+  if (document.getElementById("chart-modal").classList.contains("hidden")) {
+    document.body.classList.remove("modal-open");
+  }
 }
 
 function findAssetFromElement(el) {
@@ -779,9 +1696,127 @@ function findAssetFromElement(el) {
   return null;
 }
 
+/* ---------- Control Bindings ---------- */
+
 function bindControls() {
-  const searchInput = document.getElementById("search-input");
-  searchInput.addEventListener("input", (event) => {
+  pfViewport = createChartViewportController({
+    stageEl: document.getElementById("portfolio-chart-stage"),
+    canvasEl: document.getElementById("portfolio-echart-canvas"),
+    yAxisZoneEl: document.getElementById("portfolio-yaxis-zoom-zone"),
+    peakEl: document.getElementById("portfolio-peak-callout"),
+    troughEl: document.getElementById("portfolio-trough-callout"),
+    getChart: () => pfChartInstance,
+    getTotalCats: () => pfTotalCats,
+    getPadLeft: () => pfPadLeft,
+    getRowsLength: () => pfRows.length,
+    getMinZoomSpan: () => (pfInterval === "yearly" ? 4 : 7),
+    getGrid: () => PORTFOLIO_CHART_GRID,
+    isLogScale: () => pfScaleMode === "log",
+    getRowHighLowY: (i) => [
+      toChartY(pfRows[i].lowVal, pfScaleMode),
+      toChartY(pfRows[i].highVal, pfScaleMode),
+    ],
+    getCalloutInfo: (i) => {
+      const r = pfRows[i];
+      return {
+        highPrice: r.highVal,
+        lowPrice: r.lowVal,
+        highY: toChartY(r.val, pfScaleMode),
+        lowY: toChartY(r.val, pfScaleMode),
+        date: r.date,
+      };
+    },
+    getRefPrice: () => (pfRows.length ? pfRows[pfRows.length - 1].val : 0),
+    formatCalloutPrice: (val) => formatMoney(val, state.currency),
+  });
+
+  modalViewport = createChartViewportController({
+    stageEl: document.getElementById("modal-chart-stage"),
+    canvasEl: document.getElementById("echart-canvas"),
+    yAxisZoneEl: document.getElementById("yaxis-zoom-zone"),
+    peakEl: document.getElementById("chart-peak-callout"),
+    troughEl: document.getElementById("chart-trough-callout"),
+    getChart: () => modalChartInstance,
+    getTotalCats: () => modalTotalCats,
+    getPadLeft: () => modalPadLeft,
+    getRowsLength: () => modalRows.length,
+    getMinZoomSpan: () => (modalInterval === "yearly" ? 4 : 10),
+    getGrid: () => MDD_CHART_GRID,
+    isLogScale: () => modalScaleMode === "log",
+    getRowHighLowY: (i) => [
+      toChartY(modalRows[i][3], modalScaleMode),
+      toChartY(modalRows[i][2], modalScaleMode),
+    ],
+    getCalloutInfo: (i) => {
+      const r = modalRows[i];
+      return {
+        highPrice: r[2],
+        lowPrice: r[3],
+        highY: toChartY(r[2], modalScaleMode),
+        lowY: toChartY(r[3], modalScaleMode),
+        date: r[0],
+      };
+    },
+    getRefPrice: () => (modalRows.length ? modalRows[modalRows.length - 1][4] : 0),
+    formatCalloutPrice: (val) => formatPrice(val, Boolean(modalAsset && modalAsset.ticker.startsWith("^"))),
+  });
+
+  // View Switcher
+  document.getElementById("nav-toggle-view-btn").addEventListener("click", () => {
+    switchMainView(state.activeView === "portfolio" ? "mdd" : "portfolio");
+  });
+  document.getElementById("mdd-back-btn").addEventListener("click", () => {
+    switchMainView("portfolio");
+  });
+
+  // Currency Toggle
+  document.querySelectorAll(".currency-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".currency-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.currency = btn.dataset.currency === "usd" ? "usd" : "krw";
+      renderPortfolioDashboard();
+    });
+  });
+
+  // Portfolio Chart Filter Buttons
+  document.querySelectorAll(".pf-series-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pf-series-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      pfSeriesMode = btn.dataset.series || "total";
+      renderPortfolioChart();
+    });
+  });
+
+  document.querySelectorAll(".pf-interval-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pf-interval-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      pfInterval = btn.dataset.pfInterval || "daily";
+      renderPortfolioChart();
+    });
+  });
+
+  document.querySelectorAll(".pf-scale-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pf-scale-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      pfScaleMode = btn.dataset.pfScale === "log" ? "log" : "linear";
+      renderPortfolioChart();
+    });
+  });
+
+  // API Guide Modal
+  document.getElementById("open-api-guide-btn").addEventListener("click", openApiGuideModal);
+  document.getElementById("banner-open-guide-btn").addEventListener("click", openApiGuideModal);
+  document.getElementById("api-guide-close-btn").addEventListener("click", closeApiGuideModal);
+  document.getElementById("api-guide-modal").addEventListener("click", (e) => {
+    if (e.target.id === "api-guide-modal") closeApiGuideModal();
+  });
+
+  // MDD Controls
+  document.getElementById("search-input").addEventListener("input", (event) => {
     state.searchQuery = event.target.value;
     renderStocks();
   });
@@ -797,18 +1832,12 @@ function bindControls() {
   });
 
   const handleContainerActivate = (selector, event) => {
-    if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
+    if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
     const card = event.target.closest(selector);
     if (!card) return;
-    if (event.type === "keydown") {
-      event.preventDefault();
-    }
+    if (event.type === "keydown") event.preventDefault();
     const asset = findAssetFromElement(card);
-    if (asset) {
-      openAssetModal(asset);
-    }
+    if (asset) openAssetModal(asset);
   };
 
   const benchmarksGrid = document.getElementById("benchmarks-grid");
@@ -821,14 +1850,15 @@ function bindControls() {
 
   document.getElementById("modal-close-btn").addEventListener("click", closeAssetModal);
   document.getElementById("chart-modal").addEventListener("click", (e) => {
-    if (e.target.id === "chart-modal") {
-      closeAssetModal();
-    }
+    if (e.target.id === "chart-modal") closeAssetModal();
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !document.getElementById("chart-modal").classList.contains("hidden")) {
+    if (e.key !== "Escape") return;
+    if (!document.getElementById("chart-modal").classList.contains("hidden")) {
       closeAssetModal();
+    } else if (!document.getElementById("api-guide-modal").classList.contains("hidden")) {
+      closeApiGuideModal();
     }
   });
 
@@ -852,208 +1882,70 @@ function bindControls() {
     });
   });
 
-  const canvasEl = document.getElementById("echart-canvas");
-  let panActive = false;
-  let panLastX = 0;
-  let panLastY = 0;
-
-  canvasEl.addEventListener(
-    "mousedown",
-    (e) => {
-      if (e.button !== 0 || !chartInstance || !modalRows.length) return;
-      panActive = true;
-      panLastX = e.clientX;
-      panLastY = e.clientY;
-      canvasEl.classList.add("is-dragging");
-      e.preventDefault();
-    },
-    { capture: true }
-  );
-
-  canvasEl.addEventListener(
-    "wheel",
-    (e) => {
-      e.preventDefault();
-      if (!chartInstance || !modalRows.length) return;
-      const rect = canvasEl.getBoundingClientRect();
-      const plotWidth = Math.max(1, rect.width - CHART_GRID.left - CHART_GRID.right);
-      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left - CHART_GRID.left) / plotWidth));
-      const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
-
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        const deltaBars = (e.deltaX / plotWidth) * spanX;
-        const clamped = clampXWindow(viewState.xStart + deltaBars, viewState.xEnd + deltaBars);
-        viewState.xStart = clamped.start;
-        viewState.xEnd = clamped.end;
-      } else {
-        const n = modalRows.length;
-        const minSpan = Math.min(Math.max(4, n), modalInterval === "yearly" ? 4 : 10);
-        const maxSpan = Math.max(n * 1.8, 30);
-        const factor = e.deltaY > 0 ? 1.15 : 0.87;
-        const nextSpan = Math.max(minSpan, Math.min(maxSpan, spanX * factor));
-
-        const anchor = viewState.xStart + ratio * spanX;
-        const rawStart = anchor - ratio * nextSpan;
-        const rawEnd = rawStart + nextSpan;
-        const clamped = clampXWindow(rawStart, rawEnd);
-        viewState.xStart = clamped.start;
-        viewState.xEnd = clamped.end;
-      }
-
-      if (viewState.yAutoFit) {
-        const bounds = computeAutoYBounds(viewState.xStart, viewState.xEnd);
-        viewState.yMin = bounds.min;
-        viewState.yMax = bounds.max;
-      }
-      scheduleViewUpdate();
-    },
-    { capture: true, passive: false }
-  );
-
-  canvasEl.addEventListener("dblclick", () => {
-    if (!chartInstance || !modalRows.length) return;
-    viewState.yAutoFit = true;
-    const bounds = computeAutoYBounds(viewState.xStart, viewState.xEnd);
-    viewState.yMin = bounds.min;
-    viewState.yMax = bounds.max;
-    scheduleViewUpdate();
-  });
-
-  const yAxisZone = document.getElementById("yaxis-zoom-zone");
-  const zoomYByFactor = (factor) => {
-    if (!chartInstance || !modalRows.length) return;
-    viewState.yAutoFit = false;
-    const midY = (viewState.yMin + viewState.yMax) / 2;
-    const spanY = Math.max(1e-6, viewState.yMax - viewState.yMin);
-    const minSpanY = modalScaleMode === "log" ? 0.005 : Math.max(Math.abs(midY) * 0.002, 0.002);
-    const maxSpanY = modalScaleMode === "log" ? 15.0 : Math.max(Math.abs(midY) * 20, 100);
-    const nextSpanY = Math.max(minSpanY, Math.min(maxSpanY, spanY * factor));
-    viewState.yMin = midY - nextSpanY / 2;
-    viewState.yMax = midY + nextSpanY / 2;
-    scheduleViewUpdate();
-  };
-
-  yAxisZone.addEventListener(
-    "wheel",
-    (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      zoomYByFactor(e.deltaY > 0 ? 1.12 : 0.89);
-    },
-    { passive: false }
-  );
-
-  let yDragActive = false;
-  let yDragStartY = 0;
-  let yDragStartMin = 0;
-  let yDragStartMax = 1;
-
-  yAxisZone.addEventListener("mousedown", (e) => {
-    if (e.button !== 0 || !chartInstance || !modalRows.length) return;
-    yDragActive = true;
-    yDragStartY = e.clientY;
-    yDragStartMin = viewState.yMin;
-    yDragStartMax = viewState.yMax;
-    e.preventDefault();
-  });
-
-  window.addEventListener(
-    "mousemove",
-    (e) => {
-      if (panActive && chartInstance && modalRows.length) {
-        const dx = e.clientX - panLastX;
-        const dy = e.clientY - panLastY;
-        panLastX = e.clientX;
-        panLastY = e.clientY;
-
-        const stageEl = document.querySelector(".chart-stage");
-        const plotWidth = Math.max(1, stageEl.clientWidth - CHART_GRID.left - CHART_GRID.right);
-        const plotHeight = Math.max(1, stageEl.clientHeight - CHART_GRID.top - CHART_GRID.bottom);
-
-        if (dx !== 0) {
-          const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
-          const deltaBars = -(dx / plotWidth) * spanX;
-          const clamped = clampXWindow(viewState.xStart + deltaBars, viewState.xEnd + deltaBars);
-          viewState.xStart = clamped.start;
-          viewState.xEnd = clamped.end;
-        }
-
-        if (dy !== 0) {
-          viewState.yAutoFit = false;
-          const spanY = Math.max(1e-6, viewState.yMax - viewState.yMin);
-          const deltaY = (dy / plotHeight) * spanY;
-          viewState.yMin += deltaY;
-          viewState.yMax += deltaY;
-        }
-
-        scheduleViewUpdate();
-        return;
-      }
-
-      if (yDragActive && chartInstance && modalRows.length) {
-        viewState.yAutoFit = false;
-        const dy = e.clientY - yDragStartY;
-        const midY = (yDragStartMin + yDragStartMax) / 2;
-        const startSpanY = Math.max(1e-6, yDragStartMax - yDragStartMin);
-        const minSpanY = modalScaleMode === "log" ? 0.005 : Math.max(Math.abs(midY) * 0.002, 0.002);
-        const maxSpanY = modalScaleMode === "log" ? 15.0 : Math.max(Math.abs(midY) * 20, 100);
-        const nextSpanY = Math.max(minSpanY, Math.min(maxSpanY, startSpanY * Math.exp(dy * 0.008)));
-        viewState.yMin = midY - nextSpanY / 2;
-        viewState.yMax = midY + nextSpanY / 2;
-        scheduleViewUpdate();
-      }
-    },
-    { capture: true }
-  );
-
-  window.addEventListener(
-    "mouseup",
-    () => {
-      if (panActive) {
-        panActive = false;
-        canvasEl.classList.remove("is-dragging");
-      }
-      yDragActive = false;
-    },
-    { capture: true }
-  );
-
-  yAxisZone.addEventListener("dblclick", () => {
-    if (!chartInstance || !modalRows.length) return;
-    viewState.yAutoFit = true;
-    const bounds = computeAutoYBounds(viewState.xStart, viewState.xEnd);
-    viewState.yMin = bounds.min;
-    viewState.yMax = bounds.max;
-    scheduleViewUpdate();
-  });
-
   window.addEventListener("resize", () => {
-    if (chartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
-      chartInstance.resize();
-      scheduleCalloutsUpdate();
+    if (pfChartInstance && state.activeView === "portfolio") {
+      pfChartInstance.resize();
+      pfViewport.scheduleCalloutsUpdate();
+    }
+    if (modalChartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
+      modalChartInstance.resize();
+      modalViewport.scheduleCalloutsUpdate();
     }
   });
 }
 
+/* ---------- App Initialization ---------- */
+
 async function init() {
   bindControls();
-  try {
-    const response = await fetch(DATA_URL, { cache: "no-cache" });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    const payload = await response.json();
+
+  if (window.location.hash === "#mdd") {
+    state.activeView = "mdd";
+  }
+  updateHeaderForView();
+
+  const [pfResult, mddResult] = await Promise.allSettled([
+    fetch(PORTFOLIO_DATA_URL, { cache: "no-cache" }).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }),
+    fetch(MDD_DATA_URL, { cache: "no-cache" }).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }),
+  ]);
+
+  if (pfResult.status === "fulfilled") {
+    state.portfolio = pfResult.value;
+    state.portfolioUpdatedAt = pfResult.value.updated_at || "";
+    renderPortfolioDashboard();
+  } else {
+    const msg = `개인 자산 데이터를 불러오지 못했습니다 (${escapeHtml(pfResult.reason?.message || "오류")}).`;
+    document.getElementById("portfolio-summary-grid").innerHTML = `<div class="error-state">${msg}</div>`;
+    document.getElementById("gate-holdings-list").innerHTML = `<div class="error-state">${msg}</div>`;
+    document.getElementById("toss-holdings-list").innerHTML = `<div class="error-state">${msg}</div>`;
+    document.getElementById("portfolio-history-list").innerHTML = `<div class="error-state">${msg}</div>`;
+  }
+
+  if (mddResult.status === "fulfilled") {
+    const payload = mddResult.value;
+    state.mddUpdatedAt = payload.updated_at || "";
     state.benchmarks = Array.isArray(payload.benchmarks) ? payload.benchmarks : [];
     state.stocks = Array.isArray(payload.stocks) ? payload.stocks : [];
-
-    document.getElementById("updated-at").textContent = formatUpdatedAt(payload.updated_at);
     renderBenchmarks();
     renderStocks();
-  } catch (err) {
-    const msg = `데이터를 불러오지 못했습니다 (${escapeHtml(err.message)}). 로컬 파일 직접 열기(file://)가 아닌 웹 서버 또는 GitHub Pages 환경에서 열어주세요.`;
-    document.getElementById("updated-at").textContent = "로드 실패";
+  } else {
+    const msg = `MDD 데이터를 불러오지 못했습니다 (${escapeHtml(mddResult.reason?.message || "오류")}).`;
     document.getElementById("benchmarks-grid").innerHTML = `<div class="error-state">${msg}</div>`;
     document.getElementById("stocks-list").innerHTML = `<div class="error-state">${msg}</div>`;
+  }
+
+  updateHeaderForView();
+  if (state.activeView === "portfolio" && pfChartInstance) {
+    requestAnimationFrame(() => {
+      pfChartInstance.resize();
+      pfViewport?.scheduleCalloutsUpdate();
+    });
   }
 }
 
