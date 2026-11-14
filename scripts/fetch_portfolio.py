@@ -145,9 +145,14 @@ def fetch_gateio_readonly(
     details = total_payload.get("details") or {}
     spot_usd = _to_float((details.get("spot") or {}).get("amount"), 0.0)
     futures_usd = _to_float((details.get("futures") or {}).get("amount"), 0.0)
-    # Include delivery/margin/quant if non-zero
     delivery_usd = _to_float((details.get("delivery") or {}).get("amount"), 0.0)
     margin_usd = _to_float((details.get("cross_margin") or details.get("margin") or {}).get("amount"), 0.0)
+    other_usd = max(0.0, total_usd - spot_usd - (futures_usd + delivery_usd))
+    details_breakdown = {
+        str(k): round(_to_float((v or {}).get("amount"), 0.0), 2)
+        for k, v in details.items()
+        if isinstance(v, dict) and _to_float(v.get("amount"), 0.0) > 0
+    }
 
     holdings: list[dict[str, Any]] = []
     spot_prices = _fetch_gate_spot_prices(proxies)
@@ -233,6 +238,9 @@ def fetch_gateio_readonly(
         "futures_usd": round(futures_usd + delivery_usd, 2),
         "futures_krw": round((futures_usd + delivery_usd) * usdkrw),
         "margin_usd": round(margin_usd, 2),
+        "other_usd": round(other_usd, 2),
+        "other_krw": round(other_usd * usdkrw),
+        "details_breakdown": details_breakdown,
         "unrealized_pnl_usd": round(unrealized_pnl_usd, 2),
         "unrealized_pnl_krw": round(unrealized_pnl_usd * usdkrw),
         "holdings": holdings,
@@ -298,52 +306,19 @@ def _extract_list(payload: Any, keys: tuple[str, ...]) -> list[dict[str, Any]]:
     return []
 
 
-def _extract_cash_from_buying_power(bp_payload: Any, usdkrw: float) -> tuple[float, float]:
-    """Return (krw_cash, usd_cash) from /api/v1/buying-power response cleanly."""
+def _extract_buying_power_amount(bp_payload: Any) -> float:
+    """Extract cashBuyingPower from /api/v1/buying-power?currency=... response."""
     data = bp_payload.get("result") if isinstance(bp_payload, dict) and isinstance(bp_payload.get("result"), dict) else bp_payload
     if not isinstance(data, dict):
-        return 0.0, 0.0
-
-    krw_cash = 0.0
-    usd_cash = 0.0
-
-    for key in ("krwOrderableAmount", "orderableAmountKrw", "buyingPowerKrw", "krwDeposit", "depositKrw", "krwCash"):
-        if key in data:
-            krw_cash = _to_float(data.get(key), 0.0)
-            break
-
-    for key in ("usdOrderableAmount", "orderableAmountUsd", "buyingPowerUsd", "usdDeposit", "depositUsd", "usdCash"):
-        if key in data:
-            usd_cash = _to_float(data.get(key), 0.0)
-            break
-
-    # Fallback if a nested list or single generic orderableAmount is returned
-    if krw_cash == 0.0 and usd_cash == 0.0:
-        cur = str(data.get("currency", "KRW")).upper()
-        generic = _to_float(
-            data.get("orderableAmount")
-            or data.get("buyingPower")
-            or data.get("cashBalance")
-            or data.get("depositAmount"),
-            0.0,
-        )
-        if cur == "USD":
-            usd_cash = generic
-        else:
-            krw_cash = generic
-
-    if isinstance(data.get("krw"), dict):
-        krw_cash = max(
-            krw_cash,
-            _to_float(data["krw"].get("orderableAmount") or data["krw"].get("buyingPower") or data["krw"].get("deposit"), 0.0),
-        )
-    if isinstance(data.get("usd"), dict):
-        usd_cash = max(
-            usd_cash,
-            _to_float(data["usd"].get("orderableAmount") or data["usd"].get("buyingPower") or data["usd"].get("deposit"), 0.0),
-        )
-
-    return round(krw_cash), round(usd_cash, 2)
+        return 0.0
+    return _to_float(
+        data.get("cashBuyingPower")
+        or data.get("orderableAmount")
+        or data.get("buyingPower")
+        or data.get("cashBalance")
+        or data.get("depositAmount"),
+        0.0,
+    )
 
 
 def fetch_toss_readonly(
@@ -371,9 +346,19 @@ def fetch_toss_readonly(
         if seq is None:
             continue
 
-        # 1) Holdings
+        # 1) Holdings (GET /api/v1/holdings)
         h_payload = _toss_get("/api/v1/holdings", token, seq, proxies)
+        result_obj = h_payload.get("result") if isinstance(h_payload, dict) and isinstance(h_payload.get("result"), dict) else h_payload
         items = _extract_list(h_payload, ("items", "holdings", "result", "data"))
+
+        # Check official overview totals in case item-level sum is absent or rounded
+        overview_mv = (result_obj.get("marketValue") or {}).get("amount") if isinstance(result_obj, dict) else None
+        overview_pnl = (result_obj.get("profitLoss") or {}).get("amount") if isinstance(result_obj, dict) else None
+
+        acc_item_krw = 0.0
+        acc_item_usd = 0.0
+        acc_item_pnl_krw = 0.0
+
         for item in items:
             qty = _to_float(
                 item.get("quantity")
@@ -387,31 +372,58 @@ def fetch_toss_readonly(
 
             symbol = str(item.get("symbol") or item.get("ticker") or item.get("stockCode") or "-")
             name = str(item.get("name") or item.get("stockName") or item.get("itemName") or symbol)
-            market = str(item.get("market") or item.get("marketCode") or "").upper()
+            market = str(item.get("marketCountry") or item.get("market") or item.get("marketCode") or "").upper()
             currency = str(item.get("currency") or ("USD" if market in {"US", "NAS", "NYS", "AMS", "NASDAQ", "NYSE", "AMEX"} else "KRW")).upper()
 
-            cur_price = _to_float(item.get("currentPrice") or item.get("price"), 0.0)
-            avg_price = _to_float(item.get("averagePrice") or item.get("avgPrice") or item.get("purchasePrice"), 0.0)
-            eval_amt = _to_float(item.get("evaluationAmount") or item.get("evalAmount") or item.get("marketValue"), qty * cur_price)
-            pnl_amt = _to_float(item.get("profitAndLoss") or item.get("pnlAmount") or item.get("evaluationProfitLoss"), (cur_price - avg_price) * qty if cur_price and avg_price else 0.0)
-            pnl_rate = _to_float(item.get("profitRate") or item.get("pnlRate") or item.get("returnRate"), 0.0)
+            cur_price = _to_float(item.get("lastPrice") or item.get("currentPrice") or item.get("price"), 0.0)
+            avg_price = _to_float(
+                item.get("averagePurchasePrice")
+                or item.get("averagePrice")
+                or item.get("avgPrice")
+                or item.get("purchasePrice"),
+                0.0,
+            )
+
+            mv_field = item.get("marketValue")
+            if isinstance(mv_field, dict):
+                eval_amt = _to_float(mv_field.get("amount") or mv_field.get("amountAfterCost"), qty * cur_price)
+            else:
+                eval_amt = _to_float(
+                    item.get("evaluationAmount") or item.get("evalAmount") or mv_field,
+                    qty * cur_price,
+                )
+
+            pnl_field = item.get("profitLoss")
+            if isinstance(pnl_field, dict):
+                pnl_amt = _to_float(
+                    pnl_field.get("amount"),
+                    (cur_price - avg_price) * qty if cur_price and avg_price else 0.0,
+                )
+                # Official Toss schema returns decimal ratio (e.g., "0.1077" = +10.77%)
+                pnl_rate = _to_float(pnl_field.get("rate"), 0.0) * 100.0
+            else:
+                pnl_amt = _to_float(
+                    item.get("profitAndLoss") or item.get("pnlAmount") or item.get("evaluationProfitLoss"),
+                    (cur_price - avg_price) * qty if cur_price and avg_price else 0.0,
+                )
+                pnl_rate = _to_float(item.get("profitRate") or item.get("pnlRate") or item.get("returnRate"), 0.0)
 
             if currency == "USD":
                 val_usd = eval_amt
                 val_krw = eval_amt * usdkrw
                 pnl_usd = pnl_amt
                 pnl_krw = pnl_amt * usdkrw
-                stock_usd_direct += val_usd
+                acc_item_usd += val_usd
                 category = "미국주식"
             else:
                 val_krw = eval_amt
                 val_usd = eval_amt / usdkrw if usdkrw > 0 else 0.0
                 pnl_krw = pnl_amt
                 pnl_usd = pnl_amt / usdkrw if usdkrw > 0 else 0.0
-                stock_krw += val_krw
+                acc_item_krw += val_krw
                 category = "국내주식"
 
-            pnl_krw_total += pnl_krw
+            acc_item_pnl_krw += pnl_krw
 
             holdings.append(
                 {
@@ -431,14 +443,34 @@ def fetch_toss_readonly(
                 }
             )
 
-        # 2) Buying Power / Cash
+        if isinstance(overview_mv, dict):
+            ov_krw = _to_float(overview_mv.get("krw"), 0.0)
+            ov_usd = _to_float(overview_mv.get("usd"), 0.0)
+            stock_krw += ov_krw if ov_krw > 0 else acc_item_krw
+            stock_usd_direct += ov_usd if ov_usd > 0 else acc_item_usd
+        else:
+            stock_krw += acc_item_krw
+            stock_usd_direct += acc_item_usd
+
+        if isinstance(overview_pnl, dict):
+            ov_p_krw = _to_float(overview_pnl.get("krw"), 0.0)
+            ov_p_usd = _to_float(overview_pnl.get("usd"), 0.0)
+            pnl_krw_total += ov_p_krw + ov_p_usd * usdkrw
+        else:
+            pnl_krw_total += acc_item_pnl_krw
+
+        # 2) Buying Power / Cash (GET /api/v1/buying-power?currency=KRW and ?currency=USD)
         try:
-            bp_payload = _toss_get("/api/v1/buying-power", token, seq, proxies)
-            acc_krw_cash, acc_usd_cash = _extract_cash_from_buying_power(bp_payload, usdkrw)
-            cash_krw += acc_krw_cash
-            cash_usd += acc_usd_cash
-        except Exception:
-            pass
+            bp_krw_payload = _toss_get("/api/v1/buying-power?currency=KRW", token, seq, proxies)
+            cash_krw += round(_extract_buying_power_amount(bp_krw_payload))
+        except Exception as exc:
+            print(f"[warn] Toss KRW buying-power failed for account {seq}: {exc}")
+
+        try:
+            bp_usd_payload = _toss_get("/api/v1/buying-power?currency=USD", token, seq, proxies)
+            cash_usd += round(_extract_buying_power_amount(bp_usd_payload), 2)
+        except Exception as exc:
+            print(f"[warn] Toss USD buying-power failed for account {seq}: {exc}")
 
     if cash_krw > 0:
         holdings.append(
