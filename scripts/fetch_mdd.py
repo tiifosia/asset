@@ -16,6 +16,7 @@ import yfinance as yf
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = ROOT_DIR / "public" / "data" / "mdd.json"
+HISTORY_DIR = ROOT_DIR / "public" / "data" / "history"
 
 TRADINGVIEW_SCAN_URL = "https://scanner.tradingview.com/america/scan"
 
@@ -274,33 +275,63 @@ def compute_drawdown_metrics(series: pd.Series) -> dict[str, Any]:
     }
 
 
-def extract_close_series(df: pd.DataFrame, ticker: str) -> pd.Series | None:
-    """Extract a clean Close price series from yf.download output for a given ticker."""
+def extract_ohlc_df(df: pd.DataFrame, ticker: str) -> pd.DataFrame | None:
+    """Extract a clean OHLC DataFrame from yf.download output for a given ticker."""
     if df is None or df.empty:
         return None
+
+    ohlc_cols = ["Open", "High", "Low", "Close"]
+    extracted: dict[str, pd.Series] = {}
+
     if isinstance(df.columns, pd.MultiIndex):
         level0 = df.columns.get_level_values(0)
         level1 = df.columns.get_level_values(1)
-        if "Close" in level0 and ticker in level1:
-            s = df["Close"][ticker]
-        elif ticker in level0 and "Close" in level1:
-            s = df[ticker]["Close"]
-        else:
-            return None
+        for col in ohlc_cols:
+            if col in level0 and ticker in level1:
+                s = df[col][ticker]
+            elif ticker in level0 and col in level1:
+                s = df[ticker][col]
+            else:
+                continue
+            if isinstance(s, pd.DataFrame):
+                s = s.iloc[:, 0]
+            extracted[col] = s
     else:
-        if "Close" not in df.columns:
-            return None
-        s = df["Close"]
+        for col in ohlc_cols:
+            if col in df.columns:
+                s = df[col]
+                if isinstance(s, pd.DataFrame):
+                    s = s.iloc[:, 0]
+                extracted[col] = s
 
-    if isinstance(s, pd.DataFrame):
-        s = s.iloc[:, 0]
-    s = s.dropna()
-    return s if not s.empty else None
+    if "Close" not in extracted:
+        return None
+
+    out = pd.DataFrame(extracted).copy()
+    out = out[out["Close"].notna() & (out["Close"] > 0)].sort_index()
+    if out.empty:
+        return None
+
+    idx = pd.to_datetime(out.index)
+    if idx.tz is not None:
+        idx = idx.tz_localize(None)
+    out.index = idx
+
+    for col in ["Open", "High", "Low"]:
+        if col not in out.columns:
+            out[col] = out["Close"]
+        else:
+            invalid = out[col].isna() | (out[col] <= 0)
+            out.loc[invalid, col] = out.loc[invalid, "Close"]
+
+    out["High"] = out[["Open", "High", "Close"]].max(axis=1)
+    out["Low"] = out[["Open", "Low", "Close"]].min(axis=1)
+    return out[["Open", "High", "Low", "Close"]].astype(float)
 
 
-def download_history_batches(tickers: list[str], batch_size: int = 25) -> dict[str, pd.Series]:
-    """Download all-time daily close prices in batches with single-ticker retry fallback."""
-    histories: dict[str, pd.Series] = {}
+def download_history_batches(tickers: list[str], batch_size: int = 25) -> dict[str, pd.DataFrame]:
+    """Download all-time daily OHLC prices in batches with single-ticker retry fallback."""
+    histories: dict[str, pd.DataFrame] = {}
 
     for i in range(0, len(tickers), batch_size):
         batch = tickers[i : i + batch_size]
@@ -316,9 +347,9 @@ def download_history_batches(tickers: list[str], batch_size: int = 25) -> dict[s
                 group_by="column",
             )
             for t in batch:
-                s = extract_close_series(df, t)
-                if s is not None:
-                    histories[t] = s
+                ohlc = extract_ohlc_df(df, t)
+                if ohlc is not None:
+                    histories[t] = ohlc
         except Exception as exc:
             print(f"[History] Batch download error: {exc}")
         time.sleep(0.4)
@@ -330,16 +361,45 @@ def download_history_batches(tickers: list[str], batch_size: int = 25) -> dict[s
             for attempt in range(2):
                 try:
                     hist = yf.Ticker(t).history(period="max", interval="1d", auto_adjust=False)
-                    if not hist.empty and "Close" in hist.columns:
-                        s = hist["Close"].dropna()
-                        if not s.empty:
-                            histories[t] = s
-                            break
+                    ohlc = extract_ohlc_df(hist, t)
+                    if ohlc is not None:
+                        histories[t] = ohlc
+                        break
                 except Exception:
                     pass
                 time.sleep(0.5 * (attempt + 1))
 
     return histories
+
+
+def _serialize_ohlc_rows(df_ohlc: pd.DataFrame) -> list[list[Any]]:
+    """Serialize OHLC DataFrame rows to compact [date, open, high, low, close] lists."""
+    rows: list[list[Any]] = []
+    for dt, row in df_ohlc.iterrows():
+        rows.append(
+            [
+                dt.strftime("%Y-%m-%d"),
+                round(float(row["Open"]), 2),
+                round(float(row["High"]), 2),
+                round(float(row["Low"]), 2),
+                round(float(row["Close"]), 2),
+            ]
+        )
+    return rows
+
+
+def build_ohlc_payload(df_ohlc: pd.DataFrame, max_daily_bars: int = 1260) -> dict[str, list[list[Any]]]:
+    """Build compact daily (recent ~5Y) and weekly (all-time) OHLC arrays for charting."""
+    daily_df = df_ohlc.tail(max_daily_bars)
+    weekly_df = (
+        df_ohlc.resample("W-FRI")
+        .agg({"Open": "first", "High": "max", "Low": "min", "Close": "last"})
+        .dropna()
+    )
+    return {
+        "daily": _serialize_ohlc_rows(daily_df),
+        "weekly": _serialize_ohlc_rows(weekly_df),
+    }
 
 
 def fetch_all_data() -> dict[str, Any]:
@@ -351,27 +411,42 @@ def fetch_all_data() -> dict[str, Any]:
     all_tickers = benchmark_tickers + candidate_tickers
     histories = download_history_batches(all_tickers, batch_size=25)
 
+    HISTORY_DIR.mkdir(parents=True, exist_ok=True)
+    written_files: set[str] = set()
+
     benchmarks_out: list[dict[str, Any]] = []
     for b in BENCHMARKS:
-        s = histories.get(b["ticker"])
-        if s is None:
+        ohlc = histories.get(b["ticker"])
+        if ohlc is None:
             raise RuntimeError(f"Failed to download benchmark history for {b['ticker']}")
-        metrics = compute_drawdown_metrics(s)
-        benchmarks_out.append({**b, **metrics})
+        metrics = compute_drawdown_metrics(ohlc["Close"])
+        history_file = f"{b['id']}.json"
+        (HISTORY_DIR / history_file).write_text(
+            json.dumps(build_ohlc_payload(ohlc), separators=(",", ":")),
+            encoding="utf-8",
+        )
+        written_files.add(history_file)
+        benchmarks_out.append({**b, "history_file": history_file, **metrics})
 
     stocks_out: list[dict[str, Any]] = []
     for c in top_candidates:
         if len(stocks_out) >= 100:
             break
-        s = histories.get(c["ticker"])
-        if s is None:
+        ohlc = histories.get(c["ticker"])
+        if ohlc is None:
             print(f"[Skip] No price history for {c['ticker']}")
             continue
         try:
-            metrics = compute_drawdown_metrics(s)
+            metrics = compute_drawdown_metrics(ohlc["Close"])
         except Exception as exc:
             print(f"[Skip] Failed metrics for {c['ticker']}: {exc}")
             continue
+        history_file = f"{c['ticker']}.json"
+        (HISTORY_DIR / history_file).write_text(
+            json.dumps(build_ohlc_payload(ohlc), separators=(",", ":")),
+            encoding="utf-8",
+        )
+        written_files.add(history_file)
         stocks_out.append(
             {
                 "rank": len(stocks_out) + 1,
@@ -379,9 +454,14 @@ def fetch_all_data() -> dict[str, Any]:
                 "name": c["name"],
                 "sector": c["sector"],
                 "market_cap": int(round(c["market_cap"])),
+                "history_file": history_file,
                 **metrics,
             }
         )
+
+    for existing_json in HISTORY_DIR.glob("*.json"):
+        if existing_json.name not in written_files:
+            existing_json.unlink()
 
     if len(stocks_out) < 100:
         print(f"[Warn] Collected {len(stocks_out)} stocks (fewer than 100).")
@@ -394,7 +474,7 @@ def fetch_all_data() -> dict[str, Any]:
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[Done] Wrote {len(benchmarks_out)} benchmarks and {len(stocks_out)} stocks to {OUTPUT_PATH}")
+    print(f"[Done] Wrote {len(benchmarks_out)} benchmarks, {len(stocks_out)} stocks, and {len(written_files)} history files.")
     return payload
 
 
