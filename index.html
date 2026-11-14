@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASSET MDD TRACKER | 미국 시총 Top 100 &amp; 주요 지수 낙폭</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=20261114-3" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js" defer></script>
+  <script src="./app.js?v=20261114-3" defer></script>
 </head>
 <body>
   <div class="container">
@@ -123,26 +123,37 @@
       </div>
 
       <div class="modal-toolbar">
-        <div class="range-group" role="group" aria-label="차트 기간">
-          <button type="button" class="range-btn" data-interval="daily" data-bars="63">3개월</button>
-          <button type="button" class="range-btn" data-interval="daily" data-bars="126">6개월</button>
-          <button type="button" class="range-btn active" data-interval="daily" data-bars="252">1년</button>
-          <button type="button" class="range-btn" data-interval="daily" data-bars="756">3년</button>
-          <button type="button" class="range-btn" data-interval="daily" data-bars="1260">5년</button>
-          <button type="button" class="range-btn" data-interval="weekly" data-bars="all">주봉 전체</button>
+        <div class="toolbar-controls">
+          <div class="range-group" role="group" aria-label="차트 기간">
+            <button type="button" class="range-btn" data-interval="daily" data-bars="63">3개월</button>
+            <button type="button" class="range-btn" data-interval="daily" data-bars="126">6개월</button>
+            <button type="button" class="range-btn active" data-interval="daily" data-bars="252">1년</button>
+            <button type="button" class="range-btn" data-interval="daily" data-bars="756">3년</button>
+            <button type="button" class="range-btn" data-interval="daily" data-bars="1260">5년</button>
+            <button type="button" class="range-btn" data-interval="weekly" data-bars="all">주봉 전체</button>
+          </div>
+          <div class="scale-group" role="group" aria-label="가격 축 스케일">
+            <button type="button" class="scale-btn active" data-scale="linear">리니어</button>
+            <button type="button" class="scale-btn" data-scale="log">로그</button>
+          </div>
         </div>
         <div id="chart-ohlc-bar" class="chart-ohlc-bar tabular"></div>
       </div>
 
       <div class="chart-stage">
         <div id="echart-canvas" class="echart-canvas"></div>
+        <div
+          id="yaxis-zoom-zone"
+          class="yaxis-zoom-zone"
+          title="마우스 휠/상하 드래그: 가격축 확대·축소 · 더블클릭: 초기화"
+        ></div>
         <div id="chart-peak-callout" class="chart-callout chart-callout-peak hidden"></div>
         <div id="chart-trough-callout" class="chart-callout chart-callout-trough hidden"></div>
         <div id="chart-loading" class="chart-loading hidden">차트 데이터를 불러오는 중입니다...</div>
       </div>
 
       <div class="modal-footer-hint">
-        <span>마우스 휠: 확대/축소 · 드래그: 좌우 이동</span>
+        <span>차트 위 휠: 좌우 확대/축소 · 우측 가격축 위 휠/드래그: 상하 확대/축소 (더블클릭 초기화)</span>
       </div>
     </div>
   </div>

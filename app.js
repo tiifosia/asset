@@ -13,8 +13,11 @@ let modalAsset = null;
 let modalHistory = null;
 let modalInterval = "daily";
 let modalBars = "252";
+let modalScaleMode = "linear";
+let yZoomFactor = 1.0;
 let modalRows = [];
 let calloutRafId = null;
+let yZoomRafId = null;
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -288,6 +291,60 @@ function getVisibleRange(chart, totalLen) {
   return [s, e];
 }
 
+function toChartY(price) {
+  return modalScaleMode === "log" ? Math.log(price) : price;
+}
+
+function fromChartY(val) {
+  return modalScaleMode === "log" ? Math.exp(val) : val;
+}
+
+function computeYAxisBounds(startIdx, endIdx) {
+  if (!modalRows.length) return { min: undefined, max: undefined };
+  let visLow = Infinity;
+  let visHigh = -Infinity;
+  for (let i = startIdx; i <= endIdx; i += 1) {
+    const l = toChartY(modalRows[i][3]);
+    const h = toChartY(modalRows[i][2]);
+    if (l < visLow) visLow = l;
+    if (h > visHigh) visHigh = h;
+  }
+  if (!Number.isFinite(visLow) || !Number.isFinite(visHigh)) {
+    return { min: undefined, max: undefined };
+  }
+  const mid = (visLow + visHigh) / 2;
+  const minSpan = modalScaleMode === "log" ? 0.02 : Math.max(Math.abs(mid) * 0.01, 0.01);
+  const span = Math.max(visHigh - visLow, minSpan);
+  const halfSpan = (span / 2) * 1.36 * yZoomFactor;
+  return {
+    min: mid - halfSpan,
+    max: mid + halfSpan,
+  };
+}
+
+function applyYAxisBounds() {
+  if (!chartInstance || !modalRows.length) return;
+  const [startIdx, endIdx] = getVisibleRange(chartInstance, modalRows.length);
+  const bounds = computeYAxisBounds(startIdx, endIdx);
+  chartInstance.setOption({
+    yAxis: {
+      min: bounds.min,
+      max: bounds.max,
+    },
+  });
+  updateCallouts();
+}
+
+function scheduleYAxisUpdate() {
+  if (yZoomRafId) {
+    cancelAnimationFrame(yZoomRafId);
+  }
+  yZoomRafId = requestAnimationFrame(() => {
+    yZoomRafId = null;
+    applyYAxisBounds();
+  });
+}
+
 function updateCallouts() {
   const peakEl = document.getElementById("chart-peak-callout");
   const troughEl = document.getElementById("chart-trough-callout");
@@ -322,8 +379,8 @@ function updateCallouts() {
   const peakPct = peakPrice > 0 ? ((latestClose - peakPrice) / peakPrice) * 100 : 0;
   const troughPct = troughPrice > 0 ? ((latestClose - troughPrice) / troughPrice) * 100 : 0;
 
-  const peakPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [peakIdx, peakPrice]);
-  const troughPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [troughIdx, troughPrice]);
+  const peakPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [peakIdx, toChartY(peakPrice)]);
+  const troughPx = chartInstance.convertToPixel({ seriesIndex: 0 }, [troughIdx, toChartY(troughPrice)]);
 
   const stageEl = document.querySelector(".chart-stage");
   const stageWidth = stageEl.clientWidth;
@@ -388,7 +445,12 @@ function renderModalChart() {
   }
 
   const dates = rows.map((r) => r[0]);
-  const candles = rows.map((r) => [r[1], r[4], r[3], r[2]]); // ECharts: [open, close, low, high]
+  const candles = rows.map((r) => [
+    toChartY(r[1]),
+    toChartY(r[4]),
+    toChartY(r[3]),
+    toChartY(r[2]),
+  ]); // ECharts: [open, close, low, high]
   const closes = rows.map((r) => r[4]);
 
   const n = rows.length;
@@ -396,10 +458,11 @@ function renderModalChart() {
   const endIdx = n - 1;
   const latestClose = closes[n - 1];
   const isIndex = modalAsset.ticker.startsWith("^");
+  const yBounds = computeYAxisBounds(startIdx, endIdx);
 
   if (!chartInstance) {
     chartInstance = window.echarts.init(canvasEl);
-    chartInstance.on("dataZoom", scheduleCalloutsUpdate);
+    chartInstance.on("dataZoom", scheduleYAxisUpdate);
     chartInstance.on("finished", scheduleCalloutsUpdate);
     chartInstance.on("updateAxisPointer", (event) => {
       const idx = event?.axesInfo?.[0]?.value;
@@ -436,7 +499,7 @@ function renderModalChart() {
           fontSize: 11,
           formatter: (params) => {
             if (params.axisDimension === "y") {
-              return formatAxisPrice(params.value, isIndex);
+              return formatAxisPrice(fromChartY(params.value), isIndex);
             }
             return params.value;
           },
@@ -461,7 +524,8 @@ function renderModalChart() {
       type: "value",
       position: "right",
       scale: true,
-      boundaryGap: ["18%", "18%"],
+      min: yBounds.min,
+      max: yBounds.max,
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: {
@@ -471,7 +535,7 @@ function renderModalChart() {
       axisLabel: {
         color: "#8d8d8d",
         fontSize: 11,
-        formatter: (value) => formatAxisPrice(value, isIndex),
+        formatter: (value) => formatAxisPrice(fromChartY(value), isIndex),
       },
     },
     dataZoom: [
@@ -498,7 +562,7 @@ function renderModalChart() {
           symbol: ["none", "none"],
           silent: true,
           animation: false,
-          data: [{ yAxis: latestClose }],
+          data: [{ yAxis: toChartY(latestClose) }],
           lineStyle: {
             color: "#3182f6",
             type: "dotted",
@@ -531,6 +595,7 @@ async function openAssetModal(asset) {
   modalAsset = asset;
   modalInterval = "daily";
   modalBars = "252";
+  yZoomFactor = 1.0;
 
   document.querySelectorAll(".range-btn").forEach((btn) => {
     const active = btn.dataset.interval === "daily" && btn.dataset.bars === "252";
@@ -657,8 +722,63 @@ function bindControls() {
       btn.classList.add("active");
       modalInterval = btn.dataset.interval || "daily";
       modalBars = btn.dataset.bars || "252";
+      yZoomFactor = 1.0;
       renderModalChart();
     });
+  });
+
+  const scaleButtons = document.querySelectorAll(".scale-btn");
+  scaleButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      scaleButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      modalScaleMode = btn.dataset.scale === "log" ? "log" : "linear";
+      yZoomFactor = 1.0;
+      renderModalChart();
+    });
+  });
+
+  const yAxisZone = document.getElementById("yaxis-zoom-zone");
+  yAxisZone.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!chartInstance || !modalRows.length) return;
+      const factor = e.deltaY > 0 ? 1.12 : 0.89;
+      yZoomFactor = Math.max(0.15, Math.min(6.0, yZoomFactor * factor));
+      scheduleYAxisUpdate();
+    },
+    { passive: false }
+  );
+
+  let yDragActive = false;
+  let yDragStartY = 0;
+  let yDragStartFactor = 1.0;
+
+  yAxisZone.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    yDragActive = true;
+    yDragStartY = e.clientY;
+    yDragStartFactor = yZoomFactor;
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!yDragActive || !chartInstance || !modalRows.length) return;
+    const dy = e.clientY - yDragStartY;
+    const nextFactor = yDragStartFactor * Math.exp(dy * 0.008);
+    yZoomFactor = Math.max(0.15, Math.min(6.0, nextFactor));
+    scheduleYAxisUpdate();
+  });
+
+  window.addEventListener("mouseup", () => {
+    yDragActive = false;
+  });
+
+  yAxisZone.addEventListener("dblclick", () => {
+    yZoomFactor = 1.0;
+    scheduleYAxisUpdate();
   });
 
   window.addEventListener("resize", () => {

@@ -751,14 +751,28 @@ body.modal-open {
   flex-wrap: wrap;
 }
 
-.range-group {
+.toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.range-group,
+.scale-group {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.range-btn {
+.scale-group {
+  padding-left: 10px;
+  border-left: 1px solid var(--surface);
+}
+
+.range-btn,
+.scale-btn {
   appearance: none;
   background-color: var(--bg);
   color: var(--muted);
@@ -771,12 +785,14 @@ body.modal-open {
   transition: all 0.15s ease;
 }
 
-.range-btn:hover {
+.range-btn:hover,
+.scale-btn:hover {
   color: var(--text);
   border-color: var(--muted);
 }
 
-.range-btn.active {
+.range-btn.active,
+.scale-btn.active {
   background-color: var(--accent);
   color: var(--bg);
   border-color: var(--accent);
@@ -809,6 +825,21 @@ body.modal-open {
 .echart-canvas {
   width: 100%;
   height: 100%;
+}
+
+.yaxis-zoom-zone {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 30px;
+  width: 86px;
+  cursor: ns-resize;
+  z-index: 12;
+  user-select: none;
+}
+
+.yaxis-zoom-zone:hover {
+  background-color: rgba(195, 189, 255, 0.05);
 }
 
 .chart-callout {
