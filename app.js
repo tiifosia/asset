@@ -20,7 +20,21 @@ const PORTFOLIO_CHART_GRID = { left: 14, right: 102, top: 44, bottom: 30 };
 
 // Portfolio interactive trend chart state
 let pfChartInstance = null;
+let pfPieChartInstance = null;
 let pfSeriesMode = "total"; // "total" | "gate" | "toss" | "kis"
+let pfPieMode = "asset"; // "asset" | "account" | "category"
+const PIE_PALETTE = [
+  "#C3BDFF",
+  "#3182f6",
+  "#6366f1",
+  "#38bdf8",
+  "#a78bfa",
+  "#14b8a6",
+  "#f59e0b",
+  "#f04452",
+  "#ec4899",
+  "#8d8d8d",
+];
 let pfInterval = "daily"; // "daily" | "weekly" | "yearly"
 let pfScaleMode = "linear"; // "linear" | "log"
 let pfRows = [];
@@ -600,21 +614,30 @@ function updateHeaderForView() {
   const eyebrowEl = document.getElementById("header-eyebrow");
   const titleEl = document.getElementById("header-title");
   const subtitleEl = document.getElementById("header-subtitle");
+  const legendEl = document.getElementById("header-mdd-legend");
+  const footerEl = document.getElementById("site-footer");
   const toggleBtn = document.getElementById("nav-toggle-view-btn");
   const updatedEl = document.getElementById("updated-at");
 
+  eyebrowEl?.classList.toggle("hidden", isPortfolio);
+  subtitleEl?.classList.toggle("hidden", isPortfolio);
+  legendEl?.classList.toggle("hidden", isPortfolio);
+  footerEl?.classList.toggle("hidden", isPortfolio);
+
   if (isPortfolio) {
-    eyebrowEl.textContent = "PERSONAL ASSET TRACKER";
-    titleEl.textContent = "내 개인 자산 추이";
-    subtitleEl.textContent = "Gate.io (현물 · 선물) · 토스증권 · 한국투자증권 (중개형 ISA) 일별 통합 자산 추이 대시보드";
-    toggleBtn.textContent = "미국 시총 Top 100 & 지수 MDD 보기 →";
+    document.title = "MY ASSET";
+    eyebrowEl.textContent = "";
+    titleEl.textContent = "MY ASSET";
+    subtitleEl.textContent = "";
+    toggleBtn.textContent = "MDD check";
     updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
   } else {
+    document.title = "ASSET MDD TRACKER";
     eyebrowEl.textContent = "US MARKET DRAWDOWN DASHBOARD";
     titleEl.textContent = "ASSET MDD TRACKER";
     subtitleEl.textContent =
       "미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)";
-    toggleBtn.textContent = "← 내 개인 자산 추이 메인으로";
+    toggleBtn.textContent = "← MY ASSET";
     updatedEl.textContent = state.mddUpdatedAt ? formatUpdatedAt(state.mddUpdatedAt) : "-";
   }
 }
@@ -628,10 +651,13 @@ function switchMainView(nextView) {
       window.history.replaceState(null, "", hash);
     }
   }
-  if (state.activeView === "portfolio" && pfChartInstance) {
+  if (state.activeView === "portfolio") {
     requestAnimationFrame(() => {
-      pfChartInstance.resize();
-      pfViewport?.scheduleCalloutsUpdate();
+      if (pfChartInstance) {
+        pfChartInstance.resize();
+        pfViewport?.scheduleCalloutsUpdate();
+      }
+      pfPieChartInstance?.resize();
     });
   }
 }
@@ -643,7 +669,7 @@ function getPortfolioProviderLabel(statusObj) {
     return { text: "미연결", cls: "is-demo" };
   }
   if (statusObj.status === "connected") {
-    return { text: "읽기전용 동기화", cls: "is-live" };
+    return { text: "연결됨", cls: "is-live" };
   }
   return { text: "조회 오류", cls: "is-error" };
 }
@@ -677,6 +703,8 @@ function getPortfolioIntervalRows(history, interval) {
       const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
       const weekNo = Math.ceil(((dt - yearStart) / 86400000 + 1) / 7);
       key = `${dt.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+    } else if (interval === "monthly") {
+      key = r.date.slice(0, 7);
     } else if (interval === "yearly") {
       key = r.date.slice(0, 4);
     }
@@ -730,85 +758,35 @@ function updatePortfolioHoverBar(idx) {
 function renderPortfolioStatusBanner() {
   const data = state.portfolio;
   const banner = document.getElementById("portfolio-status-banner");
-  if (!data) {
-    banner.classList.add("hidden");
-    return;
-  }
-  banner.classList.remove("hidden");
-
-  const badge = document.getElementById("portfolio-status-badge");
-  const msgEl = document.getElementById("portfolio-status-message");
   const fxEl = document.getElementById("portfolio-fx-note");
+
+  banner?.classList.add("hidden");
+  if (!data) return;
 
   const fxStr = Number(data.usdkrw || 1400).toLocaleString("en-US", { maximumFractionDigits: 2 });
   fxEl.textContent = `적용 환율 ₩${fxStr} / $1 · 매일 06:30 KST 자동 갱신`;
-
-  const providers = data.providers || {};
-  const gateStatus = providers.gateio?.status;
-  const tossStatus = providers.toss?.status;
-  const kisStatus = providers.kis?.status;
-
-  badge.classList.remove("is-live", "is-demo", "is-error");
-  if (data.is_demo) {
-    badge.classList.add("is-demo");
-    badge.textContent = "샘플 데이터 표시 중";
-    msgEl.textContent =
-      "Gate.io · 토스증권 · 한국투자증권 ISA 읽기 전용 API 키를 연결하면 웹사이트 접속 없이도 매일 실제 자산 추이가 누적됩니다.";
-  } else if (gateStatus === "error" || tossStatus === "error" || kisStatus === "error") {
-    badge.classList.add("is-error");
-    badge.textContent = "일부 조회 점검 필요";
-    msgEl.textContent = [providers.gateio?.message, providers.toss?.message, providers.kis?.message]
-      .filter(Boolean)
-      .join(" · ");
-  } else {
-    badge.classList.add("is-live");
-    badge.textContent = "읽기 전용 실계좌 연동";
-    const connectedNames = [
-      gateStatus === "connected" ? "Gate.io" : null,
-      tossStatus === "connected" ? "토스증권" : null,
-      kisStatus === "connected" ? "한국투자증권 ISA" : null,
-    ].filter(Boolean);
-    const pendingSuffix = kisStatus === "not_configured" ? " (한국투자증권 ISA 키 등록 대기 중)" : "";
-    msgEl.textContent = `${connectedNames.join(" + ")} 실계좌 잔고가 매일 조회 전용으로 자동 기록되고 있습니다.${pendingSuffix}`;
-  }
 }
 
-function buildBrokerSummaryCardHtml({ title, share, dataObj, providerStatus, stockLabel, cashLabel, cur, alt }) {
-  const safe = dataObj || {};
-  const lbl = getPortfolioProviderLabel(providerStatus);
-  const totalMain = formatMoney(cur === "krw" ? safe.total_krw || 0 : safe.total_usd || 0, cur);
-  const totalAlt = formatMoney(alt === "krw" ? safe.total_krw || 0 : safe.total_usd || 0, alt);
-  const stocksVal = formatMoney(cur === "krw" ? safe.stocks_krw || 0 : safe.stocks_usd || 0, cur);
-  const cashVal = formatMoney(cur === "krw" ? safe.cash_krw || 0 : safe.cash_usd || 0, cur);
-  const pnlVal = formatSignedMoney(cur === "krw" ? safe.pnl_krw || 0 : safe.pnl_usd || 0, cur);
-
+function buildAccountSummaryCardHtml({ title, totalMain, subLineHtml, leftLabel, leftVal, rightLabel, rightVal }) {
   return `
     <article class="portfolio-card">
       <div>
         <div class="pf-card-head">
-          <div>
-            <div class="pf-card-title">${escapeHtml(title)}</div>
-            <div class="pf-card-sub">총자산 비중 ${share.toFixed(1)}% · 조회 전용</div>
-          </div>
-          <span class="provider-pill ${lbl.cls}">${escapeHtml(lbl.text)}</span>
+          <div class="pf-card-title">${escapeHtml(title)}</div>
         </div>
-
         <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
-        <div class="pf-sub-value tabular">${escapeHtml(totalAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(pnlVal)}</span></div>
+        <div class="pf-sub-value tabular">${subLineHtml}</div>
       </div>
 
       <div>
-        <div class="pf-weight-track" aria-hidden="true">
-          <div class="pf-weight-fill" style="width: ${share.toFixed(1)}%;"></div>
-        </div>
         <div class="pf-meta-grid tabular">
           <div>
-            <div class="pf-meta-label">${escapeHtml(stockLabel)}</div>
-            <div class="pf-meta-val">${escapeHtml(stocksVal)}</div>
+            <div class="pf-meta-label">${escapeHtml(leftLabel)}</div>
+            <div class="pf-meta-val">${escapeHtml(leftVal)}</div>
           </div>
           <div>
-            <div class="pf-meta-label">${escapeHtml(cashLabel)}</div>
-            <div class="pf-meta-val">${escapeHtml(cashVal)}</div>
+            <div class="pf-meta-label">${escapeHtml(rightLabel)}</div>
+            <div class="pf-meta-val">${escapeHtml(rightVal)}</div>
           </div>
         </div>
       </div>
@@ -831,138 +809,77 @@ function renderPortfolioSummaryCards() {
   const totalMain = formatMoney(cur === "krw" ? s.total_krw : s.total_usd, cur);
   const totalAlt = formatMoney(alt === "krw" ? s.total_krw : s.total_usd, alt);
   const dailyDelta = formatSignedMoney(cur === "krw" ? s.daily_change_krw : s.daily_change_usd, cur);
-  const athVal = formatMoney(cur === "krw" ? s.ath_krw : s.ath_usd, cur);
 
-  const totalNum = cur === "krw" ? Number(s.total_krw || 0) : Number(s.total_usd || 0);
-  const gateNum = cur === "krw" ? Number(s.gateio?.total_krw || 0) : Number(s.gateio?.total_usd || 0);
-  const tossNum = cur === "krw" ? Number(s.toss?.total_krw || 0) : Number(s.toss?.total_usd || 0);
-  const kisNum = cur === "krw" ? Number(s.kis?.total_krw || 0) : Number(s.kis?.total_usd || 0);
+  const gatePnlNum = cur === "krw" ? Number(s.gateio?.unrealized_pnl_krw || 0) : Number(s.gateio?.unrealized_pnl_usd || 0);
+  const tossPnlNum = cur === "krw" ? Number(s.toss?.pnl_krw || 0) : Number(s.toss?.pnl_usd || 0);
+  const kisPnlNum = cur === "krw" ? Number(s.kis?.pnl_krw || 0) : Number(s.kis?.pnl_usd || 0);
+  const totalPnlStr = formatSignedMoney(gatePnlNum + tossPnlNum + kisPnlNum, cur);
 
-  const gateShare = totalNum > 0 ? Math.max(0, Math.min(100, (gateNum / totalNum) * 100)) : 0;
-  const tossShare = totalNum > 0 ? Math.max(0, Math.min(100, (tossNum / totalNum) * 100)) : 0;
-  const kisShare = totalNum > 0 ? Math.max(0, Math.min(100, (kisNum / totalNum) * 100)) : 0;
-
-  const gateMain = formatMoney(gateNum, cur);
-  const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw : s.gateio?.total_usd, alt);
+  const gateMain = formatMoney(cur === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, cur);
+  const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, alt);
   const gateSpotRaw = cur === "krw" ? Number(s.gateio?.spot_krw || 0) : Number(s.gateio?.spot_usd || 0);
   const gateOtherRaw = cur === "krw" ? Number(s.gateio?.other_krw || 0) : Number(s.gateio?.other_usd || 0);
   const gateSpotLabel = gateOtherRaw > 0 ? "현물 · 기타(Earn)" : "현물 (Spot)";
   const gateSpotVal = formatMoney(gateSpotRaw + gateOtherRaw, cur);
-  const gateFut = formatMoney(cur === "krw" ? s.gateio?.futures_krw : s.gateio?.futures_usd, cur);
-  const gateUpnl = formatSignedMoney(
-    cur === "krw" ? s.gateio?.unrealized_pnl_krw : s.gateio?.unrealized_pnl_usd,
-    cur
-  );
+  const gateFut = formatMoney(cur === "krw" ? s.gateio?.futures_krw || 0 : s.gateio?.futures_usd || 0, cur);
 
-  const gateLbl = getPortfolioProviderLabel(data.providers?.gateio);
+  const toss = s.toss || {};
+  const tossMain = formatMoney(cur === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, cur);
+  const tossAlt = formatMoney(alt === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, alt);
+  const tossStocks = formatMoney(cur === "krw" ? toss.stocks_krw || 0 : toss.stocks_usd || 0, cur);
+  const tossCash = formatMoney(cur === "krw" ? toss.cash_krw || 0 : toss.cash_usd || 0, cur);
 
-  const ddObj = {
-    current_dd_abs: s.current_dd_abs,
-    max_dd_abs: s.max_dd_abs,
-    max_drawdown: s.max_drawdown,
-    mdd_peak_date: s.mdd_peak_date,
-    mdd_trough_date: s.mdd_trough_date,
-  };
+  const kis = s.kis || {};
+  const kisMain = formatMoney(cur === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, cur);
+  const kisAlt = formatMoney(alt === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, alt);
+  const kisStocks = formatMoney(cur === "krw" ? kis.stocks_krw || 0 : kis.stocks_usd || 0, cur);
+  const kisCash = formatMoney(cur === "krw" ? kis.cash_krw || 0 : kis.cash_usd || 0, cur);
 
-  grid.innerHTML = `
-    <article class="portfolio-card">
-      <div>
-        <div class="pf-card-head">
-          <div>
-            <div class="pf-card-title">전체 통합 총자산</div>
-            <div class="pf-card-sub">ATH ${escapeHtml(athVal)} (${escapeHtml(s.ath_date || "-")})</div>
-          </div>
-          <span class="provider-pill ${data.is_demo ? "is-demo" : "is-live"}">${data.is_demo ? "DEMO" : "TOTAL"}</span>
-        </div>
-
-        <div class="pf-big-value tabular">${escapeHtml(totalMain)}</div>
-        <div class="pf-sub-value tabular">${escapeHtml(totalAlt)} 환산</div>
-
-        <div class="pf-delta-row tabular">
-          <span>전일 대비 <strong class="pf-accent">${escapeHtml(dailyDelta)} (${formatSignedPct(s.daily_change_pct)})</strong></span>
-          <span>누적 <strong class="pf-primary">${formatSignedPct(s.total_return_pct)}</strong></span>
-        </div>
-      </div>
-
-      <div>
-        <div class="benchmark-gauge-area">
-          ${buildGaugeHtml(ddObj, true)}
-          <div class="gauge-value">
-            <span class="cur-dd-pct">${formatDrawdownPct(s.current_drawdown)}</span>
-            <span class="max-dd-pct">MDD ${formatDrawdownPct(s.max_drawdown)}</span>
-          </div>
-        </div>
-        <div class="benchmark-scale" aria-hidden="true">
-          <span>-100%</span>
-          <span>-50%</span>
-          <span>0%</span>
-        </div>
-      </div>
-    </article>
-
-    <article class="portfolio-card">
-      <div>
-        <div class="pf-card-head">
-          <div>
-            <div class="pf-card-title">Gate.io (해외 거래소)</div>
-            <div class="pf-card-sub">총자산 비중 ${gateShare.toFixed(1)}% · 읽기 전용</div>
-          </div>
-          <span class="provider-pill ${gateLbl.cls}">${escapeHtml(gateLbl.text)}</span>
-        </div>
-
-        <div class="pf-big-value tabular">${escapeHtml(gateMain)}</div>
-        <div class="pf-sub-value tabular">${escapeHtml(gateAlt)} · 미실현 손익 <span class="pf-accent">${escapeHtml(gateUpnl)}</span></div>
-      </div>
-
-      <div>
-        <div class="pf-weight-track" aria-hidden="true">
-          <div class="pf-weight-fill" style="width: ${gateShare.toFixed(1)}%;"></div>
-        </div>
-        <div class="pf-meta-grid tabular">
-          <div>
-            <div class="pf-meta-label">${gateSpotLabel}</div>
-            <div class="pf-meta-val">${escapeHtml(gateSpotVal)}</div>
-          </div>
-          <div>
-            <div class="pf-meta-label">선물 (Futures)</div>
-            <div class="pf-meta-val">${escapeHtml(gateFut)}</div>
-          </div>
-        </div>
-      </div>
-    </article>
-
-    ${buildBrokerSummaryCardHtml({
+  grid.innerHTML = [
+    buildAccountSummaryCardHtml({
+      title: "TOTAL",
+      totalMain,
+      subLineHtml: `${escapeHtml(totalAlt)} 환산`,
+      leftLabel: "전일 대비",
+      leftVal: `${dailyDelta} (${formatSignedPct(s.daily_change_pct)})`,
+      rightLabel: "총 평가손익",
+      rightVal: totalPnlStr,
+    }),
+    buildAccountSummaryCardHtml({
+      title: "Gate.io (해외 거래소)",
+      totalMain: gateMain,
+      subLineHtml: `${escapeHtml(gateAlt)} · 미실현 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(gatePnlNum, cur))}</span>`,
+      leftLabel: gateSpotLabel,
+      leftVal: gateSpotVal,
+      rightLabel: "선물 (Futures)",
+      rightVal: gateFut,
+    }),
+    buildAccountSummaryCardHtml({
       title: "토스증권 (국내 · 미국 주식)",
-      share: tossShare,
-      dataObj: s.toss,
-      providerStatus: data.providers?.toss,
-      stockLabel: "보유 주식 평가액",
-      cashLabel: "예수금 (KRW + USD)",
-      cur,
-      alt,
-    })}
-
-    ${buildBrokerSummaryCardHtml({
+      totalMain: tossMain,
+      subLineHtml: `${escapeHtml(tossAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(tossPnlNum, cur))}</span>`,
+      leftLabel: "보유 주식 평가액",
+      leftVal: tossStocks,
+      rightLabel: "예수금 (KRW + USD)",
+      rightVal: tossCash,
+    }),
+    buildAccountSummaryCardHtml({
       title: "한국투자증권 (중개형 ISA)",
-      share: kisShare,
-      dataObj: s.kis,
-      providerStatus: data.providers?.kis,
-      stockLabel: "ISA 보유 종목",
-      cashLabel: "ISA 예수금 (KRW)",
-      cur,
-      alt,
-    })}
-  `;
+      totalMain: kisMain,
+      subLineHtml: `${escapeHtml(kisAlt)} · 평가 손익 <span class="pf-accent">${escapeHtml(formatSignedMoney(kisPnlNum, cur))}</span>`,
+      leftLabel: "ISA 보유 종목",
+      leftVal: kisStocks,
+      rightLabel: "ISA 예수금 (KRW)",
+      rightVal: kisCash,
+    }),
+  ].join("");
 }
 
 function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessage, getSubText) {
   const badgeEl = document.getElementById(badgeId);
   const listEl = document.getElementById(listId);
-  if (!badgeEl || !listEl) return;
-
-  const lbl = getPortfolioProviderLabel(providerStatus);
-  badgeEl.className = `provider-pill ${lbl.cls}`;
-  badgeEl.textContent = lbl.text;
+  if (!listEl) return;
+  badgeEl?.classList.add("hidden");
 
   const rows = Array.isArray(items) ? items : [];
   if (!rows.length) {
@@ -1118,6 +1035,7 @@ function renderPortfolioChart() {
   let visibleBars = n;
   if (pfInterval === "daily") visibleBars = Math.min(n, 120);
   else if (pfInterval === "weekly") visibleBars = Math.min(n, 52);
+  else if (pfInterval === "monthly") visibleBars = Math.min(n, 36);
 
   const rightBuffer = Math.max(4, Math.round(visibleBars * 0.1));
   const leftBuffer = pfInterval === "yearly" ? Math.max(2, Math.round(visibleBars * 0.1)) : 0;
@@ -1263,10 +1181,225 @@ function renderPortfolioChart() {
   pfViewport.scheduleCalloutsUpdate();
 }
 
+function getAllocationVal(item, cur) {
+  return cur === "krw" ? Number(item?.value_krw || 0) : Number(item?.value_usd || 0);
+}
+
+function getSliceDisplayName(item) {
+  const sym = String(item?.symbol || "-");
+  if (sym === "KRW" || sym === "USD" || /^[0-9][0-9A-Z]{5}$/.test(sym)) {
+    return String(item?.name || sym);
+  }
+  return sym;
+}
+
+function buildPortfolioAllocationData() {
+  const data = state.portfolio;
+  if (!data) return [];
+  const cur = state.currency;
+  const holdings = data.holdings || {};
+  const summary = data.summary || {};
+
+  let items = [];
+
+  if (pfPieMode === "account") {
+    items = [
+      {
+        name: "Gate.io",
+        sub: "해외 거래소",
+        val: cur === "krw" ? Number(summary.gateio?.total_krw || 0) : Number(summary.gateio?.total_usd || 0),
+      },
+      {
+        name: "토스증권",
+        sub: "국내 · 미국 주식",
+        val: cur === "krw" ? Number(summary.toss?.total_krw || 0) : Number(summary.toss?.total_usd || 0),
+      },
+      {
+        name: "한국투자증권 ISA",
+        sub: "중개형 ISA",
+        val: cur === "krw" ? Number(summary.kis?.total_krw || 0) : Number(summary.kis?.total_usd || 0),
+      },
+    ];
+  } else if (pfPieMode === "category") {
+    const gateItems = Array.isArray(holdings.gateio) ? holdings.gateio : [];
+    const tossItems = Array.isArray(holdings.toss) ? holdings.toss : [];
+    const kisItems = Array.isArray(holdings.kis) ? holdings.kis : [];
+
+    const sumBy = (arr, pred) =>
+      arr.reduce((acc, row) => (pred(row) ? acc + getAllocationVal(row, cur) : acc), 0);
+
+    const futuresVal = sumBy(gateItems, (r) => String(r.category || "").includes("선물"));
+    const usStockVal = sumBy(tossItems, (r) => r.category === "미국주식");
+    const krStockVal =
+      sumBy(tossItems, (r) => r.category === "국내주식") +
+      sumBy(kisItems, (r) => String(r.category || "") !== "예수금");
+    const spotEarnVal =
+      sumBy(gateItems, (r) => r.category === "현물") +
+      (cur === "krw" ? Number(summary.gateio?.other_krw || 0) : Number(summary.gateio?.other_usd || 0));
+    const cashVal =
+      sumBy(tossItems, (r) => r.category === "예수금") +
+      sumBy(kisItems, (r) => r.category === "예수금");
+
+    items = [
+      { name: "선물 (Gate.io)", sub: "Perpetual Futures", val: futuresVal },
+      { name: "미국주식 (토스증권)", sub: "해외 상장 주식 · ETF", val: usStockVal },
+      { name: "국내주식·ETF (토스·한투 ISA)", sub: "국내 상장 ETF · 주식", val: krStockVal },
+      { name: "코인 현물·Earn (Gate.io)", sub: "Spot · 금융/Earn", val: spotEarnVal },
+      { name: "예수금 (KRW·USD)", sub: "현금성 잔고", val: cashVal },
+    ];
+  } else {
+    const allRows = [
+      ...(Array.isArray(holdings.gateio) ? holdings.gateio : []),
+      ...(Array.isArray(holdings.toss) ? holdings.toss : []),
+      ...(Array.isArray(holdings.kis) ? holdings.kis : []),
+    ];
+    for (const row of allRows) {
+      const val = getAllocationVal(row, cur);
+      if (val > 0) {
+        items.push({
+          name: getSliceDisplayName(row),
+          sub: `${row.exchange || ""} · ${row.category || ""}`,
+          val,
+        });
+      }
+    }
+    const gateOtherVal =
+      cur === "krw" ? Number(summary.gateio?.other_krw || 0) : Number(summary.gateio?.other_usd || 0);
+    if (gateOtherVal > 0) {
+      items.push({
+        name: "Gate.io Earn/금융",
+        sub: "Gate.io · 기타",
+        val: gateOtherVal,
+      });
+    }
+
+    const totalRaw = items.reduce((acc, it) => acc + it.val, 0);
+    if (totalRaw > 0) {
+      const major = [];
+      let tinySum = 0;
+      let tinyCount = 0;
+      for (const it of items) {
+        if (it.val / totalRaw < 0.003) {
+          tinySum += it.val;
+          tinyCount += 1;
+        } else {
+          major.push(it);
+        }
+      }
+      if (tinySum > 0) {
+        major.push({
+          name: "기타 소액 잔고",
+          sub: `${tinyCount}개 소액 항목`,
+          val: tinySum,
+        });
+      }
+      items = major;
+    }
+  }
+
+  return items
+    .filter((it) => Number.isFinite(it.val) && it.val > 0)
+    .sort((a, b) => b.val - a.val);
+}
+
+function renderPortfolioAllocationPie() {
+  const pieCanvasEl = document.getElementById("portfolio-pie-canvas");
+  const listEl = document.getElementById("portfolio-allocation-list");
+  if (!pieCanvasEl || !listEl) return;
+
+  const slices = buildPortfolioAllocationData();
+  const cur = state.currency;
+
+  if (!slices.length) {
+    if (pfPieChartInstance) pfPieChartInstance.clear();
+    listEl.innerHTML = `<div class="empty-state">표시할 자산 비중 데이터가 없습니다.</div>`;
+    return;
+  }
+
+  const total = slices.reduce((acc, s) => acc + s.val, 0);
+  listEl.innerHTML = slices
+    .map((item, idx) => {
+      const color = PIE_PALETTE[idx % PIE_PALETTE.length];
+      const pct = total > 0 ? (item.val / total) * 100 : 0;
+      return `
+        <div class="allocation-row">
+          <div class="allocation-label">
+            <span class="allocation-dot" style="background-color: ${color};"></span>
+            <div>
+              <div class="allocation-name">${escapeHtml(item.name)}</div>
+              <div class="allocation-sub">${escapeHtml(item.sub)}</div>
+            </div>
+          </div>
+          <div class="allocation-val tabular">
+            <div class="allocation-money">${escapeHtml(formatMoney(item.val, cur))}</div>
+            <div class="allocation-pct">${pct.toFixed(1)}%</div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  if (typeof window.echarts === "undefined") return;
+  if (!pfPieChartInstance) {
+    pfPieChartInstance = window.echarts.init(pieCanvasEl);
+  }
+
+  const showOutsideLabels = pieCanvasEl.clientWidth >= 300;
+  pfPieChartInstance.setOption(
+    {
+      animation: true,
+      animationDuration: 320,
+      backgroundColor: "transparent",
+      tooltip: {
+        trigger: "item",
+        backgroundColor: "#111111",
+        borderColor: "#333333",
+        textStyle: { color: "#F5F5F5", fontSize: 12 },
+        formatter: (params) =>
+          `<strong>${escapeHtml(params.name)}</strong><br/>${escapeHtml(formatMoney(params.value, cur))} (${params.percent.toFixed(1)}%)`,
+      },
+      series: [
+        {
+          name: "자산별 비중",
+          type: "pie",
+          radius: ["42%", "74%"],
+          center: ["50%", "50%"],
+          avoidLabelOverlap: true,
+          itemStyle: {
+            borderColor: "#111111",
+            borderWidth: 2,
+          },
+          label: {
+            show: showOutsideLabels,
+            color: "#F5F5F5",
+            fontSize: 11,
+            lineHeight: 15,
+            formatter: "{b}\n{d}%",
+          },
+          labelLine: {
+            show: showOutsideLabels,
+            length: 10,
+            length2: 8,
+            lineStyle: { color: "#8d8d8d" },
+          },
+          data: slices.map((item, idx) => ({
+            name: item.name,
+            value: item.val,
+            itemStyle: { color: PIE_PALETTE[idx % PIE_PALETTE.length] },
+          })),
+        },
+      ],
+    },
+    true
+  );
+  pfPieChartInstance.resize();
+}
+
 function renderPortfolioDashboard() {
   renderPortfolioStatusBanner();
   renderPortfolioSummaryCards();
   renderPortfolioHoldings();
+  renderPortfolioAllocationPie();
   renderPortfolioHistoryLog();
   renderPortfolioChart();
   renderApiGuideStatus();
@@ -1759,7 +1892,7 @@ function bindControls() {
     getTotalCats: () => pfTotalCats,
     getPadLeft: () => pfPadLeft,
     getRowsLength: () => pfRows.length,
-    getMinZoomSpan: () => (pfInterval === "yearly" ? 4 : 7),
+    getMinZoomSpan: () => (pfInterval === "yearly" ? 4 : pfInterval === "monthly" ? 6 : 7),
     getGrid: () => PORTFOLIO_CHART_GRID,
     isLogScale: () => pfScaleMode === "log",
     getRowHighLowY: (i) => [
@@ -1857,6 +1990,16 @@ function bindControls() {
     });
   });
 
+  // Portfolio Allocation Pie Filter Buttons
+  document.querySelectorAll(".pf-pie-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".pf-pie-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      pfPieMode = btn.dataset.pieMode || "asset";
+      renderPortfolioAllocationPie();
+    });
+  });
+
   // API Guide Modal
   document.getElementById("open-api-guide-btn").addEventListener("click", openApiGuideModal);
   document.getElementById("banner-open-guide-btn").addEventListener("click", openApiGuideModal);
@@ -1933,9 +2076,12 @@ function bindControls() {
   });
 
   window.addEventListener("resize", () => {
-    if (pfChartInstance && state.activeView === "portfolio") {
-      pfChartInstance.resize();
-      pfViewport.scheduleCalloutsUpdate();
+    if (state.activeView === "portfolio") {
+      if (pfChartInstance) {
+        pfChartInstance.resize();
+        pfViewport.scheduleCalloutsUpdate();
+      }
+      pfPieChartInstance?.resize();
     }
     if (modalChartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
       modalChartInstance.resize();
