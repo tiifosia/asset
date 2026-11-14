@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-14 16:05 UTC",
+  "updated_at": "2026-11-14 16:26 UTC",
   "is_demo": false,
   "usdkrw": 1336.18,
   "providers": {
@@ -14,16 +14,16 @@
       "message": "토스증권 조회 전용 Open API 정상 동기화"
     },
     "kis": {
-      "status": "not_configured",
+      "status": "connected",
       "mode": "read_only",
-      "message": "KIS_APP_KEY / KIS_APP_SECRET / KIS_ACCOUNT_NO 미설정"
+      "message": "한국투자증권 중개형 ISA 조회 전용 Open API 정상 동기화"
     }
   },
   "summary": {
-    "total_krw": 13668845,
-    "total_usd": 10229.79,
-    "ath_krw": 13668845,
-    "ath_usd": 10229.79,
+    "total_krw": 14334525,
+    "total_usd": 10727.99,
+    "ath_krw": 14334525,
+    "ath_usd": 10727.99,
     "ath_date": "2026-11-15",
     "current_drawdown": 0.0,
     "current_dd_abs": 0.0,
@@ -36,23 +36,23 @@
     "daily_change_pct": 0.0,
     "total_return_pct": 0.0,
     "gateio": {
-      "total_usd": 6667.0,
-      "total_krw": 8908315,
-      "spot_usd": 657.57,
-      "spot_krw": 878637,
+      "total_usd": 6663.06,
+      "total_krw": 8903045,
+      "spot_usd": 655.67,
+      "spot_krw": 876094,
       "futures_usd": 4853.55,
       "futures_krw": 6485217,
       "margin_usd": 0.0,
-      "other_usd": 1155.88,
-      "other_krw": 1544461,
+      "other_usd": 1153.84,
+      "other_krw": 1541735,
       "details_breakdown": {
         "event_contract": 0.01,
-        "finance": 1155.87,
+        "finance": 1153.83,
         "futures": 4853.55,
-        "spot": 657.57
+        "spot": 655.67
       },
-      "unrealized_pnl_usd": -734.89,
-      "unrealized_pnl_krw": -981942
+      "unrealized_pnl_usd": -760.36,
+      "unrealized_pnl_krw": -1015980
     },
     "toss": {
       "total_krw": 4760530,
@@ -65,14 +65,14 @@
       "pnl_usd": -1064.15
     },
     "kis": {
-      "total_krw": 0,
-      "total_usd": 0.0,
-      "stocks_krw": 0,
-      "stocks_usd": 0.0,
+      "total_krw": 670950,
+      "total_usd": 502.14,
+      "stocks_krw": 670950,
+      "stocks_usd": 502.14,
       "cash_krw": 0,
       "cash_usd": 0.0,
-      "pnl_krw": 0,
-      "pnl_usd": 0.0
+      "pnl_krw": -155221,
+      "pnl_usd": -116.17
     }
   },
   "holdings": {
@@ -83,14 +83,14 @@
         "symbol": "NAS100_USDT",
         "name": "NAS100/USDT Perpetual",
         "quantity": 7841.0,
-        "price_usd": 27687.52,
+        "price_usd": 27660.02,
         "entry_price_usd": 28618.509694,
         "value_usd": 4508.35,
         "value_krw": 6023961,
-        "notional_usd": 21709.78,
-        "pnl_usd": -729.99,
-        "pnl_krw": -975397,
-        "pnl_pct": -16.19
+        "notional_usd": 21688.22,
+        "pnl_usd": -751.55,
+        "pnl_krw": -1004208,
+        "pnl_pct": -16.67
       },
       {
         "exchange": "Gate.io",
@@ -98,14 +98,14 @@
         "symbol": "SPX500_USDT",
         "name": "SPX500/USDT Perpetual",
         "quantity": 221.0,
-        "price_usd": 7533.32,
+        "price_usd": 7515.62,
         "entry_price_usd": 7555.485068,
         "value_usd": 335.2,
         "value_krw": 447894,
-        "notional_usd": 1664.86,
-        "pnl_usd": -4.9,
-        "pnl_krw": -6545,
-        "pnl_pct": -1.46
+        "notional_usd": 1660.95,
+        "pnl_usd": -8.81,
+        "pnl_krw": -11772,
+        "pnl_pct": -2.63
       },
       {
         "exchange": "Gate.io",
@@ -113,9 +113,9 @@
         "symbol": "GTBTC",
         "name": "GTBTC (Spot)",
         "quantity": 0.00995823,
-        "price_usd": 65948.5,
-        "value_usd": 656.73,
-        "value_krw": 877510,
+        "price_usd": 65757.7,
+        "value_usd": 654.83,
+        "value_krw": 874971,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -137,9 +137,9 @@
         "symbol": "GT",
         "name": "GT (Spot)",
         "quantity": 0.04875776,
-        "price_usd": 8.13,
-        "value_usd": 0.4,
-        "value_krw": 530,
+        "price_usd": 8.07,
+        "value_usd": 0.39,
+        "value_krw": 526,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -149,7 +149,7 @@
         "symbol": "BTC",
         "name": "BTC (Spot)",
         "quantity": 7.5e-07,
-        "price_usd": 65611.3,
+        "price_usd": 65488.4,
         "value_usd": 0.05,
         "value_krw": 66,
         "pnl_usd": null,
@@ -261,21 +261,37 @@
         "pnl_pct": null
       }
     ],
-    "kis": []
+    "kis": [
+      {
+        "exchange": "한국투자증권 ISA",
+        "category": "ISA 국내주식/ETF",
+        "symbol": "426030",
+        "name": "TIME 미국나스닥100액티브",
+        "currency": "KRW",
+        "quantity": 18.0,
+        "price_native": 37275.0,
+        "avg_price_native": 45898.39,
+        "value_krw": 670950,
+        "value_usd": 502.14,
+        "pnl_krw": -155221,
+        "pnl_usd": -116.17,
+        "pnl_pct": -18.78
+      }
+    ]
   },
   "history": [
     {
       "date": "2026-11-15",
-      "total_krw": 13668845,
-      "total_usd": 10229.79,
-      "gate_krw": 8908315,
-      "gate_usd": 6667.0,
-      "gate_spot_usd": 657.57,
+      "total_krw": 14334525,
+      "total_usd": 10727.99,
+      "gate_krw": 8903045,
+      "gate_usd": 6663.06,
+      "gate_spot_usd": 655.67,
       "gate_futures_usd": 4853.55,
       "toss_krw": 4760530,
       "toss_usd": 3562.79,
-      "kis_krw": 0,
-      "kis_usd": 0.0,
+      "kis_krw": 670950,
+      "kis_usd": 502.14,
       "usdkrw": 1336.18
     }
   ]
