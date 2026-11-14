@@ -14,7 +14,6 @@ let modalHistory = null;
 let modalInterval = "daily";
 let modalBars = "252";
 let modalRows = [];
-let modalMAs = null;
 let calloutRafId = null;
 
 function escapeHtml(value) {
@@ -252,22 +251,7 @@ function renderStocks() {
     .join("");
 }
 
-/* ---------- Modal & Candlestick + MA Chart ---------- */
-
-function computeMA(closes, period) {
-  const out = new Array(closes.length).fill(null);
-  let sum = 0;
-  for (let i = 0; i < closes.length; i += 1) {
-    sum += closes[i];
-    if (i >= period) {
-      sum -= closes[i - period];
-    }
-    if (i >= period - 1) {
-      out[i] = Number((sum / period).toFixed(2));
-    }
-  }
-  return out;
-}
+/* ---------- Modal & Candlestick Chart ---------- */
 
 function updateOhlcBar(index) {
   const barEl = document.getElementById("chart-ohlc-bar");
@@ -278,10 +262,6 @@ function updateOhlcBar(index) {
   const [date, open, high, low, close] = modalRows[index];
   const isIndex = Boolean(modalAsset && modalAsset.ticker.startsWith("^"));
   const fmt = (v) => (v == null ? "-" : formatPrice(v, isIndex));
-  const ma5 = modalMAs?.ma5[index];
-  const ma20 = modalMAs?.ma20[index];
-  const ma60 = modalMAs?.ma60[index];
-  const ma120 = modalMAs?.ma120[index];
 
   barEl.innerHTML = `
     <span class="ohlc-date">${escapeHtml(date)}</span>
@@ -289,10 +269,6 @@ function updateOhlcBar(index) {
     <span>고 ${fmt(high)}</span>
     <span>저 ${fmt(low)}</span>
     <span>종 ${fmt(close)}</span>
-    <span class="ma-pill-5">MA5 ${fmt(ma5)}</span>
-    <span class="ma-pill-20">MA20 ${fmt(ma20)}</span>
-    <span class="ma-pill-60">MA60 ${fmt(ma60)}</span>
-    <span class="ma-pill-120">MA120 ${fmt(ma120)}</span>
   `;
 }
 
@@ -414,13 +390,6 @@ function renderModalChart() {
   const dates = rows.map((r) => r[0]);
   const candles = rows.map((r) => [r[1], r[4], r[3], r[2]]); // ECharts: [open, close, low, high]
   const closes = rows.map((r) => r[4]);
-
-  modalMAs = {
-    ma5: computeMA(closes, 5),
-    ma20: computeMA(closes, 20),
-    ma60: computeMA(closes, 60),
-    ma120: computeMA(closes, 120),
-  };
 
   const n = rows.length;
   const startIdx = modalBars === "all" ? 0 : Math.max(0, n - Number(modalBars));
@@ -547,42 +516,6 @@ function renderModalChart() {
             borderRadius: 4,
           },
         },
-      },
-      {
-        name: "MA5",
-        type: "line",
-        data: modalMAs.ma5,
-        smooth: false,
-        showSymbol: false,
-        silent: true,
-        lineStyle: { width: 1.2, color: "#f59e0b" },
-      },
-      {
-        name: "MA20",
-        type: "line",
-        data: modalMAs.ma20,
-        smooth: false,
-        showSymbol: false,
-        silent: true,
-        lineStyle: { width: 1.2, color: "#22c55e" },
-      },
-      {
-        name: "MA60",
-        type: "line",
-        data: modalMAs.ma60,
-        smooth: false,
-        showSymbol: false,
-        silent: true,
-        lineStyle: { width: 1.2, color: "#3b82f6" },
-      },
-      {
-        name: "MA120",
-        type: "line",
-        data: modalMAs.ma120,
-        smooth: false,
-        showSymbol: false,
-        silent: true,
-        lineStyle: { width: 1.2, color: "#a855f7" },
       },
     ],
   };

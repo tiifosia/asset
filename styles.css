@@ -796,11 +796,6 @@ body.modal-open {
   font-weight: 600;
 }
 
-.ma-pill-5 { color: #f59e0b; }
-.ma-pill-20 { color: #22c55e; }
-.ma-pill-60 { color: #3b82f6; }
-.ma-pill-120 { color: #a855f7; }
-
 .chart-stage {
   position: relative;
   width: 100%;
