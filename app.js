@@ -988,7 +988,7 @@ function renderPortfolioHistoryLog() {
     return;
   }
 
-  const recent = history.slice(-60).reverse();
+  const recent = history.slice().reverse();
   listEl.innerHTML = recent
     .map((row, revIdx) => {
       const origIdx = history.length - 1 - revIdx;

@@ -217,6 +217,8 @@ def fetch_gateio_readonly(
     api_secret: str,
     usdkrw: float,
     proxies: dict[str, str] | None = None,
+    prev_gate: dict[str, Any] | None = None,
+    prev_gate_holdings: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Fetch combined Spot & Futures balances and positions strictly read-only."""
     total_payload = _gate_get("/wallet/total_balance", "currency=USDT", api_key, api_secret, proxies)
@@ -264,8 +266,10 @@ def fetch_gateio_readonly(
                     "pnl_pct": None,
                 }
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"[warn] Gate.io spot accounts fetch failed: {exc}")
+        if spot_usd > 0 and prev_gate_holdings:
+            holdings.extend(h for h in prev_gate_holdings if h.get("category") == "현물")
 
     # 2) USDT Perpetual Futures positions (GET /api/v4/futures/usdt/positions)
     unrealized_pnl_usd = 0.0
@@ -303,8 +307,12 @@ def fetch_gateio_readonly(
                     "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
                 }
             )
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"[warn] Gate.io futures positions fetch failed: {exc}")
+        if (futures_usd + delivery_usd) > 0:
+            unrealized_pnl_usd = _to_float((prev_gate or {}).get("unrealized_pnl_usd"), 0.0)
+            if prev_gate_holdings:
+                holdings.extend(h for h in prev_gate_holdings if "선물" in str(h.get("category") or ""))
 
     # Sort holdings: Futures positions first, then descending by USD value
     holdings.sort(key=lambda h: (0 if "선물" in h["category"] else 1, -_to_float(h.get("value_usd"), 0.0)))
@@ -350,7 +358,7 @@ def _toss_issue_token(
         resp.raise_for_status()
         return resp.json()
 
-    payload = _run_with_retries(_do, attempts=2, delay=1.2)
+    payload = _run_with_retries(_do, attempts=3, delay=2.0)
     token = payload.get("access_token") or (payload.get("result") or {}).get("access_token")
     if not token:
         raise RuntimeError("Toss Open API did not return an access_token")
@@ -375,7 +383,7 @@ def _toss_get(
         resp.raise_for_status()
         return resp.json()
 
-    return _run_with_retries(_do, attempts=2, delay=1.2)
+    return _run_with_retries(_do, attempts=3, delay=2.0)
 
 
 def _extract_list(payload: Any, keys: tuple[str, ...]) -> list[dict[str, Any]]:
@@ -413,6 +421,7 @@ def fetch_toss_readonly(
     client_secret: str,
     usdkrw: float,
     proxies: dict[str, str] | None = None,
+    prev_toss: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Fetch Toss Securities accounts, holdings, and cash buying power strictly read-only."""
     token = _toss_issue_token(client_id, client_secret, proxies)
@@ -425,6 +434,9 @@ def fetch_toss_readonly(
     stock_usd_direct = 0.0
     cash_krw = 0.0
     cash_usd = 0.0
+    krw_bp_ok = False
+    usd_bp_ok = False
+    cash_fallback = False
     pnl_krw_total = 0.0
     holdings: list[dict[str, Any]] = []
 
@@ -550,14 +562,21 @@ def fetch_toss_readonly(
         try:
             bp_krw_payload = _toss_get("/api/v1/buying-power?currency=KRW", token, seq, proxies)
             cash_krw += round(_extract_buying_power_amount(bp_krw_payload))
+            krw_bp_ok = True
         except Exception as exc:
             print(f"[warn] Toss KRW buying-power failed for account {seq}: {exc}")
 
         try:
             bp_usd_payload = _toss_get("/api/v1/buying-power?currency=USD", token, seq, proxies)
             cash_usd += round(_extract_buying_power_amount(bp_usd_payload), 2)
+            usd_bp_ok = True
         except Exception as exc:
             print(f"[warn] Toss USD buying-power failed for account {seq}: {exc}")
+
+    if not krw_bp_ok and not usd_bp_ok and prev_toss:
+        cash_krw = round(_to_float(prev_toss.get("cash_krw"), 0.0))
+        cash_usd = 0.0
+        cash_fallback = cash_krw > 0
 
     if cash_krw > 0:
         holdings.append(
@@ -565,7 +584,7 @@ def fetch_toss_readonly(
                 "exchange": "토스증권",
                 "category": "예수금",
                 "symbol": "KRW",
-                "name": "원화 예수금",
+                "name": "원화·외화 예수금 (이전 값 유지)" if cash_fallback else "원화 예수금",
                 "currency": "KRW",
                 "quantity": cash_krw,
                 "price_native": 1.0,
@@ -658,10 +677,20 @@ def _kis_issue_token(
             timeout=20,
             proxies=proxy_cfg,
         )
+        if "EGW00133" in resp.text:
+            raise RuntimeError("EGW00133_RATE_LIMIT")
         resp.raise_for_status()
         return resp.json()
 
-    payload = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=2, delay=2.0)
+    try:
+        payload = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=2, delay=2.0)
+    except RuntimeError as exc:
+        if "EGW00133_RATE_LIMIT" not in str(exc):
+            raise
+        print("[info] KIS token endpoint hit 1-minute cooldown (EGW00133); waiting 62s before retry...")
+        time.sleep(62)
+        payload = _call_direct_then_proxy(_do, proxies=proxies, direct_attempts=2, delay=2.0)
+
     token = payload.get("access_token") if isinstance(payload, dict) else None
     if not token:
         raise RuntimeError("KIS Open API did not return an access_token")
@@ -1129,7 +1158,14 @@ def main() -> None:
     # 1) Gate.io Read-Only Fetch (valued in KRW via Upbit KRW-USDT market price)
     if has_gate_creds:
         try:
-            gate_data = fetch_gateio_readonly(gate_key, gate_secret, usdt_krw, proxies)
+            gate_data = fetch_gateio_readonly(
+                gate_key,
+                gate_secret,
+                usdt_krw,
+                proxies,
+                prev_gate=prev_summary.get("gateio"),
+                prev_gate_holdings=prev_holdings.get("gateio"),
+            )
             providers_status["gateio"] = {
                 "status": "connected",
                 "mode": "read_only",
@@ -1174,7 +1210,13 @@ def main() -> None:
     # 2) Toss Securities Read-Only Fetch
     if has_toss_creds:
         try:
-            toss_data = fetch_toss_readonly(toss_id, toss_secret, usdkrw, proxies)
+            toss_data = fetch_toss_readonly(
+                toss_id,
+                toss_secret,
+                usdkrw,
+                proxies,
+                prev_toss=prev_summary.get("toss"),
+            )
             providers_status["toss"] = {
                 "status": "connected",
                 "mode": "read_only",
@@ -1282,20 +1324,25 @@ def main() -> None:
         "date": today_str,
         "total_krw": total_krw,
         "total_usd": total_usd,
-        "gate_krw": gate_data["total_krw"],
-        "gate_usd": gate_data["total_usd"],
-        "gate_spot_usd": gate_data["spot_usd"],
-        "gate_futures_usd": gate_data["futures_usd"],
-        "toss_krw": toss_data["total_krw"],
-        "toss_usd": toss_data["total_usd"],
-        "kis_krw": kis_data["total_krw"],
-        "kis_usd": kis_data["total_usd"],
+        "gate_krw": round(_to_float(gate_data.get("total_krw"), 0.0)),
+        "gate_usd": round(_to_float(gate_data.get("total_usd"), 0.0), 2),
+        "gate_spot_usd": round(_to_float(gate_data.get("spot_usd"), 0.0), 2),
+        "gate_futures_usd": round(_to_float(gate_data.get("futures_usd"), 0.0), 2),
+        "toss_krw": round(_to_float(toss_data.get("total_krw"), 0.0)),
+        "toss_usd": round(_to_float(toss_data.get("total_usd"), 0.0), 2),
+        "kis_krw": round(_to_float(kis_data.get("total_krw"), 0.0)),
+        "kis_usd": round(_to_float(kis_data.get("total_usd"), 0.0), 2),
         "usdkrw": usdkrw,
         "usdt_krw": usdt_krw,
     }
 
-    by_date = {row["date"]: row for row in history if isinstance(row, dict) and row.get("date")}
-    by_date[today_str] = today_entry
+    by_date = {
+        str(row["date"]): row
+        for row in history
+        if isinstance(row, dict) and row.get("date") and _to_float(row.get("total_krw"), 0.0) > 0
+    }
+    if total_krw > 0:
+        by_date[today_str] = today_entry
     sorted_history = [by_date[d] for d in sorted(by_date.keys())]
 
     metrics = _compute_history_metrics(sorted_history)
@@ -1323,7 +1370,9 @@ def main() -> None:
         "history": sorted_history,
     }
 
-    PORTFOLIO_PATH.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path = PORTFOLIO_PATH.with_suffix(".json.tmp")
+    tmp_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp_path.replace(PORTFOLIO_PATH)
     print(f"Saved real portfolio snapshot for {today_str} -> {PORTFOLIO_PATH}")
 
 

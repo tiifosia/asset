@@ -64,6 +64,7 @@ jobs:
           git add -A public/data/
           if ! git diff --staged --quiet; then
             git commit -m "chore(data): update daily portfolio and MDD data"
+            git pull --rebase origin main || true
             git push origin HEAD:main
           fi
 
