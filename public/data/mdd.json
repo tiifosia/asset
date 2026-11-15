@@ -73,7 +73,8 @@
       "max_dd_abs": 82.22,
       "mdd_peak_date": "1991-04-02",
       "mdd_trough_date": "1997-12-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "apple"
     },
     {
       "rank": 2,
@@ -91,7 +92,8 @@
       "max_dd_abs": 89.72,
       "mdd_peak_date": "2002-01-03",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "nvidia"
     },
     {
       "rank": 3,
@@ -109,7 +111,8 @@
       "max_dd_abs": 74.56,
       "mdd_peak_date": "1999-12-27",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "microsoft"
     },
     {
       "rank": 4,
@@ -127,7 +130,8 @@
       "max_dd_abs": 65.29,
       "mdd_peak_date": "2007-11-06",
       "mdd_trough_date": "2008-11-24",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "alphabet"
     },
     {
       "rank": 5,
@@ -145,7 +149,8 @@
       "max_dd_abs": 94.4,
       "mdd_peak_date": "1999-12-10",
       "mdd_trough_date": "2001-09-28",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "amazon"
     },
     {
       "rank": 6,
@@ -163,7 +168,8 @@
       "max_dd_abs": 48.78,
       "mdd_peak_date": "2026-06-16",
       "mdd_trough_date": "2026-08-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "spacex"
     },
     {
       "rank": 7,
@@ -181,7 +187,8 @@
       "max_dd_abs": 48.79,
       "mdd_peak_date": "2019-12-12",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "broadcom"
     },
     {
       "rank": 8,
@@ -199,7 +206,8 @@
       "max_dd_abs": 76.74,
       "mdd_peak_date": "2021-09-07",
       "mdd_trough_date": "2022-11-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "meta-platforms"
     },
     {
       "rank": 9,
@@ -217,7 +225,8 @@
       "max_dd_abs": 73.63,
       "mdd_peak_date": "2021-11-04",
       "mdd_trough_date": "2023-01-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "tesla"
     },
     {
       "rank": 10,
@@ -235,7 +244,8 @@
       "max_dd_abs": 74.69,
       "mdd_peak_date": "2000-08-08",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "eli-lilly"
     },
     {
       "rank": 11,
@@ -253,7 +263,8 @@
       "max_dd_abs": 53.86,
       "mdd_peak_date": "2007-12-10",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "berkshire-hathaway"
     },
     {
       "rank": 12,
@@ -271,7 +282,8 @@
       "max_dd_abs": 77.14,
       "mdd_peak_date": "1972-11-27",
       "mdd_trough_date": "1974-12-10",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "walmart"
     },
     {
       "rank": 13,
@@ -289,7 +301,8 @@
       "max_dd_abs": 81.67,
       "mdd_peak_date": "1986-03-27",
       "mdd_trough_date": "1990-10-31",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "jpmorgan-chase"
     },
     {
       "rank": 14,
@@ -307,7 +320,8 @@
       "max_dd_abs": 98.25,
       "mdd_peak_date": "2000-07-14",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "micron-technology"
     },
     {
       "rank": 15,
@@ -325,7 +339,8 @@
       "max_dd_abs": 96.59,
       "mdd_peak_date": "2000-06-21",
       "mdd_trough_date": "2015-07-27",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "advanced-micro-devices"
     },
     {
       "rank": 16,
@@ -343,7 +358,8 @@
       "max_dd_abs": 52.07,
       "mdd_peak_date": "2008-05-07",
       "mdd_trough_date": "2009-01-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "visa"
     },
     {
       "rank": 17,
@@ -361,7 +377,8 @@
       "max_dd_abs": 69.87,
       "mdd_peak_date": "2014-06-23",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "exxon"
     },
     {
       "rank": 18,
@@ -379,7 +396,8 @@
       "max_dd_abs": 52.6,
       "mdd_peak_date": "1972-11-01",
       "mdd_trough_date": "1977-04-25",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "johnson-and-johnson"
     },
     {
       "rank": 19,
@@ -397,7 +415,8 @@
       "max_dd_abs": 62.76,
       "mdd_peak_date": "2008-06-02",
       "mdd_trough_date": "2009-01-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "mastercard"
     },
     {
       "rank": 20,
@@ -415,7 +434,8 @@
       "max_dd_abs": 48.88,
       "mdd_peak_date": "2018-01-26",
       "mdd_trough_date": "2019-08-15",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "abbvie"
     },
     {
       "rank": 21,
@@ -433,7 +453,8 @@
       "max_dd_abs": 61.72,
       "mdd_peak_date": "1991-08-29",
       "mdd_trough_date": "1995-01-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "costco-wholesale"
     },
     {
       "rank": 22,
@@ -451,7 +472,8 @@
       "max_dd_abs": 59.79,
       "mdd_peak_date": "2014-07-24",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "chevron"
     },
     {
       "rank": 23,
@@ -469,7 +491,8 @@
       "max_dd_abs": 69.06,
       "mdd_peak_date": "1973-01-04",
       "mdd_trough_date": "1974-10-04",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "coca-cola"
     },
     {
       "rank": 24,
@@ -487,7 +510,8 @@
       "max_dd_abs": 84.62,
       "mdd_peak_date": "2021-01-27",
       "mdd_trough_date": "2022-12-27",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "palantir"
     },
     {
       "rank": 25,
@@ -505,7 +529,8 @@
       "max_dd_abs": 54.46,
       "mdd_peak_date": "2000-01-11",
       "mdd_trough_date": "2000-06-29",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "procter-and-gamble"
     },
     {
       "rank": 26,
@@ -523,7 +548,8 @@
       "max_dd_abs": 84.19,
       "mdd_peak_date": "2000-09-01",
       "mdd_trough_date": "2002-06-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "oracle"
     },
     {
       "rank": 27,
@@ -541,7 +567,8 @@
       "max_dd_abs": 89.26,
       "mdd_peak_date": "2000-03-27",
       "mdd_trough_date": "2002-10-08",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "cisco"
     },
     {
       "rank": 28,
@@ -559,7 +586,8 @@
       "max_dd_abs": 82.68,
       "mdd_peak_date": "1986-04-08",
       "mdd_trough_date": "1987-11-17",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "unitedhealth"
     },
     {
       "rank": 29,
@@ -577,7 +605,8 @@
       "max_dd_abs": 77.88,
       "mdd_peak_date": "2000-11-29",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "merck-and-co"
     },
     {
       "rank": 30,
@@ -595,7 +624,8 @@
       "max_dd_abs": 94.28,
       "mdd_peak_date": "2006-11-16",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "bank-of-america"
     },
     {
       "rank": 31,
@@ -613,7 +643,8 @@
       "max_dd_abs": 73.82,
       "mdd_peak_date": "1999-12-31",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "home-depot"
     },
     {
       "rank": 32,
@@ -631,7 +662,8 @@
       "max_dd_abs": 90.48,
       "mdd_peak_date": "2000-08-28",
       "mdd_trough_date": "2020-05-15",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "ge-aerospace"
     },
     {
       "rank": 33,
@@ -649,7 +681,8 @@
       "max_dd_abs": 83.87,
       "mdd_peak_date": "2000-08-31",
       "mdd_trough_date": "2009-02-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "intel"
     },
     {
       "rank": 34,
@@ -667,7 +700,8 @@
       "max_dd_abs": 51.2,
       "mdd_peak_date": "2017-06-19",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "philip-morris"
     },
     {
       "rank": 35,
@@ -685,7 +719,8 @@
       "max_dd_abs": 91.59,
       "mdd_peak_date": "2000-09-11",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "morgan-stanley"
     },
     {
       "rank": 36,
@@ -703,7 +738,8 @@
       "max_dd_abs": 85.83,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "applied-materials"
     },
     {
       "rank": 37,
@@ -721,7 +757,8 @@
       "max_dd_abs": 87.91,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "lam-research"
     },
     {
       "rank": 38,
@@ -739,7 +776,8 @@
       "max_dd_abs": 85.9,
       "mdd_peak_date": "2000-03-03",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "texas-instruments"
     },
     {
       "rank": 39,
@@ -757,7 +795,8 @@
       "max_dd_abs": 74.51,
       "mdd_peak_date": "2007-07-19",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "caterpillar"
     },
     {
       "rank": 40,
@@ -775,7 +814,8 @@
       "max_dd_abs": 80.27,
       "mdd_peak_date": "1967-06-27",
       "mdd_trough_date": "1973-12-13",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "raytheon"
     },
     {
       "rank": 41,
@@ -793,7 +833,8 @@
       "max_dd_abs": 79.03,
       "mdd_peak_date": "2007-10-31",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "golden-sachs-etf-trust-goldman"
     },
     {
       "rank": 42,
@@ -811,7 +852,8 @@
       "max_dd_abs": 47.98,
       "mdd_peak_date": "2019-02-27",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "palo-alto-networks"
     },
     {
       "rank": 43,
@@ -829,7 +871,8 @@
       "max_dd_abs": 71.16,
       "mdd_peak_date": "1997-12-30",
       "mdd_trough_date": "1999-04-15",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "thermo-fisher-scientific"
     },
     {
       "rank": 44,
@@ -847,7 +890,8 @@
       "max_dd_abs": 79.6,
       "mdd_peak_date": "2008-09-19",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "wells-fargo"
     },
     {
       "rank": 45,
@@ -865,7 +909,8 @@
       "max_dd_abs": 81.99,
       "mdd_peak_date": "2011-07-13",
       "mdd_trough_date": "2012-09-25",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "netflix"
     },
     {
       "rank": 46,
@@ -883,7 +928,8 @@
       "max_dd_abs": 78.03,
       "mdd_peak_date": "1983-06-17",
       "mdd_trough_date": "1984-11-19",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "amgen"
     },
     {
       "rank": 47,
@@ -901,7 +947,8 @@
       "max_dd_abs": 52.2,
       "mdd_peak_date": "2019-04-16",
       "mdd_trough_date": "2020-03-16",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "arista-networks"
     },
     {
       "rank": 48,
@@ -919,7 +966,8 @@
       "max_dd_abs": 51.96,
       "mdd_peak_date": "2008-06-23",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "linde"
     },
     {
       "rank": 49,
@@ -937,7 +985,8 @@
       "max_dd_abs": 76.54,
       "mdd_peak_date": "1987-08-20",
       "mdd_trough_date": "1993-08-16",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "international-bus-mach"
     },
     {
       "rank": 50,
@@ -955,7 +1004,8 @@
       "max_dd_abs": 67.69,
       "mdd_peak_date": "2021-11-09",
       "mdd_trough_date": "2023-01-06",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "crowdstrike"
     },
     {
       "rank": 51,
@@ -973,7 +1023,8 @@
       "max_dd_abs": 60.03,
       "mdd_peak_date": "2024-05-29",
       "mdd_trough_date": "2025-04-04",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "dell"
     },
     {
       "rank": 52,
@@ -991,7 +1042,8 @@
       "max_dd_abs": 84.35,
       "mdd_peak_date": "2007-07-19",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "american-express"
     },
     {
       "rank": 53,
@@ -1009,7 +1061,8 @@
       "max_dd_abs": 38.29,
       "mdd_peak_date": "2025-01-23",
       "mdd_trough_date": "2025-03-10",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "ge-verona"
     },
     {
       "rank": 54,
@@ -1027,7 +1080,8 @@
       "max_dd_abs": 70.83,
       "mdd_peak_date": "1992-01-27",
       "mdd_trough_date": "1994-06-06",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "gilead"
     },
     {
       "rank": 55,
@@ -1045,7 +1099,8 @@
       "max_dd_abs": 85.66,
       "mdd_peak_date": "1973-01-02",
       "mdd_trough_date": "1974-12-17",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "walt-disney"
     },
     {
       "rank": 56,
@@ -1063,7 +1118,8 @@
       "max_dd_abs": 98.27,
       "mdd_peak_date": "2000-08-28",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "citigroup"
     },
     {
       "rank": 57,
@@ -1081,7 +1137,8 @@
       "max_dd_abs": 84.41,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "kla-tencor"
     },
     {
       "rank": 58,
@@ -1099,7 +1156,8 @@
       "max_dd_abs": 67.32,
       "mdd_peak_date": "1972-11-17",
       "mdd_trough_date": "1974-10-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "pepsico"
     },
     {
       "rank": 59,
@@ -1117,7 +1175,8 @@
       "max_dd_abs": 60.75,
       "mdd_peak_date": "2008-08-11",
       "mdd_trough_date": "2009-03-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "blackrock"
     },
     {
       "rank": 60,
@@ -1135,7 +1194,8 @@
       "max_dd_abs": 63.43,
       "mdd_peak_date": "2008-08-15",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "amphenol"
     },
     {
       "rank": 61,
@@ -1153,7 +1213,8 @@
       "max_dd_abs": 84.12,
       "mdd_peak_date": "2000-09-01",
       "mdd_trough_date": "2008-12-01",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "analog-devices"
     },
     {
       "rank": 62,
@@ -1171,7 +1232,8 @@
       "max_dd_abs": 62.37,
       "mdd_peak_date": "1999-10-04",
       "mdd_trough_date": "2008-10-24",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "verizon"
     },
     {
       "rank": 63,
@@ -1189,7 +1251,8 @@
       "max_dd_abs": 77.47,
       "mdd_peak_date": "1968-05-07",
       "mdd_trough_date": "1969-07-22",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "mcdonalds"
     },
     {
       "rank": 64,
@@ -1207,7 +1270,8 @@
       "max_dd_abs": 84.82,
       "mdd_peak_date": "2021-11-19",
       "mdd_trough_date": "2022-10-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "shopify"
     },
     {
       "rank": 65,
@@ -1225,7 +1289,8 @@
       "max_dd_abs": 46.27,
       "mdd_peak_date": "2002-01-31",
       "mdd_trough_date": "2002-07-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "abbott"
     },
     {
       "rank": 66,
@@ -1243,7 +1308,8 @@
       "max_dd_abs": 86.75,
       "mdd_peak_date": "2000-01-03",
       "mdd_trough_date": "2002-08-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "qualcomm"
     },
     {
       "rank": 67,
@@ -1261,7 +1327,8 @@
       "max_dd_abs": 73.78,
       "mdd_peak_date": "2008-01-14",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "deere"
     },
     {
       "rank": 68,
@@ -1279,7 +1346,8 @@
       "max_dd_abs": 86.29,
       "mdd_peak_date": "2007-07-17",
       "mdd_trough_date": "2010-01-28",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "t-mobile"
     },
     {
       "rank": 69,
@@ -1297,7 +1365,8 @@
       "max_dd_abs": 67.49,
       "mdd_peak_date": "1980-11-26",
       "mdd_trough_date": "1982-08-13",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "union-pacific"
     },
     {
       "rank": 70,
@@ -1315,7 +1384,8 @@
       "max_dd_abs": 64.07,
       "mdd_peak_date": "2019-09-04",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "welltower-indrn"
     },
     {
       "rank": 71,
@@ -1333,7 +1403,8 @@
       "max_dd_abs": 70.5,
       "mdd_peak_date": "2008-06-23",
       "mdd_trough_date": "2008-11-19",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "salesforce"
     },
     {
       "rank": 72,
@@ -1351,7 +1422,8 @@
       "max_dd_abs": 64.89,
       "mdd_peak_date": "1973-03-13",
       "mdd_trough_date": "1974-09-13",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "nextera-energy"
     },
     {
       "rank": 73,
@@ -1369,7 +1441,8 @@
       "max_dd_abs": 73.87,
       "mdd_peak_date": "2014-07-23",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "conocophillips"
     },
     {
       "rank": 74,
@@ -1387,7 +1460,8 @@
       "max_dd_abs": 76.7,
       "mdd_peak_date": "1999-04-12",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "pfizer"
     },
     {
       "rank": 75,
@@ -1405,7 +1479,8 @@
       "max_dd_abs": 65.31,
       "mdd_peak_date": "1979-08-28",
       "mdd_trough_date": "1982-06-23",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "danaher"
     },
     {
       "rank": 76,
@@ -1423,7 +1498,8 @@
       "max_dd_abs": 86.92,
       "mdd_peak_date": "1999-04-13",
       "mdd_trough_date": "2003-03-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "schwab"
     },
     {
       "rank": 77,
@@ -1441,7 +1517,8 @@
       "max_dd_abs": 82.25,
       "mdd_peak_date": "2000-07-31",
       "mdd_trough_date": "2001-04-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "intuitive-surgical"
     },
     {
       "rank": 78,
@@ -1459,7 +1536,8 @@
       "max_dd_abs": 69.91,
       "mdd_peak_date": "1999-07-16",
       "mdd_trough_date": "2023-07-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "at-and-t"
     },
     {
       "rank": 79,
@@ -1477,7 +1555,8 @@
       "max_dd_abs": 88.96,
       "mdd_peak_date": "2007-06-22",
       "mdd_trough_date": "2009-02-26",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "blackstone"
     },
     {
       "rank": 80,
@@ -1495,7 +1574,8 @@
       "max_dd_abs": 70.04,
       "mdd_peak_date": "2021-12-29",
       "mdd_trough_date": "2026-06-30",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "accenture"
     },
     {
       "rank": 81,
@@ -1513,7 +1593,8 @@
       "max_dd_abs": 69.2,
       "mdd_peak_date": "1989-06-14",
       "mdd_trough_date": "1990-10-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "tjx-cos"
     },
     {
       "rank": 82,
@@ -1531,7 +1612,8 @@
       "max_dd_abs": 65.13,
       "mdd_peak_date": "1998-07-15",
       "mdd_trough_date": "2000-03-07",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "chubb"
     },
     {
       "rank": 83,
@@ -1549,7 +1631,8 @@
       "max_dd_abs": 68.05,
       "mdd_peak_date": "2019-06-28",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "uber"
     },
     {
       "rank": 84,
@@ -1567,7 +1650,8 @@
       "max_dd_abs": 80.5,
       "mdd_peak_date": "2007-10-29",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "southern-copper"
     },
     {
       "rank": 85,
@@ -1585,7 +1669,8 @@
       "max_dd_abs": 63.66,
       "mdd_peak_date": "2008-02-01",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "interactive-brokers-group"
     },
     {
       "rank": 86,
@@ -1603,7 +1688,8 @@
       "max_dd_abs": 95.74,
       "mdd_peak_date": "1967-07-18",
       "mdd_trough_date": "1973-12-28",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "lockheed-martin"
     },
     {
       "rank": 87,
@@ -1621,7 +1707,8 @@
       "max_dd_abs": 91.59,
       "mdd_peak_date": "2000-09-13",
       "mdd_trough_date": "2001-04-04",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "marvell-tech"
     },
     {
       "rank": 88,
@@ -1639,7 +1726,8 @@
       "max_dd_abs": 75.83,
       "mdd_peak_date": "2007-06-04",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "s-and-p-global"
     },
     {
       "rank": 89,
@@ -1657,7 +1745,8 @@
       "max_dd_abs": 70.48,
       "mdd_peak_date": "2007-07-23",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "eaton"
     },
     {
       "rank": 90,
@@ -1675,7 +1764,8 @@
       "max_dd_abs": 71.16,
       "mdd_peak_date": "1999-01-11",
       "mdd_trough_date": "2000-03-13",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "progressive-ohio"
     },
     {
       "rank": 91,
@@ -1693,7 +1783,8 @@
       "max_dd_abs": 91.77,
       "mdd_peak_date": "2000-11-02",
       "mdd_trough_date": "2003-11-11",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "vertex-pharmaceutical"
     },
     {
       "rank": 92,
@@ -1711,7 +1802,8 @@
       "max_dd_abs": 89.46,
       "mdd_peak_date": "1967-08-02",
       "mdd_trough_date": "1974-01-08",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "boeing"
     },
     {
       "rank": 93,
@@ -1729,7 +1821,8 @@
       "max_dd_abs": 91.9,
       "mdd_peak_date": "2021-11-11",
       "mdd_trough_date": "2022-12-27",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "applovin-cdr-cad-hedged"
     },
     {
       "rank": 94,
@@ -1747,7 +1840,8 @@
       "max_dd_abs": 72.8,
       "mdd_peak_date": "1973-10-02",
       "mdd_trough_date": "1977-10-27",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "medtronic"
     },
     {
       "rank": 95,
@@ -1765,7 +1859,8 @@
       "max_dd_abs": 83.84,
       "mdd_peak_date": "2007-01-11",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "altria"
     },
     {
       "rank": 96,
@@ -1783,7 +1878,8 @@
       "max_dd_abs": 76.73,
       "mdd_peak_date": "1999-10-28",
       "mdd_trough_date": "2008-10-16",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "bristol-myers-squibb"
     },
     {
       "rank": 97,
@@ -1801,7 +1897,8 @@
       "max_dd_abs": 62.69,
       "mdd_peak_date": "1986-03-14",
       "mdd_trough_date": "1987-12-03",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "lowe-s"
     },
     {
       "rank": 98,
@@ -1819,7 +1916,8 @@
       "max_dd_abs": 83.04,
       "mdd_peak_date": "1998-10-06",
       "mdd_trough_date": "2000-05-26",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "mckesson"
     },
     {
       "rank": 99,
@@ -1837,7 +1935,8 @@
       "max_dd_abs": 80.51,
       "mdd_peak_date": "2021-02-19",
       "mdd_trough_date": "2022-11-04",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "spotify-technology"
     },
     {
       "rank": 100,
@@ -1855,7 +1954,8 @@
       "max_dd_abs": 65.46,
       "mdd_peak_date": "2026-06-25",
       "mdd_trough_date": "2026-11-05",
-      "last_date": "2026-11-13"
+      "last_date": "2026-11-13",
+      "logoid": "sandisk"
     }
   ]
 }

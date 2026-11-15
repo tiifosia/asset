@@ -122,6 +122,8 @@ def deduplicate_candidates(raw_rows: list[dict[str, Any]]) -> list[dict[str, Any
                     existing["name"] = row["name"]
                 if row.get("sector"):
                     existing["sector"] = row["sector"]
+                if row.get("logoid"):
+                    existing["logoid"] = row["logoid"]
 
     deduped = sorted(seen_keys.values(), key=lambda x: x["market_cap"], reverse=True)
     return deduped
@@ -140,7 +142,7 @@ def fetch_top_candidates_tradingview(limit: int = 160) -> list[dict[str, Any]]:
         "options": {"lang": "en"},
         "markets": ["america"],
         "symbols": {"query": {"types": []}, "tickers": []},
-        "columns": ["name", "description", "market_cap_basic", "close", "sector"],
+        "columns": ["name", "description", "market_cap_basic", "close", "sector", "logoid"],
         "sort": {"sortBy": "market_cap_basic", "sortOrder": "desc"},
         "range": [0, limit],
     }
@@ -158,6 +160,7 @@ def fetch_top_candidates_tradingview(limit: int = 160) -> list[dict[str, Any]]:
         if len(cols) < 5:
             continue
         raw_ticker, name, market_cap, _close, sector = cols[:5]
+        logoid = str(cols[5] or "").strip() if len(cols) > 5 else ""
         if not raw_ticker or not market_cap or market_cap <= 0:
             continue
         rows.append(
@@ -166,6 +169,7 @@ def fetch_top_candidates_tradingview(limit: int = 160) -> list[dict[str, Any]]:
                 "name": str(name or raw_ticker).strip(),
                 "market_cap": float(market_cap),
                 "sector": str(sector or "").strip(),
+                "logoid": logoid,
             }
         )
     return deduplicate_candidates(rows)
@@ -465,6 +469,7 @@ def fetch_all_data() -> dict[str, Any]:
                 "ticker": c["ticker"],
                 "name": c["name"],
                 "sector": c["sector"],
+                "logoid": c.get("logoid", ""),
                 "market_cap": int(round(c["market_cap"])),
                 "history_file": history_file,
                 **metrics,

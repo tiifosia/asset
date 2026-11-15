@@ -630,6 +630,7 @@ function updateHeaderForView() {
   const eyebrowEl = document.getElementById("header-eyebrow");
   const titleEl = document.getElementById("header-title");
   const subtitleEl = document.getElementById("header-subtitle");
+  const currencyGroupEl = document.getElementById("currency-group");
   const legendEl = document.getElementById("header-mdd-legend");
   const footerEl = document.getElementById("site-footer");
   const toggleBtn = document.getElementById("nav-toggle-view-btn");
@@ -637,6 +638,7 @@ function updateHeaderForView() {
 
   eyebrowEl?.classList.toggle("hidden", isPortfolio);
   subtitleEl?.classList.toggle("hidden", isPortfolio);
+  currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
   legendEl?.classList.toggle("hidden", isPortfolio);
   footerEl?.classList.toggle("hidden", isPortfolio);
 
@@ -1586,6 +1588,23 @@ function getFilteredAndSortedStocks() {
   return sorted;
 }
 
+function buildStockLogoUrls(stock) {
+  const urls = [];
+  const logoid = String(stock?.logoid || "").trim();
+  const ticker = String(stock?.ticker || "").trim();
+  if (logoid) {
+    urls.push(`https://s3-symbol-logo.tradingview.com/${encodeURIComponent(logoid)}--big.svg`);
+  }
+  if (ticker) {
+    urls.push(`https://assets.parqet.com/logos/symbol/${encodeURIComponent(ticker)}?format=png`);
+    urls.push(`https://financialmodelingprep.com/image-stock/${encodeURIComponent(ticker)}.png`);
+    if (ticker.includes("-")) {
+      urls.push(`https://assets.parqet.com/logos/symbol/${encodeURIComponent(ticker.replace(/-/g, "."))}?format=png`);
+    }
+  }
+  return urls;
+}
+
 function renderStocks() {
   const listEl = document.getElementById("stocks-list");
   const countEl = document.getElementById("stock-count");
@@ -1605,6 +1624,25 @@ function renderStocks() {
   listEl.innerHTML = items
     .map((s) => {
       const curClass = Number(s.current_dd_abs) === 0 ? "cur-dd-pct at-ath" : "cur-dd-pct";
+      const logoUrls = buildStockLogoUrls(s);
+      const primaryLogo = logoUrls[0] || "";
+      const fallbackLogos = logoUrls.slice(1).join("|");
+      const monogram = escapeHtml((s.ticker || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 3) || "?");
+      const logoHtml = primaryLogo
+        ? `<div class="stock-logo-circle" aria-hidden="true">
+            <img
+              class="stock-logo-img"
+              src="${escapeHtml(primaryLogo)}"
+              data-fallbacks="${escapeHtml(fallbackLogos)}"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="stock-logo-fallback">${monogram}</span>
+          </div>`
+        : `<div class="stock-logo-circle is-fallback" aria-hidden="true">
+            <span class="stock-logo-fallback">${monogram}</span>
+          </div>`;
       return `
         <div
           class="stock-row"
@@ -1616,11 +1654,14 @@ function renderStocks() {
         >
           <div class="row-rank">#${s.rank}</div>
           <div class="row-asset">
-            <div class="row-asset-top">
-              <span class="row-ticker">${escapeHtml(s.ticker)}</span>
-              <span class="row-mcap">${formatMarketCap(s.market_cap)}</span>
+            ${logoHtml}
+            <div class="row-asset-info">
+              <div class="row-asset-top">
+                <span class="row-ticker">${escapeHtml(s.ticker)}</span>
+                <span class="row-mcap">${formatMarketCap(s.market_cap)}</span>
+              </div>
+              <div class="row-name" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</div>
             </div>
-            <div class="row-name" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</div>
           </div>
           <div class="row-price">
             <span class="row-current-price">${formatPrice(s.current_price, false)}</span>
@@ -2020,9 +2061,6 @@ function bindControls() {
   document.getElementById("nav-toggle-view-btn").addEventListener("click", () => {
     switchMainView(state.activeView === "portfolio" ? "mdd" : "portfolio");
   });
-  document.getElementById("mdd-back-btn").addEventListener("click", () => {
-    switchMainView("portfolio");
-  });
 
   // Currency Toggle
   document.querySelectorAll(".currency-btn").forEach((btn) => {
@@ -2112,6 +2150,24 @@ function bindControls() {
   const stocksList = document.getElementById("stocks-list");
   stocksList.addEventListener("click", (e) => handleContainerActivate(".stock-row", e));
   stocksList.addEventListener("keydown", (e) => handleContainerActivate(".stock-row", e));
+  stocksList.addEventListener(
+    "error",
+    (e) => {
+      const img = e.target;
+      if (!img || !img.classList || !img.classList.contains("stock-logo-img")) return;
+      const raw = img.dataset.fallbacks || "";
+      const queue = raw ? raw.split("|").filter(Boolean) : [];
+      if (queue.length > 0) {
+        const nextUrl = queue.shift();
+        img.dataset.fallbacks = queue.join("|");
+        img.src = nextUrl;
+      } else {
+        img.classList.add("is-hidden");
+        img.parentElement?.classList.add("is-fallback");
+      }
+    },
+    true
+  );
 
   document.getElementById("modal-close-btn").addEventListener("click", closeAssetModal);
   document.getElementById("chart-modal").addEventListener("click", (e) => {
