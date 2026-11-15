@@ -2481,10 +2481,10 @@ function renderPeTrendChart(idx) {
         formatter: `현재 ${peCur.toFixed(2)}x`,
         backgroundColor: "#C3BDFF",
         color: "#111111",
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: 800,
-        padding: [3, 6],
-        borderRadius: 4,
+        padding: [4, 8],
+        borderRadius: 6,
       },
     });
   }
@@ -2498,10 +2498,10 @@ function renderPeTrendChart(idx) {
         formatter: `선행 ${fwdCur.toFixed(2)}x`,
         backgroundColor: "#4ade80",
         color: "#111111",
-        fontSize: 10,
+        fontSize: 13,
         fontWeight: 800,
-        padding: [3, 6],
-        borderRadius: 4,
+        padding: [4, 8],
+        borderRadius: 6,
       },
     });
   }
@@ -2524,7 +2524,7 @@ function renderPeTrendChart(idx) {
   inst.setOption(
     {
       animationDuration: 300,
-      grid: { left: 38, right: 82, top: 34, bottom: 26 },
+      grid: { left: 38, right: 108, top: 34, bottom: 26 },
       legend: {
         top: 0,
         left: 0,
