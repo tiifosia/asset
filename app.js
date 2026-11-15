@@ -2467,20 +2467,41 @@ function renderPeTrendChart(idx) {
   peTrendChartInstances[idx.id] = inst;
 
   const mean5y = idx.world_pe?.mean_5y != null ? Number(idx.world_pe.mean_5y) : null;
+  const peCur = idx.pe != null ? Number(idx.pe) : null;
   const fwdCur = idx.forward_pe != null ? Number(idx.forward_pe) : null;
 
   const markLineData = [];
+  if (peCur != null && Number.isFinite(peCur)) {
+    markLineData.push({
+      yAxis: peCur,
+      lineStyle: { color: "rgba(195, 189, 255, 0.35)", type: "dashed", width: 1 },
+      label: {
+        show: true,
+        position: "end",
+        formatter: `현재 ${peCur.toFixed(2)}x`,
+        backgroundColor: "#C3BDFF",
+        color: "#111111",
+        fontSize: 10,
+        fontWeight: 800,
+        padding: [3, 6],
+        borderRadius: 4,
+      },
+    });
+  }
   if (fwdCur != null && Number.isFinite(fwdCur)) {
     markLineData.push({
       yAxis: fwdCur,
       lineStyle: { color: "#4ade80", type: "dashed", width: 1.5 },
       label: {
         show: true,
-        position: "insideEndTop",
-        formatter: `선행 PER ${fwdCur.toFixed(2)}x`,
-        color: "#4ade80",
-        fontSize: 11,
-        fontWeight: 700,
+        position: "end",
+        formatter: `선행 ${fwdCur.toFixed(2)}x`,
+        backgroundColor: "#4ade80",
+        color: "#111111",
+        fontSize: 10,
+        fontWeight: 800,
+        padding: [3, 6],
+        borderRadius: 4,
       },
     });
   }
@@ -2503,10 +2524,10 @@ function renderPeTrendChart(idx) {
   inst.setOption(
     {
       animationDuration: 300,
-      grid: { left: 40, right: 16, top: 28, bottom: 26 },
+      grid: { left: 38, right: 82, top: 34, bottom: 26 },
       legend: {
         top: 0,
-        right: 4,
+        left: 0,
         itemWidth: 12,
         itemHeight: 8,
         textStyle: { color: "#b5b5b5", fontSize: 11 },
@@ -2554,6 +2575,14 @@ function renderPeTrendChart(idx) {
       yAxis: {
         type: "value",
         scale: true,
+        min: (value) => {
+          const floorBase = fwdCur != null ? Math.min(value.min, fwdCur) : value.min;
+          return Math.floor(floorBase - 1);
+        },
+        max: (value) => {
+          const ceilBase = peCur != null ? Math.max(value.max, peCur) : value.max;
+          return Math.ceil(ceilBase + 2);
+        },
         splitLine: { lineStyle: { color: "#232323" } },
         axisLabel: {
           color: "#8d8d8d",
@@ -2578,6 +2607,38 @@ function renderPeTrendChart(idx) {
             ]),
           },
           data: peSeries,
+          markPoint: {
+            symbol: "circle",
+            symbolSize: 6,
+            data: [
+              {
+                type: "max",
+                name: "최고",
+                label: {
+                  show: true,
+                  position: "top",
+                  distance: 4,
+                  color: "#e5e5e5",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  formatter: (p) => `최고 ${Number(p.value).toFixed(1)}x`,
+                },
+              },
+              {
+                type: "min",
+                name: "최저",
+                label: {
+                  show: true,
+                  position: "bottom",
+                  distance: 4,
+                  color: "#a1a1aa",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  formatter: (p) => `최저 ${Number(p.value).toFixed(1)}x`,
+                },
+              },
+            ],
+          },
           markLine: markLineData.length
             ? {
                 symbol: "none",
@@ -2590,7 +2651,7 @@ function renderPeTrendChart(idx) {
           name: "Forward PER (선행)",
           type: "line",
           showSymbol: fwdCount <= 10,
-          symbolSize: 7,
+          symbolSize: 8,
           connectNulls: true,
           lineStyle: { color: "#4ade80", width: 2 },
           itemStyle: { color: "#4ade80" },
@@ -2834,18 +2895,43 @@ function renderIndexDashboard() {
         )
         .join("");
 
+      const fwdDiff =
+        idx.forward_pe != null && idx.pe != null
+          ? `${formatMacroDelta(idx.forward_pe - idx.pe, 2)}x`
+          : "";
+
       return `<article class="index-val-card">
         <div class="index-val-head">
           <div>
             <h3 class="index-val-title">${escapeHtml(idx.name)}</h3>
-            <span class="index-val-ticker">${escapeHtml(idx.ticker)} · Trailing ${formatMacroNum(
-        idx.pe,
-        2
-      )}x · 선행 ${formatMacroNum(idx.forward_pe, 2)}x</span>
+            <span class="index-val-ticker">${escapeHtml(idx.ticker)} · 참고 ETF ${escapeHtml(idx.etf_ref || "-")}</span>
           </div>
           <div class="index-val-price-box">
             <span class="index-val-price">${formatMacroNum(tech.close, 2)}</span>
             <span class="index-val-chg ${chgCls}">${chgText}</span>
+          </div>
+        </div>
+
+        <div class="index-per-kpis">
+          <div class="index-kpi-pill">
+            <div class="index-kpi-label-wrap">
+              <span class="index-kpi-dot is-trailing"></span>
+              <span class="index-kpi-label">Trailing PER</span>
+            </div>
+            <div class="index-kpi-num-wrap">
+              <strong class="index-kpi-num">${formatMacroNum(idx.pe, 2)}x</strong>
+              <span class="index-kpi-sub">52주전 ${formatMacroNum(idx.pe_52w_ago, 2)}x</span>
+            </div>
+          </div>
+          <div class="index-kpi-pill is-forward">
+            <div class="index-kpi-label-wrap">
+              <span class="index-kpi-dot is-forward"></span>
+              <span class="index-kpi-label">선행 PER (Forward)</span>
+            </div>
+            <div class="index-kpi-num-wrap">
+              <strong class="index-kpi-num">${formatMacroNum(idx.forward_pe, 2)}x</strong>
+              <span class="index-kpi-sub">${fwdDiff ? `현재 대비 ${fwdDiff}` : `ETF ${formatMacroNum(idx.etf_forward_pe, 2)}x`}</span>
+            </div>
           </div>
         </div>
 
