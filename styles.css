@@ -19,8 +19,8 @@
   --accent-soft: rgba(195, 189, 255, 0.14);
 
   /* semantic */
-  --up: var(--accent);
-  --down: var(--muted);
+  --up: #f04452;
+  --down: #3182f6;
 
   --radius: 8px;
   --radius-sm: 6px;
@@ -1844,23 +1844,23 @@ body.modal-open {
 }
 
 .fg-pill-extreme-fear {
-  color: var(--accent);
+  color: #f87171;
 }
 
 .fg-pill-fear {
-  color: var(--text);
+  color: #fb923c;
 }
 
 .fg-pill-neutral {
-  color: var(--text-2);
+  color: #facc15;
 }
 
 .fg-pill-greed {
-  color: var(--text);
+  color: #4ade80;
 }
 
 .fg-pill-extreme-greed {
-  color: var(--accent);
+  color: #22c55e;
 }
 
 .fg-source-note {
@@ -1881,15 +1881,15 @@ body.modal-open {
   border-radius: 3px;
   background: linear-gradient(
     90deg,
-    #262626 0 25%,
+    #f87171 0 25%,
     var(--bg) 25% calc(25% + 2px),
-    #333333 calc(25% + 2px) 45%,
+    #fb923c calc(25% + 2px) 45%,
     var(--bg) 45% calc(45% + 2px),
-    #4a4a4a calc(45% + 2px) 55%,
+    #facc15 calc(45% + 2px) 55%,
     var(--bg) 55% calc(55% + 2px),
-    rgba(195, 189, 255, 0.55) calc(55% + 2px) 75%,
+    #4ade80 calc(55% + 2px) 75%,
     var(--bg) 75% calc(75% + 2px),
-    var(--accent) calc(75% + 2px) 100%
+    #22c55e calc(75% + 2px) 100%
   );
   margin-bottom: 8px;
 }
@@ -1968,11 +1968,11 @@ body.modal-open {
 }
 
 .fg-compare-delta.is-up {
-  color: var(--accent);
+  color: #4ade80;
 }
 
 .fg-compare-delta.is-down {
-  color: var(--muted);
+  color: #f87171;
 }
 
 .fg-crypto-desc {
@@ -2147,15 +2147,15 @@ body.modal-open {
 }
 
 .macro-badge.is-good {
-  color: var(--accent);
+  color: #4ade80;
 }
 
 .macro-badge.is-warn {
-  color: var(--text);
+  color: #facc15;
 }
 
 .macro-badge.is-alert {
-  color: var(--accent);
+  color: #f87171;
 }
 
 .macro-card-val-row {

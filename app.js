@@ -63,15 +63,15 @@ let pfSeriesMode = "total"; // "total" | "gate" | "toss" | "kis"
 let pfPieMode = "asset"; // "asset" | "account" | "category"
 const PIE_PALETTE = [
   "#C3BDFF",
-  "#F5F5F5",
-  "#8A83D6",
+  "#3182f6",
+  "#6366f1",
+  "#38bdf8",
+  "#a78bfa",
+  "#14b8a6",
+  "#f59e0b",
+  "#f04452",
+  "#ec4899",
   "#8d8d8d",
-  "#E3E0FF",
-  "#5E5E5E",
-  "#6C66B0",
-  "#BDBDBD",
-  "#A49DF0",
-  "#474747",
 ];
 
 // Shared ECharts theme: match page typography
@@ -1193,7 +1193,7 @@ function renderPortfolioHistoryLog() {
           const prevVal = cur === "krw" ? Number(prev.total_krw || 0) : Number(prev.total_usd || 0);
           const diff = totalVal - prevVal;
           const pct = prevVal > 0 ? (diff / prevVal) * 100 : 0;
-          deltaHtml = `<span class="pf-accent">${escapeHtml(formatSignedMoney(diff, cur))}</span><span class="history-sub">${formatSignedPct(pct)}</span>`;
+          deltaHtml = `<span class="pf-accent ${getPnlColorClass(diff)}">${escapeHtml(formatSignedMoney(diff, cur))}</span><span class="history-sub">${formatSignedPct(pct)}</span>`;
         } else {
           deltaHtml = `<span class="history-sub">${MASKED_TEXT}</span><span class="history-sub">${MASKED_TEXT}</span>`;
         }
@@ -1687,7 +1687,6 @@ function renderBenchmarks() {
           <div class="benchmark-head">
             <div class="benchmark-name">
               <span class="benchmark-title">${escapeHtml(b.name_ko || b.name)}</span>
-              <span class="benchmark-ticker">${escapeHtml(b.display_ticker)} (${escapeHtml(b.ticker)})</span>
             </div>
             <div class="benchmark-prices">
               <div class="benchmark-current-price">${formatPrice(b.current_price, isIndex)}</div>
@@ -2317,11 +2316,11 @@ function getFearGreedBand(score) {
   if (!Number.isFinite(num)) {
     return { pillCls: "fg-pill-neutral", color: "#8d8d8d", labelKo: "-" };
   }
-  if (num < 25) return { pillCls: "fg-pill-extreme-fear", color: "#C3BDFF", labelKo: "극단적 공포" };
-  if (num < 45) return { pillCls: "fg-pill-fear", color: "#F5F5F5", labelKo: "공포" };
-  if (num < 55) return { pillCls: "fg-pill-neutral", color: "#F5F5F5", labelKo: "중립" };
-  if (num < 75) return { pillCls: "fg-pill-greed", color: "#F5F5F5", labelKo: "탐욕" };
-  return { pillCls: "fg-pill-extreme-greed", color: "#C3BDFF", labelKo: "극단적 탐욕" };
+  if (num < 25) return { pillCls: "fg-pill-extreme-fear", color: "#f87171", labelKo: "극단적 공포" };
+  if (num < 45) return { pillCls: "fg-pill-fear", color: "#fb923c", labelKo: "공포" };
+  if (num < 55) return { pillCls: "fg-pill-neutral", color: "#facc15", labelKo: "중립" };
+  if (num < 75) return { pillCls: "fg-pill-greed", color: "#4ade80", labelKo: "탐욕" };
+  return { pillCls: "fg-pill-extreme-greed", color: "#22c55e", labelKo: "극단적 탐욕" };
 }
 
 function translateWorldPeBand(band) {
@@ -2410,12 +2409,14 @@ function renderCnnFearGreedChart(history) {
             ]),
           },
           data: values,
-          markLine: {
-            symbol: "none",
+          markArea: {
             silent: true,
-            label: { show: false },
-            lineStyle: { color: "#262626", type: "dashed", width: 1 },
-            data: [{ yAxis: 25 }, { yAxis: 50 }, { yAxis: 75 }],
+            data: [
+              [{ yAxis: 0, itemStyle: { color: "rgba(239, 68, 68, 0.07)" } }, { yAxis: 25 }],
+              [{ yAxis: 25, itemStyle: { color: "rgba(249, 115, 22, 0.05)" } }, { yAxis: 45 }],
+              [{ yAxis: 55, itemStyle: { color: "rgba(74, 222, 128, 0.05)" } }, { yAxis: 75 }],
+              [{ yAxis: 75, itemStyle: { color: "rgba(34, 197, 94, 0.08)" } }, { yAxis: 100 }],
+            ],
           },
         },
       ],
@@ -2499,12 +2500,12 @@ function renderPeTrendChart(idx) {
   if (fwdCur != null && Number.isFinite(fwdCur)) {
     markLineData.push({
       yAxis: fwdCur,
-      lineStyle: { color: "rgba(245, 245, 245, 0.55)", type: "dashed", width: 1.5 },
+      lineStyle: { color: "#4ade80", type: "dashed", width: 1.5 },
       label: {
         show: true,
         position: "end",
         formatter: `선행 ${fwdCur.toFixed(2)}x`,
-        backgroundColor: "#F5F5F5",
+        backgroundColor: "#4ade80",
         color: "#111111",
         fontSize: 13,
         fontWeight: 800,
@@ -2560,7 +2561,7 @@ function renderPeTrendChart(idx) {
             );
           if (fwdCur != null && !list.some((p) => p.seriesName === "Forward PER (선행)" && p.value != null)) {
             lines.push(
-              `<div style="color:#F5F5F5;">현재 선행 PER 기준: <b>${fwdCur.toFixed(2)}x</b></div>`
+              `<div style="color:#4ade80;">현재 선행 PER 기준: <b>${fwdCur.toFixed(2)}x</b></div>`
             );
           }
           return `<div style="font-weight:700;margin-bottom:4px;">${escapeHtml(dt)}</div>${lines.join("")}`;
@@ -2661,8 +2662,8 @@ function renderPeTrendChart(idx) {
           showSymbol: fwdCount <= 10,
           symbolSize: 8,
           connectNulls: true,
-          lineStyle: { color: "#F5F5F5", width: 2, type: "dashed" },
-          itemStyle: { color: "#F5F5F5" },
+          lineStyle: { color: "#4ade80", width: 2 },
+          itemStyle: { color: "#4ade80" },
           data: fwdSeries,
         },
       ],
