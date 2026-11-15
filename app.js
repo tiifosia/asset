@@ -2321,7 +2321,7 @@ function formatNumOrDash(val, digits = 2, suffix = "") {
   return `${Number(val).toFixed(digits)}${suffix}`;
 }
 
-function formatSignedPct(val, digits = 2) {
+function formatCompanyPct(val, digits = 2) {
   if (val === null || val === undefined || !Number.isFinite(Number(val))) return { text: "-", cls: "" };
   const num = Number(val);
   const sign = num > 0 ? "+" : "";
@@ -2497,11 +2497,11 @@ function renderCompanies() {
   listEl.innerHTML = shown
     .map((c) => {
       const exClass = c.exchange === "NASDAQ" ? "exchange-nasdaq" : c.exchange === "NYSE" ? "exchange-nyse" : "";
-      const chg = formatSignedPct(c.change, 2);
+      const chg = formatCompanyPct(c.change, 2);
       const chgCls = c.change > 0 ? "up" : c.change < 0 ? "down" : "flat";
-      const p1m = formatSignedPct(c.perf_1m, 1);
-      const pytd = formatSignedPct(c.perf_ytd, 1);
-      const p1y = formatSignedPct(c.perf_1y, 1);
+      const p1m = formatCompanyPct(c.perf_1m, 1);
+      const pytd = formatCompanyPct(c.perf_ytd, 1);
+      const p1y = formatCompanyPct(c.perf_1y, 1);
       const roeStr = formatNumOrDash(c.roe, 1, "%");
       const deStr = formatNumOrDash(c.debt_to_equity, 1, "%");
 
@@ -2594,7 +2594,7 @@ function openCompanyDetailModal(company) {
   if (!modal) return;
 
   const exClass = company.exchange === "NASDAQ" ? "exchange-nasdaq" : company.exchange === "NYSE" ? "exchange-nyse" : "";
-  const chg = formatSignedPct(company.change, 2);
+  const chg = formatCompanyPct(company.change, 2);
   const logoWrap = document.getElementById("cmodal-logo-wrap");
   if (logoWrap) {
     logoWrap.outerHTML = buildStockLogoHtml(company, "cmodal-logo").replace("<div ", '<div id="cmodal-logo-wrap" ');
@@ -2630,12 +2630,12 @@ function openCompanyDetailModal(company) {
     )
     .join("");
 
-  const pW = formatSignedPct(company.perf_w, 2);
-  const p1M = formatSignedPct(company.perf_1m, 2);
-  const p3M = formatSignedPct(company.perf_3m, 2);
-  const p6M = formatSignedPct(company.perf_6m, 2);
-  const pYTD = formatSignedPct(company.perf_ytd, 2);
-  const p1Y = formatSignedPct(company.perf_1y, 2);
+  const pW = formatCompanyPct(company.perf_w, 2);
+  const p1M = formatCompanyPct(company.perf_1m, 2);
+  const p3M = formatCompanyPct(company.perf_3m, 2);
+  const p6M = formatCompanyPct(company.perf_6m, 2);
+  const pYTD = formatCompanyPct(company.perf_ytd, 2);
+  const p1Y = formatCompanyPct(company.perf_1y, 2);
   const rec = getRecSummary(company.rec_all);
 
   const kv = (label, value, cls = "") =>
