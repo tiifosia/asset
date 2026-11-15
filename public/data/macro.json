@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15 09:56:22 UTC",
+  "updated_at": "2026-11-15 10:21:48 UTC",
   "sentiment": {
     "cnn": {
       "score": 38.6,
@@ -4823,26 +4823,6 @@
           "perf_ytd": 9.48,
           "perf_1y": 10.07
         }
-      }
-    ],
-    "secondary": [
-      {
-        "id": "RUT",
-        "name": "Russell 2000",
-        "ticker": "RUT",
-        "pe": 33.56,
-        "forward_pe": 26.65,
-        "pe_52w_ago": 34.25,
-        "div_yield": 1.55
-      },
-      {
-        "id": "DJI",
-        "name": "Dow Jones 30",
-        "ticker": "DJI",
-        "pe": 20.3,
-        "forward_pe": 19.45,
-        "pe_52w_ago": 24.61,
-        "div_yield": 1.52
       }
     ]
   },

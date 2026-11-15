@@ -2011,7 +2011,7 @@ body.modal-open {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .index-val-head {
@@ -2122,64 +2122,6 @@ body.modal-open {
   margin: 6px 0 0;
   font-size: 11px;
   color: var(--muted);
-}
-
-.pe-compare-card {
-  background: #1a1a1a;
-  border: 1px solid #2b2b2b;
-  border-radius: 14px;
-  padding: 20px;
-  margin-bottom: 14px;
-}
-
-.pe-compare-chart-stage {
-  width: 100%;
-  height: 240px;
-}
-
-.index-secondary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.index-sec-card {
-  padding: 15px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.index-sec-name {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.index-sec-sub {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.index-sec-metrics {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.index-sec-m-label {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.index-sec-m-val {
-  font-size: 15px;
-  font-weight: 700;
 }
 
 /* Macro Timing Cards */

@@ -28,7 +28,6 @@ const state = {
 
 let cnnChartInstance = null;
 const peTrendChartInstances = {};
-let peCompareChartInstance = null;
 const indexPeRangeById = { SP500: "5y", NASDAQ100: "5y" };
 
 async function verifyPortfolioPin(rawPin) {
@@ -800,7 +799,6 @@ function switchMainView(nextView) {
         renderAllIndexCharts();
         cnnChartInstance?.resize();
         Object.values(peTrendChartInstances).forEach((inst) => inst?.resize());
-        peCompareChartInstance?.resize();
       });
     });
   }
@@ -2663,116 +2661,19 @@ function renderPeTrendChart(idx) {
   );
 }
 
-function renderPeCompareChart(primary, secondary) {
-  const el = document.getElementById("index-pe-compare-chart");
-  if (!el || typeof echarts === "undefined") return;
-
-  const all = [...(primary || []), ...(secondary || [])].filter((item) => item && item.name);
-  if (!all.length) return;
-
-  let inst = echarts.getInstanceByDom(el);
-  if (!inst) {
-    inst = echarts.init(el, null, { renderer: "canvas" });
-  }
-  peCompareChartInstance = inst;
-
-  const names = all.map((x) => `${x.name}`);
-  const pe52w = all.map((x) => (x.pe_52w_ago != null ? Number(x.pe_52w_ago) : null));
-  const peCur = all.map((x) => (x.pe != null ? Number(x.pe) : null));
-  const peFwd = all.map((x) => (x.forward_pe != null ? Number(x.forward_pe) : null));
-
-  const labelOpt = {
-    show: true,
-    position: "top",
-    color: "#d4d4d4",
-    fontSize: 11,
-    fontWeight: 700,
-    formatter: ({ value }) => (value != null ? `${Number(value).toFixed(1)}x` : ""),
-  };
-
-  inst.setOption(
-    {
-      animationDuration: 300,
-      grid: { left: 40, right: 16, top: 34, bottom: 28 },
-      legend: {
-        top: 0,
-        right: 4,
-        itemWidth: 12,
-        itemHeight: 10,
-        textStyle: { color: "#b5b5b5", fontSize: 11 },
-        data: ["52주 전 PER", "현재 PER", "Forward PER (선행)"],
-      },
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        backgroundColor: "#181818",
-        borderColor: "#333333",
-        textStyle: { color: "#F5F5F5", fontSize: 12 },
-        valueFormatter: (v) => (v != null ? `${Number(v).toFixed(2)}x` : "-"),
-      },
-      xAxis: {
-        type: "category",
-        data: names,
-        axisLine: { lineStyle: { color: "#2c2c2c" } },
-        axisTick: { show: false },
-        axisLabel: { color: "#e5e5e5", fontSize: 12, fontWeight: 700 },
-      },
-      yAxis: {
-        type: "value",
-        splitLine: { lineStyle: { color: "#232323" } },
-        axisLabel: {
-          color: "#8d8d8d",
-          fontSize: 11,
-          formatter: (v) => `${v}x`,
-        },
-      },
-      series: [
-        {
-          name: "52주 전 PER",
-          type: "bar",
-          barMaxWidth: 26,
-          itemStyle: { color: "#52525b", borderRadius: [5, 5, 0, 0] },
-          label: labelOpt,
-          data: pe52w,
-        },
-        {
-          name: "현재 PER",
-          type: "bar",
-          barMaxWidth: 26,
-          itemStyle: { color: "#C3BDFF", borderRadius: [5, 5, 0, 0] },
-          label: labelOpt,
-          data: peCur,
-        },
-        {
-          name: "Forward PER (선행)",
-          type: "bar",
-          barMaxWidth: 26,
-          itemStyle: { color: "#4ade80", borderRadius: [5, 5, 0, 0] },
-          label: { ...labelOpt, color: "#4ade80" },
-          data: peFwd,
-        },
-      ],
-    },
-    true
-  );
-}
-
 function renderAllIndexCharts() {
   const payload = state.macro;
   if (!payload || state.activeView !== "index") return;
   const cnnHist = payload.sentiment?.cnn?.history;
   if (cnnHist) renderCnnFearGreedChart(cnnHist);
   const primary = payload.indices?.primary || [];
-  const secondary = payload.indices?.secondary || [];
   primary.forEach((idx) => renderPeTrendChart(idx));
-  renderPeCompareChart(primary, secondary);
 }
 
 function renderIndexDashboard() {
   const payload = state.macro;
   const heroGrid = document.getElementById("sentiment-hero-grid");
   const primaryGrid = document.getElementById("index-primary-grid");
-  const secondaryGrid = document.getElementById("index-secondary-grid");
   const macroGrid = document.getElementById("macro-indicators-grid");
   if (!heroGrid || !payload) return;
 
@@ -2921,23 +2822,6 @@ function renderIndexDashboard() {
         </div>
       </article>`;
     })
-    .join("");
-
-  const secondary = payload.indices?.secondary || [];
-  secondaryGrid.innerHTML = secondary
-    .map(
-      (idx) => `<article class="index-sec-card">
-        <div>
-          <div class="index-sec-name">${escapeHtml(idx.name)} (${escapeHtml(idx.ticker)})</div>
-          <span class="index-sec-sub">WSJ Market Data · 52주 전 PER ${formatMacroNum(idx.pe_52w_ago, 2)}x</span>
-        </div>
-        <div class="index-sec-metrics">
-          <div><span class="index-sec-m-label">PER</span><span class="index-sec-m-val">${formatMacroNum(idx.pe, 2)}x</span></div>
-          <div><span class="index-sec-m-label">Forward PER</span><span class="index-sec-m-val">${formatMacroNum(idx.forward_pe, 2)}x</span></div>
-          <div><span class="index-sec-m-label">배당률</span><span class="index-sec-m-val">${formatMacroNum(idx.div_yield, 2, "%")}</span></div>
-        </div>
-      </article>`
-    )
     .join("");
 
   if (state.activeView === "index") {
@@ -3353,7 +3237,6 @@ function bindControls() {
     if (state.activeView === "index") {
       cnnChartInstance?.resize();
       Object.values(peTrendChartInstances).forEach((inst) => inst?.resize());
-      peCompareChartInstance?.resize();
     }
     if (modalChartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
       modalChartInstance.resize();

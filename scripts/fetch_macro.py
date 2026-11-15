@@ -538,26 +538,6 @@ def fetch_all_macro() -> dict[str, Any]:
                     "technicals": tv.get("NASDAQ:NDX") or {},
                 },
             ],
-            "secondary": [
-                {
-                    "id": "RUT",
-                    "name": "Russell 2000",
-                    "ticker": "RUT",
-                    "pe": wsj_rut.get("pe"),
-                    "forward_pe": wsj_rut.get("forward_pe"),
-                    "pe_52w_ago": wsj_rut.get("pe_52w_ago"),
-                    "div_yield": wsj_rut.get("div_yield"),
-                },
-                {
-                    "id": "DJI",
-                    "name": "Dow Jones 30",
-                    "ticker": "DJI",
-                    "pe": wsj_dji.get("pe"),
-                    "forward_pe": wsj_dji.get("forward_pe"),
-                    "pe_52w_ago": wsj_dji.get("pe_52w_ago"),
-                    "div_yield": wsj_dji.get("div_yield"),
-                },
-            ],
         },
         "macro": {
             "vix": {
