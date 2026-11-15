@@ -1296,6 +1296,24 @@ body.modal-open {
   border-bottom: 1px solid #222222;
 }
 
+.holding-row-link {
+  text-decoration: none;
+  color: inherit;
+  padding: 12px 8px;
+  margin: 0 -4px;
+  border-radius: 8px;
+  transition: background-color 0.16s ease;
+  cursor: pointer;
+}
+
+.holding-row-link:hover {
+  background-color: rgba(195, 189, 255, 0.06);
+}
+
+.holding-row-link:hover .holding-sym {
+  color: var(--accent);
+}
+
 .holding-row:last-child {
   border-bottom: none;
   padding-bottom: 4px;

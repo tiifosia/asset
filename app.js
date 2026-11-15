@@ -901,6 +901,22 @@ function renderPortfolioSummaryCards() {
   ].join("");
 }
 
+const HOLDING_LINKS_BY_SYMBOL = {
+  NAS100_USDT: "https://www.gate.com/futures/USDT/NAS100_USDT",
+  SPX500_USDT: "https://www.gate.com/futures/USDT/SPX500_USDT",
+  BTC_USDT: "https://www.gate.com/futures/USDT/BTC_USDT",
+  TECL: "https://www.tossinvest.com/stocks/US20081217003/order",
+  "0219E0": "https://www.tossinvest.com/stocks/A0219E0/order",
+  BOXX: "https://www.tossinvest.com/stocks/AMX0221228001/order",
+  COKE: "https://www.tossinvest.com/stocks/US19900326008/order",
+  CCEP: "https://www.tossinvest.com/stocks/US20210913002/order",
+};
+
+function getHoldingLinkUrl(item) {
+  if (!item || (item.exchange !== "Gate.io" && item.exchange !== "토스증권")) return "";
+  return HOLDING_LINKS_BY_SYMBOL[String(item.symbol || "")] || "";
+}
+
 function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessage, getSubText) {
   const badgeEl = document.getElementById(badgeId);
   const listEl = document.getElementById(listId);
@@ -922,8 +938,13 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
       const hasPnl = item.pnl_krw != null || item.pnl_usd != null;
       const pnlColorClass = hasPnl ? getPnlColorClass(cur === "krw" ? item.pnl_krw : item.pnl_usd) : "";
       const metaSub = `${item.symbol !== primaryName ? `${item.symbol} · ` : ""}수량 ${formatQuantity(item.quantity)}`;
+      const linkUrl = getHoldingLinkUrl(item);
+      const tagOpen = linkUrl
+        ? `<a class="holding-row holding-row-link" href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer">`
+        : `<div class="holding-row">`;
+      const tagClose = linkUrl ? `</a>` : `</div>`;
       return `
-        <div class="holding-row">
+        ${tagOpen}
           <div class="holding-info">
             <div class="holding-sym" title="${escapeHtml(item.name || item.symbol)}">${escapeHtml(primaryName)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
             <div class="holding-sub tabular">${escapeHtml(metaSub)}</div>
@@ -932,7 +953,7 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
             <div class="holding-val-main">${escapeHtml(valMain)}</div>
             <div class="holding-val-sub${pnlColorClass ? ` ${pnlColorClass}` : ""}">${escapeHtml(valSub)}</div>
           </div>
-        </div>
+        ${tagClose}
       `;
     })
     .join("");
