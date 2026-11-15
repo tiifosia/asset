@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MY ASSET</title>
-  <link rel="stylesheet" href="./styles.css?v=20261115-12" />
+  <link rel="stylesheet" href="./styles.css?v=20261115-13" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js?v=20261115-12" defer></script>
+  <script src="./app.js?v=20261115-13" defer></script>
 </head>
 <body>
   <div class="container">
@@ -44,9 +44,14 @@
             <button id="open-api-guide-btn" type="button" class="header-secondary-btn hidden">
               API 자동연동 설정
             </button>
-            <button id="nav-toggle-view-btn" type="button" class="nav-switch-btn">
-              MDD check
-            </button>
+            <div class="nav-switch-group" role="group" aria-label="페이지 선택">
+              <button id="nav-portfolio-btn" type="button" class="nav-switch-btn active" data-view="portfolio" aria-pressed="true">
+                MY ASSET
+              </button>
+              <button id="nav-mdd-btn" type="button" class="nav-switch-btn" data-view="mdd" aria-pressed="false">
+                MDD check
+              </button>
+            </div>
           </div>
 
           <div class="meta-bottom-row">

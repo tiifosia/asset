@@ -718,7 +718,8 @@ function updateHeaderForView() {
   const currencyGroupEl = document.getElementById("currency-group");
   const legendEl = document.getElementById("header-mdd-legend");
   const footerEl = document.getElementById("site-footer");
-  const toggleBtn = document.getElementById("nav-toggle-view-btn");
+  const portfolioBtn = document.getElementById("nav-portfolio-btn");
+  const mddBtn = document.getElementById("nav-mdd-btn");
   const updatedEl = document.getElementById("updated-at");
 
   eyebrowEl?.classList.toggle("hidden", isPortfolio);
@@ -726,6 +727,10 @@ function updateHeaderForView() {
   currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
   legendEl?.classList.toggle("hidden", isPortfolio);
   footerEl?.classList.toggle("hidden", isPortfolio);
+  portfolioBtn?.classList.toggle("active", isPortfolio);
+  portfolioBtn?.setAttribute("aria-pressed", String(isPortfolio));
+  mddBtn?.classList.toggle("active", !isPortfolio);
+  mddBtn?.setAttribute("aria-pressed", String(!isPortfolio));
   updatePortfolioAuthUi();
 
   if (isPortfolio) {
@@ -733,7 +738,6 @@ function updateHeaderForView() {
     eyebrowEl.textContent = "";
     titleEl.textContent = "MY ASSET";
     subtitleEl.textContent = "";
-    toggleBtn.textContent = "MDD check";
     updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
   } else {
     document.title = "ASSET MDD TRACKER";
@@ -741,7 +745,6 @@ function updateHeaderForView() {
     titleEl.textContent = "ASSET MDD TRACKER";
     subtitleEl.textContent =
       "미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)";
-    toggleBtn.textContent = "← MY ASSET";
     updatedEl.textContent = state.mddUpdatedAt ? formatUpdatedAt(state.mddUpdatedAt) : "-";
   }
 }
@@ -2166,8 +2169,11 @@ function bindControls() {
   });
 
   // View Switcher
-  document.getElementById("nav-toggle-view-btn").addEventListener("click", () => {
-    switchMainView(state.activeView === "portfolio" ? "mdd" : "portfolio");
+  document.getElementById("nav-portfolio-btn")?.addEventListener("click", () => {
+    if (state.activeView !== "portfolio") switchMainView("portfolio");
+  });
+  document.getElementById("nav-mdd-btn")?.addEventListener("click", () => {
+    if (state.activeView !== "mdd") switchMainView("mdd");
   });
 
   // Currency Toggle

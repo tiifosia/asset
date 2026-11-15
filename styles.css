@@ -1108,21 +1108,40 @@ body.modal-open {
   color: var(--accent);
 }
 
+.nav-switch-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .nav-switch-btn {
   appearance: none;
-  background-color: var(--accent);
-  color: var(--bg);
-  border: 1px solid var(--accent);
+  background-color: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--surface);
   border-radius: 7px;
   padding: 7px 14px;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .nav-switch-btn:hover {
-  opacity: 0.9;
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.nav-switch-btn.active {
+  background-color: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.nav-switch-btn.active:hover {
+  opacity: 0.92;
+  color: var(--bg);
+  border-color: var(--accent);
 }
 
 .status-banner,
