@@ -1,10 +1,11 @@
 const PORTFOLIO_DATA_URL = "./public/data/portfolio.json";
 const MDD_DATA_URL = "./public/data/mdd.json";
+const COMPANIES_DATA_URL = "./public/data/companies.json";
 const PORTFOLIO_PIN_SHA256 = "8e44d9bf2f3c1c43531adb5af938704486efc9224533583acb749390695dfe53";
 const MASKED_TEXT = "****";
 
 const state = {
-  activeView: "portfolio", // "portfolio" | "mdd"
+  activeView: "portfolio", // "portfolio" | "mdd" | "company"
   currency: "krw", // "krw" | "usd"
   portfolioUnlocked: false,
   portfolio: null,
@@ -14,6 +15,18 @@ const state = {
   stocks: [],
   searchQuery: "",
   sortBy: "rank",
+  companies: null,
+  companiesLoading: false,
+  companiesPromise: null,
+  companiesError: "",
+  companiesUpdatedAt: "",
+  companiesSectors: [],
+  companySearch: "",
+  companyPreset: "all",
+  companyExchange: "ALL",
+  companySector: "ALL",
+  companySort: "rank",
+  companyLimit: 100,
 };
 
 async function verifyPortfolioPin(rawPin) {
@@ -708,9 +721,14 @@ function updatePortfolioAuthUi() {
 }
 
 function updateHeaderForView() {
-  const isPortfolio = state.activeView === "portfolio";
+  const view = state.activeView;
+  const isPortfolio = view === "portfolio";
+  const isMdd = view === "mdd";
+  const isCompany = view === "company";
+
   document.getElementById("portfolio-view").classList.toggle("hidden", !isPortfolio);
-  document.getElementById("mdd-view").classList.toggle("hidden", isPortfolio);
+  document.getElementById("mdd-view").classList.toggle("hidden", !isMdd);
+  document.getElementById("company-view")?.classList.toggle("hidden", !isCompany);
 
   const eyebrowEl = document.getElementById("header-eyebrow");
   const titleEl = document.getElementById("header-title");
@@ -720,17 +738,21 @@ function updateHeaderForView() {
   const footerEl = document.getElementById("site-footer");
   const portfolioBtn = document.getElementById("nav-portfolio-btn");
   const mddBtn = document.getElementById("nav-mdd-btn");
+  const companyBtn = document.getElementById("nav-company-btn");
   const updatedEl = document.getElementById("updated-at");
 
   eyebrowEl?.classList.toggle("hidden", isPortfolio);
   subtitleEl?.classList.add("hidden");
   currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
-  legendEl?.classList.toggle("hidden", isPortfolio);
-  footerEl?.classList.toggle("hidden", isPortfolio);
+  legendEl?.classList.toggle("hidden", !isMdd);
+  footerEl?.classList.toggle("hidden", !isMdd);
+
   portfolioBtn?.classList.toggle("active", isPortfolio);
   portfolioBtn?.setAttribute("aria-pressed", String(isPortfolio));
-  mddBtn?.classList.toggle("active", !isPortfolio);
-  mddBtn?.setAttribute("aria-pressed", String(!isPortfolio));
+  mddBtn?.classList.toggle("active", isMdd);
+  mddBtn?.setAttribute("aria-pressed", String(isMdd));
+  companyBtn?.classList.toggle("active", isCompany);
+  companyBtn?.setAttribute("aria-pressed", String(isCompany));
   updatePortfolioAuthUi();
 
   if (isPortfolio) {
@@ -739,20 +761,27 @@ function updateHeaderForView() {
     titleEl.textContent = "MY ASSET";
     subtitleEl.textContent = "";
     updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
-  } else {
+  } else if (isMdd) {
     document.title = "ASSET MDD TRACKER";
     eyebrowEl.textContent = "US MARKET DRAWDOWN DASHBOARD";
     titleEl.textContent = "ASSET MDD TRACKER";
     subtitleEl.textContent = "";
     updatedEl.textContent = state.mddUpdatedAt ? formatUpdatedAt(state.mddUpdatedAt) : "-";
+  } else {
+    document.title = "US COMPANY INFO";
+    eyebrowEl.textContent = "NYSE · NASDAQ SCREENER & FINANCIALS";
+    titleEl.textContent = "COMPANY INFO";
+    subtitleEl.textContent = "";
+    const ts = state.companiesUpdatedAt || state.mddUpdatedAt;
+    updatedEl.textContent = ts ? formatUpdatedAt(ts) : "-";
   }
 }
 
 function switchMainView(nextView) {
-  state.activeView = nextView === "mdd" ? "mdd" : "portfolio";
+  state.activeView = nextView === "mdd" || nextView === "company" ? nextView : "portfolio";
   updateHeaderForView();
   if (window.history && window.history.replaceState) {
-    const hash = state.activeView === "mdd" ? "#mdd" : "#portfolio";
+    const hash = state.activeView === "mdd" ? "#mdd" : state.activeView === "company" ? "#company" : "#portfolio";
     if (window.location.hash !== hash) {
       window.history.replaceState(null, "", hash);
     }
@@ -764,6 +793,10 @@ function switchMainView(nextView) {
         pfViewport?.scheduleCalloutsUpdate();
       }
       pfPieChartInstance?.resize();
+    });
+  } else if (state.activeView === "company") {
+    ensureCompaniesLoaded().then(() => {
+      renderCompanies();
     });
   }
 }
@@ -1667,14 +1700,88 @@ function renderBenchmarks() {
     .join("");
 }
 
+function ensureCompaniesLoaded() {
+  if (state.companies) return Promise.resolve(state.companies);
+  if (state.companiesPromise) return state.companiesPromise;
+
+  state.companiesLoading = true;
+  state.companiesError = "";
+  state.companiesPromise = fetch(COMPANIES_DATA_URL, { cache: "no-cache" })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((payload) => {
+      state.companies = Array.isArray(payload.companies) ? payload.companies : [];
+      state.companiesUpdatedAt = payload.updated_at || "";
+      state.companiesSectors = Array.isArray(payload.sectors) ? payload.sectors : [];
+      populateCompanySectorOptions();
+      if (state.activeView === "company") {
+        updateHeaderForView();
+      }
+      if (state.searchQuery.trim()) {
+        renderStocks();
+      }
+      return state.companies;
+    })
+    .catch((err) => {
+      state.companiesError = err?.message || "오류";
+      return null;
+    })
+    .finally(() => {
+      state.companiesLoading = false;
+    });
+
+  return state.companiesPromise;
+}
+
+function populateCompanySectorOptions() {
+  const selectEl = document.getElementById("company-sector-select");
+  if (!selectEl) return;
+  const current = state.companySector;
+  const sectors = state.companiesSectors || [];
+  selectEl.innerHTML = [
+    `<option value="ALL">전체 섹터 (${sectors.length})</option>`,
+    ...sectors.map((sec) => `<option value="${escapeHtml(sec)}">${escapeHtml(sec)}</option>`),
+  ].join("");
+  selectEl.value = sectors.includes(current) ? current : "ALL";
+}
+
+function buildStockLogoHtml(stock, extraClass = "") {
+  const logoUrls = buildStockLogoUrls(stock);
+  const primaryLogo = logoUrls[0] || "";
+  const fallbackLogos = logoUrls.slice(1).join("|");
+  const monogram = escapeHtml((stock?.ticker || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 3) || "?");
+  const cls = extraClass ? `stock-logo-circle ${extraClass}` : "stock-logo-circle";
+  if (primaryLogo) {
+    return `<div class="${cls}" aria-hidden="true">
+      <img
+        class="stock-logo-img"
+        src="${escapeHtml(primaryLogo)}"
+        data-fallbacks="${escapeHtml(fallbackLogos)}"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+      <span class="stock-logo-fallback">${monogram}</span>
+    </div>`;
+  }
+  return `<div class="${cls} is-fallback" aria-hidden="true">
+    <span class="stock-logo-fallback">${monogram}</span>
+  </div>`;
+}
+
 function getFilteredAndSortedStocks() {
   const q = state.searchQuery.trim().toLowerCase();
-  const filtered = state.stocks.filter((s) => {
+  const sourceList = q && state.companies ? state.companies : state.stocks;
+
+  const filtered = sourceList.filter((s) => {
     if (!q) return true;
     return (
       s.ticker.toLowerCase().includes(q) ||
       s.name.toLowerCase().includes(q) ||
-      (s.sector && s.sector.toLowerCase().includes(q))
+      (s.sector && s.sector.toLowerCase().includes(q)) ||
+      (s.industry && s.industry.toLowerCase().includes(q))
     );
   });
 
@@ -1691,7 +1798,18 @@ function getFilteredAndSortedStocks() {
       break;
     case "rank":
     default:
-      sorted.sort((a, b) => a.rank - b.rank);
+      if (q) {
+        // Put exact/prefix ticker matches ahead of pure rank when searching 4,700+ companies.
+        sorted.sort((a, b) => {
+          const at = a.ticker.toLowerCase();
+          const bt = b.ticker.toLowerCase();
+          const aExact = at === q ? 0 : at.startsWith(q) ? 1 : 2;
+          const bExact = bt === q ? 0 : bt.startsWith(q) ? 1 : 2;
+          return aExact - bExact || a.rank - b.rank;
+        });
+      } else {
+        sorted.sort((a, b) => a.rank - b.rank);
+      }
       break;
   }
   return sorted;
@@ -1717,10 +1835,23 @@ function buildStockLogoUrls(stock) {
 function renderStocks() {
   const listEl = document.getElementById("stocks-list");
   const countEl = document.getElementById("stock-count");
-  const items = getFilteredAndSortedStocks();
+  const hasQuery = Boolean(state.searchQuery.trim());
+  if (hasQuery && !state.companies && !state.companiesError) {
+    ensureCompaniesLoaded();
+  }
 
-  if (state.searchQuery.trim()) {
-    countEl.textContent = `검색 ${items.length} / ${state.stocks.length}개`;
+  const allMatches = getFilteredAndSortedStocks();
+  const totalPool = hasQuery && state.companies ? state.companies.length : state.stocks.length;
+  const items = hasQuery ? allMatches.slice(0, 150) : allMatches;
+
+  if (hasQuery) {
+    if (!state.companies && state.companiesLoading) {
+      countEl.textContent = `검색 ${allMatches.length}개 · 전체 미국 기업 불러오는 중...`;
+    } else if (allMatches.length > items.length) {
+      countEl.textContent = `상위 ${items.length} / 매칭 ${allMatches.length.toLocaleString()}개 (전체 ${totalPool.toLocaleString()}개)`;
+    } else {
+      countEl.textContent = `검색 ${allMatches.length.toLocaleString()} / 전체 ${totalPool.toLocaleString()}개`;
+    }
   } else {
     countEl.textContent = `${state.stocks.length}개 종목`;
   }
@@ -1733,25 +1864,7 @@ function renderStocks() {
   listEl.innerHTML = items
     .map((s) => {
       const curClass = Number(s.current_dd_abs) === 0 ? "cur-dd-pct at-ath" : "cur-dd-pct";
-      const logoUrls = buildStockLogoUrls(s);
-      const primaryLogo = logoUrls[0] || "";
-      const fallbackLogos = logoUrls.slice(1).join("|");
-      const monogram = escapeHtml((s.ticker || "").replace(/[^A-Za-z0-9]/g, "").slice(0, 3) || "?");
-      const logoHtml = primaryLogo
-        ? `<div class="stock-logo-circle" aria-hidden="true">
-            <img
-              class="stock-logo-img"
-              src="${escapeHtml(primaryLogo)}"
-              data-fallbacks="${escapeHtml(fallbackLogos)}"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-            <span class="stock-logo-fallback">${monogram}</span>
-          </div>`
-        : `<div class="stock-logo-circle is-fallback" aria-hidden="true">
-            <span class="stock-logo-fallback">${monogram}</span>
-          </div>`;
+      const logoHtml = buildStockLogoHtml(s);
       return `
         <div
           class="stock-row"
@@ -2020,8 +2133,52 @@ function renderModalChart() {
   modalViewport.scheduleCalloutsUpdate();
 }
 
+function toTradingViewSymbol(asset) {
+  const raw = String(asset?.ticker || "AAPL").replace(/-/g, ".");
+  const ex = String(asset?.exchange || "").toUpperCase();
+  return ex === "NYSE" || ex === "NASDAQ" ? `${ex}:${raw}` : raw;
+}
+
+function mountTradingViewChart(containerEl, asset) {
+  if (!containerEl) return;
+  containerEl.innerHTML = "";
+  const wrapper = document.createElement("div");
+  wrapper.className = "tradingview-widget-container";
+  wrapper.style.width = "100%";
+  wrapper.style.height = "100%";
+
+  const widgetDiv = document.createElement("div");
+  widgetDiv.className = "tradingview-widget-container__widget";
+  widgetDiv.style.width = "100%";
+  widgetDiv.style.height = "100%";
+
+  const script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+  script.async = true;
+  script.text = JSON.stringify({
+    autosize: true,
+    symbol: toTradingViewSymbol(asset),
+    interval: "D",
+    timezone: "Asia/Seoul",
+    theme: "dark",
+    style: "1",
+    locale: "kr",
+    backgroundColor: "rgba(20, 20, 20, 1)",
+    gridColor: "rgba(51, 51, 51, 0.45)",
+    allow_symbol_change: false,
+    save_image: false,
+    calendar: false,
+    support_host: "https://www.tradingview.com",
+  });
+
+  wrapper.appendChild(widgetDiv);
+  wrapper.appendChild(script);
+  containerEl.appendChild(wrapper);
+}
+
 async function openAssetModal(asset) {
-  if (!asset || !asset.history_file) return;
+  if (!asset) return;
   modalAsset = asset;
   modalInterval = "daily";
 
@@ -2041,13 +2198,43 @@ async function openAssetModal(asset) {
 
   const modalEl = document.getElementById("chart-modal");
   const loadingEl = document.getElementById("chart-loading");
+  const toolbarEl = modalEl.querySelector(".modal-toolbar");
+  const hintEl = modalEl.querySelector(".modal-footer-hint");
+  const echartEl = document.getElementById("echart-canvas");
+  const yAxisEl = document.getElementById("yaxis-zoom-zone");
+  const tvStageEl = document.getElementById("tv-mdd-chart-container");
+
   document.getElementById("chart-peak-callout").classList.add("hidden");
   document.getElementById("chart-trough-callout").classList.add("hidden");
-  loadingEl.textContent = "차트 데이터를 불러오는 중입니다...";
-  loadingEl.classList.remove("hidden");
 
   modalEl.classList.remove("hidden");
   document.body.classList.add("modal-open");
+
+  if (!asset.history_file) {
+    // Rank 101+ searched stocks use live TradingView chart widget.
+    toolbarEl?.classList.add("hidden");
+    hintEl?.classList.add("hidden");
+    echartEl?.classList.add("hidden");
+    yAxisEl?.classList.add("hidden");
+    loadingEl.classList.add("hidden");
+    if (tvStageEl) {
+      tvStageEl.classList.remove("hidden");
+      mountTradingViewChart(tvStageEl, asset);
+    }
+    return;
+  }
+
+  toolbarEl?.classList.remove("hidden");
+  hintEl?.classList.remove("hidden");
+  echartEl?.classList.remove("hidden");
+  yAxisEl?.classList.remove("hidden");
+  if (tvStageEl) {
+    tvStageEl.classList.add("hidden");
+    tvStageEl.innerHTML = "";
+  }
+
+  loadingEl.textContent = "차트 데이터를 불러오는 중입니다...";
+  loadingEl.classList.remove("hidden");
 
   try {
     let historyData = historyCache.get(asset.history_file);
@@ -2071,7 +2258,14 @@ async function openAssetModal(asset) {
 
 function closeAssetModal() {
   document.getElementById("chart-modal").classList.add("hidden");
-  document.body.classList.remove("modal-open");
+  const tvStageEl = document.getElementById("tv-mdd-chart-container");
+  if (tvStageEl) {
+    tvStageEl.innerHTML = "";
+    tvStageEl.classList.add("hidden");
+  }
+  if (document.getElementById("company-detail-modal")?.classList.contains("hidden")) {
+    document.body.classList.remove("modal-open");
+  }
   modalAsset = null;
 }
 
@@ -2083,7 +2277,10 @@ function openApiGuideModal() {
 
 function closeApiGuideModal() {
   document.getElementById("api-guide-modal").classList.add("hidden");
-  if (document.getElementById("chart-modal").classList.contains("hidden")) {
+  if (
+    document.getElementById("chart-modal").classList.contains("hidden") &&
+    document.getElementById("company-detail-modal")?.classList.contains("hidden")
+  ) {
     document.body.classList.remove("modal-open");
   }
 }
@@ -2096,9 +2293,421 @@ function findAssetFromElement(el) {
     return state.benchmarks.find((b) => b.id === key) || null;
   }
   if (type === "stock") {
-    return state.stocks.find((s) => s.ticker === key) || null;
+    return (
+      state.stocks.find((s) => s.ticker === key) ||
+      (state.companies ? state.companies.find((c) => c.ticker === key) : null) ||
+      null
+    );
   }
   return null;
+}
+
+/* ---------- COMPANY Info View & Detail Modal ---------- */
+
+function formatCompactUsd(val) {
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
+  const num = Number(val);
+  const abs = Math.abs(num);
+  const sign = num < 0 ? "-" : "";
+  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(2)}T`;
+  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(2)}B`;
+  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(0)}K`;
+  return `${sign}$${abs.toFixed(0)}`;
+}
+
+function formatNumOrDash(val, digits = 2, suffix = "") {
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
+  return `${Number(val).toFixed(digits)}${suffix}`;
+}
+
+function formatSignedPct(val, digits = 2) {
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return { text: "-", cls: "" };
+  const num = Number(val);
+  const sign = num > 0 ? "+" : "";
+  const cls = num > 0 ? "pos" : num < 0 ? "neg" : "";
+  return { text: `${sign}${num.toFixed(digits)}%`, cls };
+}
+
+function getRecSummary(rec) {
+  if (rec === null || rec === undefined || !Number.isFinite(Number(rec))) {
+    return { text: "-", cls: "" };
+  }
+  const v = Number(rec);
+  if (v >= 0.5) return { text: `강력 매수 (${v.toFixed(2)})`, cls: "pos" };
+  if (v >= 0.1) return { text: `매수 (${v.toFixed(2)})`, cls: "pos" };
+  if (v > -0.1) return { text: `중립 (${v.toFixed(2)})`, cls: "" };
+  if (v > -0.5) return { text: `매도 (${v.toFixed(2)})`, cls: "neg" };
+  return { text: `강력 매도 (${v.toFixed(2)})`, cls: "neg" };
+}
+
+function matchesCompanyPreset(c, preset) {
+  switch (preset) {
+    case "low_per":
+      return c.per !== null && c.per > 0 && c.per <= 15;
+    case "high_div":
+      return c.div_yield !== null && c.div_yield >= 3;
+    case "rsi_oversold":
+      return c.rsi !== null && c.rsi <= 35;
+    case "near_52w_low":
+      return (
+        c.low_52w !== null &&
+        c.low_52w > 0 &&
+        c.current_price !== null &&
+        c.current_price <= c.low_52w * 1.1
+      );
+    case "ytd_leaders":
+      return c.perf_ytd !== null && c.perf_ytd > 0;
+    case "all":
+    default:
+      return true;
+  }
+}
+
+function compareNullable(a, b, asc = true) {
+  const aValid = a !== null && a !== undefined && Number.isFinite(Number(a));
+  const bValid = b !== null && b !== undefined && Number.isFinite(Number(b));
+  if (!aValid && !bValid) return 0;
+  if (!aValid) return 1;
+  if (!bValid) return -1;
+  return asc ? Number(a) - Number(b) : Number(b) - Number(a);
+}
+
+function getFilteredAndSortedCompanies() {
+  const list = state.companies || [];
+  const q = state.companySearch.trim().toLowerCase();
+
+  const filtered = list.filter((c) => {
+    if (state.companyExchange !== "ALL" && c.exchange !== state.companyExchange) return false;
+    if (state.companySector !== "ALL" && c.sector !== state.companySector) return false;
+    if (!matchesCompanyPreset(c, state.companyPreset)) return false;
+    if (q) {
+      const hit =
+        c.ticker.toLowerCase().includes(q) ||
+        c.name.toLowerCase().includes(q) ||
+        (c.sector && c.sector.toLowerCase().includes(q)) ||
+        (c.industry && c.industry.toLowerCase().includes(q));
+      if (!hit) return false;
+    }
+    return true;
+  });
+
+  const sorted = [...filtered];
+  switch (state.companySort) {
+    case "change_desc":
+      sorted.sort((a, b) => compareNullable(a.change, b.change, false) || a.rank - b.rank);
+      break;
+    case "per_asc":
+      sorted.sort((a, b) => {
+        const av = a.per !== null && a.per > 0 ? a.per : null;
+        const bv = b.per !== null && b.per > 0 ? b.per : null;
+        return compareNullable(av, bv, true) || a.rank - b.rank;
+      });
+      break;
+    case "div_desc":
+      sorted.sort((a, b) => compareNullable(a.div_yield, b.div_yield, false) || a.rank - b.rank);
+      break;
+    case "ytd_desc":
+      sorted.sort((a, b) => compareNullable(a.perf_ytd, b.perf_ytd, false) || a.rank - b.rank);
+      break;
+    case "rsi_asc":
+      sorted.sort((a, b) => compareNullable(a.rsi, b.rsi, true) || a.rank - b.rank);
+      break;
+    case "rank":
+    default:
+      if (q) {
+        sorted.sort((a, b) => {
+          const at = a.ticker.toLowerCase();
+          const bt = b.ticker.toLowerCase();
+          const aExact = at === q ? 0 : at.startsWith(q) ? 1 : 2;
+          const bExact = bt === q ? 0 : bt.startsWith(q) ? 1 : 2;
+          return aExact - bExact || a.rank - b.rank;
+        });
+      } else {
+        sorted.sort((a, b) => a.rank - b.rank);
+      }
+      break;
+  }
+  return sorted;
+}
+
+function build52wRangeHtml(c) {
+  const low = Number(c.low_52w);
+  const high = Number(c.high_52w);
+  const cur = Number(c.current_price);
+  if (!Number.isFinite(low) || !Number.isFinite(high) || high <= low || !Number.isFinite(cur)) {
+    return `<div class="range52-wrap"><span class="company-sub-line">52주 범위 정보 없음</span></div>`;
+  }
+  const pct = Math.max(0, Math.min(100, ((cur - low) / (high - low)) * 100));
+  return `
+    <div class="range52-wrap">
+      <div class="range52-bar" title="52주 저가 ${formatPrice(low, false)} ~ 고가 ${formatPrice(high, false)}">
+        <div class="range52-fill" style="width:${pct.toFixed(1)}%"></div>
+        <div class="range52-dot" style="left:${pct.toFixed(1)}%"></div>
+      </div>
+      <div class="range52-labels tabular">
+        <span>52L ${formatPrice(low, false)}</span>
+        <span>52H ${formatPrice(high, false)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompanies() {
+  const listEl = document.getElementById("company-list");
+  const countEl = document.getElementById("company-count");
+  const moreWrap = document.getElementById("company-more-wrap");
+  const moreBtn = document.getElementById("company-more-btn");
+  if (!listEl || !countEl) return;
+
+  if (!state.companies) {
+    if (state.companiesError) {
+      countEl.textContent = "오류";
+      listEl.innerHTML = `<div class="error-state">기업 데이터를 불러오지 못했습니다 (${escapeHtml(state.companiesError)}).</div>`;
+    } else {
+      countEl.textContent = "불러오는 중...";
+      listEl.innerHTML = `<div class="loading-state">전체 NYSE · NASDAQ 기업 데이터를 불러오는 중입니다...</div>`;
+    }
+    moreWrap?.classList.add("hidden");
+    return;
+  }
+
+  const totalCount = state.companies.length;
+  const matched = getFilteredAndSortedCompanies();
+  const shown = matched.slice(0, state.companyLimit);
+  const isDefaultTopView =
+    !state.companySearch.trim() &&
+    state.companyPreset === "all" &&
+    state.companyExchange === "ALL" &&
+    state.companySector === "ALL" &&
+    state.companySort === "rank";
+
+  if (isDefaultTopView && state.companyLimit <= 100) {
+    countEl.textContent = `Top ${shown.length} / 전체 ${totalCount.toLocaleString()}개 기업`;
+  } else {
+    countEl.textContent = `${shown.length.toLocaleString()} / 매칭 ${matched.length.toLocaleString()}개 (전체 ${totalCount.toLocaleString()}개)`;
+  }
+
+  if (!shown.length) {
+    listEl.innerHTML = `<div class="empty-state">조건에 해당하는 상장 기업이 없습니다.</div>`;
+    moreWrap?.classList.add("hidden");
+    return;
+  }
+
+  listEl.innerHTML = shown
+    .map((c) => {
+      const exClass = c.exchange === "NASDAQ" ? "exchange-nasdaq" : c.exchange === "NYSE" ? "exchange-nyse" : "";
+      const chg = formatSignedPct(c.change, 2);
+      const chgCls = c.change > 0 ? "up" : c.change < 0 ? "down" : "flat";
+      const p1m = formatSignedPct(c.perf_1m, 1);
+      const pytd = formatSignedPct(c.perf_ytd, 1);
+      const p1y = formatSignedPct(c.perf_1y, 1);
+      const roeStr = formatNumOrDash(c.roe, 1, "%");
+      const deStr = formatNumOrDash(c.debt_to_equity, 1, "%");
+
+      return `
+        <article
+          class="company-row"
+          data-company-ticker="${escapeHtml(c.ticker)}"
+          tabindex="0"
+          role="button"
+          aria-label="${escapeHtml(c.ticker)} (${escapeHtml(c.name)}) 기업 상세 보기"
+        >
+          <div class="company-rank tabular">#${c.rank}</div>
+          <div class="company-identity">
+            ${buildStockLogoHtml(c)}
+            <div class="company-id-text">
+              <div class="company-title-line">
+                <span class="company-ticker">${escapeHtml(c.ticker)}</span>
+                ${c.exchange ? `<span class="company-badge ${exClass}">${escapeHtml(c.exchange)}</span>` : ""}
+                <span class="row-mcap tabular">${formatMarketCap(c.market_cap)}</span>
+              </div>
+              <div class="company-name-line" title="${escapeHtml(c.name)}">${escapeHtml(c.name)}</div>
+              <div class="company-sub-line">${escapeHtml(c.sector || "기타")}${c.industry ? ` · ${escapeHtml(c.industry)}` : ""}</div>
+            </div>
+          </div>
+
+          <div class="company-price-col">
+            <div class="company-price-top tabular">
+              <span class="company-price">${formatPrice(c.current_price, false)}</span>
+              <span class="company-change ${chgCls}">${chg.text}</span>
+            </div>
+            ${build52wRangeHtml(c)}
+          </div>
+
+          <div class="company-metrics-grid tabular">
+            <div class="cmetric-item">
+              <span class="cmetric-label">PER / PBR</span>
+              <span class="cmetric-val">${formatNumOrDash(c.per, 1)} / ${formatNumOrDash(c.pbr, 1)}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">배당수익률</span>
+              <span class="cmetric-val">${formatNumOrDash(c.div_yield, 2, "%")}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">1M / YTD</span>
+              <span class="cmetric-val">
+                <span class="${p1m.cls}">${p1m.text}</span> / <span class="${pytd.cls}">${pytd.text}</span>
+              </span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">1Y 수익률</span>
+              <span class="cmetric-val ${p1y.cls}">${p1y.text}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">매출 (TTM)</span>
+              <span class="cmetric-val">${formatCompactUsd(c.revenue)}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">순이익 (TTM)</span>
+              <span class="cmetric-val ${c.net_income < 0 ? "neg" : ""}">${formatCompactUsd(c.net_income)}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">ROE / 부채비율</span>
+              <span class="cmetric-val">${roeStr} / ${deStr}</span>
+            </div>
+            <div class="cmetric-item">
+              <span class="cmetric-label">RSI / MDD</span>
+              <span class="cmetric-val">${formatNumOrDash(c.rsi, 1)} / ${formatDrawdownPct(c.max_drawdown)}</span>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  if (matched.length > shown.length) {
+    const rem = matched.length - shown.length;
+    const step = Math.min(100, rem);
+    moreWrap?.classList.remove("hidden");
+    if (moreBtn) {
+      moreBtn.textContent = `더 보기 (+${step}개 · 남은 기업 ${rem.toLocaleString()}개)`;
+    }
+  } else {
+    moreWrap?.classList.add("hidden");
+  }
+}
+
+function openCompanyDetailModal(company) {
+  if (!company) return;
+  const modal = document.getElementById("company-detail-modal");
+  if (!modal) return;
+
+  const exClass = company.exchange === "NASDAQ" ? "exchange-nasdaq" : company.exchange === "NYSE" ? "exchange-nyse" : "";
+  const chg = formatSignedPct(company.change, 2);
+  const logoWrap = document.getElementById("cmodal-logo-wrap");
+  if (logoWrap) {
+    logoWrap.outerHTML = buildStockLogoHtml(company, "cmodal-logo").replace("<div ", '<div id="cmodal-logo-wrap" ');
+  }
+
+  document.getElementById("cmodal-title").textContent = company.name || company.ticker;
+  document.getElementById("cmodal-ticker").textContent = company.ticker;
+
+  const exBadge = document.getElementById("cmodal-exchange");
+  exBadge.textContent = company.exchange || "US";
+  exBadge.className = `company-badge ${exClass}`;
+
+  document.getElementById("cmodal-rank").textContent = `시총 #${company.rank}`;
+  document.getElementById("cmodal-sector").textContent =
+    `${company.sector || "기타"}${company.industry ? ` · ${company.industry}` : ""}`;
+  document.getElementById("cmodal-price").textContent = formatPrice(company.current_price, false);
+
+  const chgEl = document.getElementById("cmodal-change");
+  chgEl.textContent = chg.text;
+  chgEl.className = `tabular company-change ${company.change > 0 ? "up" : company.change < 0 ? "down" : "flat"}`;
+  document.getElementById("cmodal-mcap").textContent = `시총 ${formatMarketCap(company.market_cap)}`;
+
+  const tvSym = `${company.exchange ? `${company.exchange}-` : ""}${company.ticker.replace(/-/g, ".")}`;
+  const extLinks = [
+    { label: "TradingView", url: `https://www.tradingview.com/symbols/${encodeURIComponent(tvSym)}/` },
+    { label: "Yahoo Finance", url: `https://finance.yahoo.com/quote/${encodeURIComponent(company.ticker)}` },
+    { label: "Toss Invest", url: `https://tossinvest.com/?q=${encodeURIComponent(company.ticker)}` },
+  ];
+  document.getElementById("cmodal-ext-links").innerHTML = extLinks
+    .map(
+      (link) =>
+        `<a class="company-ext-link" href="${link.url}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)} ↗</a>`
+    )
+    .join("");
+
+  const pW = formatSignedPct(company.perf_w, 2);
+  const p1M = formatSignedPct(company.perf_1m, 2);
+  const p3M = formatSignedPct(company.perf_3m, 2);
+  const p6M = formatSignedPct(company.perf_6m, 2);
+  const pYTD = formatSignedPct(company.perf_ytd, 2);
+  const p1Y = formatSignedPct(company.perf_1y, 2);
+  const rec = getRecSummary(company.rec_all);
+
+  const kv = (label, value, cls = "") =>
+    `<div class="cdetail-kv"><span class="cdetail-k">${escapeHtml(label)}</span><span class="cdetail-v tabular ${cls}">${escapeHtml(String(value))}</span></div>`;
+
+  document.getElementById("company-detail-grid").innerHTML = `
+    <div class="cdetail-card">
+      <h4 class="cdetail-card-title">밸류에이션 (Valuation)</h4>
+      <div class="cdetail-kv-grid">
+        ${kv("PER (TTM)", formatNumOrDash(company.per, 2))}
+        ${kv("PBR (FQ)", formatNumOrDash(company.pbr, 2))}
+        ${kv("PSR", formatNumOrDash(company.psr, 2))}
+        ${kv("EV/EBITDA", formatNumOrDash(company.ev_ebitda, 2))}
+        ${kv("EPS (TTM)", company.eps !== null && company.eps !== undefined ? `$${Number(company.eps).toFixed(2)}` : "-")}
+        ${kv("배당수익률", formatNumOrDash(company.div_yield, 2, "%"))}
+      </div>
+    </div>
+    <div class="cdetail-card">
+      <h4 class="cdetail-card-title">재무 요약 &amp; ATH (Financials)</h4>
+      <div class="cdetail-kv-grid">
+        ${kv("시가총액", formatMarketCap(company.market_cap))}
+        ${kv("매출액 (TTM)", formatCompactUsd(company.revenue))}
+        ${kv("순이익 (TTM)", formatCompactUsd(company.net_income), company.net_income < 0 ? "neg" : "")}
+        ${kv("ROE", formatNumOrDash(company.roe, 2, "%"))}
+        ${kv("부채비율 (D/E)", formatNumOrDash(company.debt_to_equity, 1, "%"))}
+        ${kv("전고점 낙폭 / MDD", `${formatDrawdownPct(company.current_drawdown)} / ${formatDrawdownPct(company.max_drawdown)}`, "neg")}
+      </div>
+    </div>
+    <div class="cdetail-card">
+      <h4 class="cdetail-card-title">기간별 수익률 &amp; 52주 범위</h4>
+      <div class="cdetail-kv-grid">
+        ${kv("1주 (1W)", pW.text, pW.cls)}
+        ${kv("1개월 (1M)", p1M.text, p1M.cls)}
+        ${kv("3개월 (3M)", p3M.text, p3M.cls)}
+        ${kv("6개월 (6M)", p6M.text, p6M.cls)}
+        ${kv("연초 대비 (YTD)", pYTD.text, pYTD.cls)}
+        ${kv("1년 (1Y)", p1Y.text, p1Y.cls)}
+        ${kv("52주 최저", formatPrice(company.low_52w, false))}
+        ${kv("52주 최고", formatPrice(company.high_52w, false))}
+        ${kv("역대 최고가 (ATH)", formatPrice(company.ath_price, false))}
+      </div>
+    </div>
+    <div class="cdetail-card">
+      <h4 class="cdetail-card-title">기술적 지표 &amp; 시그널</h4>
+      <div class="cdetail-kv-grid">
+        ${kv("RSI (14)", formatNumOrDash(company.rsi, 2), company.rsi <= 35 ? "warn" : "")}
+        ${kv("SMA 50", formatPrice(company.sma50, false))}
+        ${kv("SMA 200", formatPrice(company.sma200, false))}
+        ${kv("Beta (1Y)", formatNumOrDash(company.beta, 2))}
+        ${kv("거래량", company.volume ? Number(company.volume).toLocaleString("en-US") : "-")}
+        ${kv("종합 시그널", rec.text, rec.cls)}
+      </div>
+    </div>
+  `;
+
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+  mountTradingViewChart(document.getElementById("company-tv-chart"), company);
+}
+
+function closeCompanyDetailModal() {
+  const modal = document.getElementById("company-detail-modal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  const chartEl = document.getElementById("company-tv-chart");
+  if (chartEl) chartEl.innerHTML = "";
+  if (
+    document.getElementById("chart-modal").classList.contains("hidden") &&
+    document.getElementById("api-guide-modal").classList.contains("hidden")
+  ) {
+    document.body.classList.remove("modal-open");
+  }
 }
 
 /* ---------- Control Bindings ---------- */
@@ -2173,6 +2782,9 @@ function bindControls() {
   });
   document.getElementById("nav-mdd-btn")?.addEventListener("click", () => {
     if (state.activeView !== "mdd") switchMainView("mdd");
+  });
+  document.getElementById("nav-company-btn")?.addEventListener("click", () => {
+    if (state.activeView !== "company") switchMainView("company");
   });
 
   // Currency Toggle
@@ -2300,27 +2912,106 @@ function bindControls() {
   benchmarksGrid.addEventListener("click", (e) => handleContainerActivate(".benchmark-card", e));
   benchmarksGrid.addEventListener("keydown", (e) => handleContainerActivate(".benchmark-card", e));
 
+  const handleLogoError = (e) => {
+    const img = e.target;
+    if (!img || !img.classList || !img.classList.contains("stock-logo-img")) return;
+    const raw = img.dataset.fallbacks || "";
+    const queue = raw ? raw.split("|").filter(Boolean) : [];
+    if (queue.length > 0) {
+      const nextUrl = queue.shift();
+      img.dataset.fallbacks = queue.join("|");
+      img.src = nextUrl;
+    } else {
+      img.classList.add("is-hidden");
+      img.parentElement?.classList.add("is-fallback");
+    }
+  };
+
   const stocksList = document.getElementById("stocks-list");
   stocksList.addEventListener("click", (e) => handleContainerActivate(".stock-row", e));
   stocksList.addEventListener("keydown", (e) => handleContainerActivate(".stock-row", e));
-  stocksList.addEventListener(
-    "error",
-    (e) => {
-      const img = e.target;
-      if (!img || !img.classList || !img.classList.contains("stock-logo-img")) return;
-      const raw = img.dataset.fallbacks || "";
-      const queue = raw ? raw.split("|").filter(Boolean) : [];
-      if (queue.length > 0) {
-        const nextUrl = queue.shift();
-        img.dataset.fallbacks = queue.join("|");
-        img.src = nextUrl;
-      } else {
-        img.classList.add("is-hidden");
-        img.parentElement?.classList.add("is-fallback");
+  stocksList.addEventListener("error", handleLogoError, true);
+
+  // COMPANY Info Controls
+  document.getElementById("company-search-input")?.addEventListener("input", (event) => {
+    state.companySearch = event.target.value;
+    state.companyLimit = 100;
+    renderCompanies();
+  });
+
+  const presetBtns = document.querySelectorAll(".preset-btn");
+  presetBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      presetBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      const nextPreset = btn.dataset.preset || "all";
+      state.companyPreset = nextPreset;
+      state.companyLimit = 100;
+      if (nextPreset === "ytd_leaders" && state.companySort === "rank") {
+        state.companySort = "ytd_desc";
+        document.querySelectorAll(".csort-btn").forEach((b) => {
+          b.classList.toggle("active", b.dataset.csort === "ytd_desc");
+        });
       }
-    },
-    true
-  );
+      renderCompanies();
+    });
+  });
+
+  const exchangeBtns = document.querySelectorAll(".exchange-btn");
+  exchangeBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      exchangeBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.companyExchange = btn.dataset.exchange || "ALL";
+      state.companyLimit = 100;
+      renderCompanies();
+    });
+  });
+
+  document.getElementById("company-sector-select")?.addEventListener("change", (event) => {
+    state.companySector = event.target.value || "ALL";
+    state.companyLimit = 100;
+    renderCompanies();
+  });
+
+  const csortBtns = document.querySelectorAll(".csort-btn");
+  csortBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      csortBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.companySort = btn.dataset.csort || "rank";
+      state.companyLimit = 100;
+      renderCompanies();
+    });
+  });
+
+  document.getElementById("company-more-btn")?.addEventListener("click", () => {
+    state.companyLimit += 100;
+    renderCompanies();
+  });
+
+  const companyList = document.getElementById("company-list");
+  if (companyList) {
+    const activateCompany = (event) => {
+      if (event.type === "keydown" && event.key !== "Enter" && event.key !== " ") return;
+      const row = event.target.closest(".company-row");
+      if (!row) return;
+      if (event.type === "keydown") event.preventDefault();
+      const ticker = row.dataset.companyTicker;
+      const company = state.companies?.find((c) => c.ticker === ticker);
+      if (company) openCompanyDetailModal(company);
+    };
+    companyList.addEventListener("click", activateCompany);
+    companyList.addEventListener("keydown", activateCompany);
+    companyList.addEventListener("error", handleLogoError, true);
+  }
+
+  document.getElementById("company-modal-close-btn")?.addEventListener("click", closeCompanyDetailModal);
+  const companyDetailModal = document.getElementById("company-detail-modal");
+  companyDetailModal?.addEventListener("click", (e) => {
+    if (e.target.id === "company-detail-modal") closeCompanyDetailModal();
+  });
+  companyDetailModal?.addEventListener("error", handleLogoError, true);
 
   document.getElementById("modal-close-btn").addEventListener("click", closeAssetModal);
   document.getElementById("chart-modal").addEventListener("click", (e) => {
@@ -2329,7 +3020,9 @@ function bindControls() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
-    if (!document.getElementById("chart-modal").classList.contains("hidden")) {
+    if (!document.getElementById("company-detail-modal")?.classList.contains("hidden")) {
+      closeCompanyDetailModal();
+    } else if (!document.getElementById("chart-modal").classList.contains("hidden")) {
       closeAssetModal();
     } else if (!document.getElementById("api-guide-modal").classList.contains("hidden")) {
       closeApiGuideModal();
@@ -2378,8 +3071,16 @@ async function init() {
 
   if (window.location.hash === "#mdd") {
     state.activeView = "mdd";
+  } else if (window.location.hash === "#company") {
+    state.activeView = "company";
   }
   updateHeaderForView();
+
+  if (state.activeView === "company") {
+    ensureCompaniesLoaded().then(() => {
+      renderCompanies();
+    });
+  }
 
   const [pfResult, mddResult] = await Promise.allSettled([
     fetch(PORTFOLIO_DATA_URL, { cache: "no-cache" }).then((res) => {

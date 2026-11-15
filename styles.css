@@ -1765,3 +1765,557 @@ body.modal-open {
     height: 280px;
   }
 }
+
+/* =========================================================
+   TradingView Embedded Stage (101+ MDD & Company Modal)
+   ========================================================= */
+.tv-embed-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #141414;
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 3;
+}
+
+.tv-embed-stage iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* =========================================================
+   COMPANY Info Page & Screener
+   ========================================================= */
+.company-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
+}
+
+.company-preset-row,
+.company-sort-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.preset-btn,
+.csort-btn,
+.exchange-btn {
+  appearance: none;
+  border: 1px solid #353535;
+  background: #232323;
+  color: #cfcfcf;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.preset-btn:hover,
+.csort-btn:hover,
+.exchange-btn:hover {
+  border-color: #565656;
+  color: var(--text);
+}
+
+.preset-btn.active {
+  background: var(--accent);
+  color: #111111;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.csort-btn.active,
+.exchange-btn.active {
+  background: rgba(195, 189, 255, 0.16);
+  color: var(--accent);
+  border-color: rgba(195, 189, 255, 0.55);
+}
+
+.company-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.company-filter-row .search-box {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.company-filter-row .search-box input {
+  width: 100%;
+  background: #141414;
+  border: 1px solid #353535;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  outline: none;
+}
+
+.company-filter-row .search-box input:focus {
+  border-color: var(--accent);
+}
+
+.company-dropdown-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.exchange-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.company-select {
+  background: #141414;
+  color: var(--text);
+  border: 1px solid #353535;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  max-width: 220px;
+}
+
+.company-select:focus {
+  border-color: var(--accent);
+}
+
+.company-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.company-row {
+  display: grid;
+  grid-template-columns: 52px minmax(220px, 1.3fr) minmax(150px, 0.85fr) minmax(260px, 1.6fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #1c1c1c;
+  border: 1px solid #2b2b2b;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.14s ease;
+}
+
+.company-row:hover {
+  border-color: rgba(195, 189, 255, 0.55);
+  background: #222222;
+}
+
+.company-rank {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.company-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.company-id-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.company-title-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.company-ticker {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.company-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: #2c2c2c;
+  color: #bdbdbd;
+}
+
+.company-badge.exchange-nasdaq {
+  background: rgba(96, 165, 250, 0.14);
+  color: #93c5fd;
+}
+
+.company-badge.exchange-nyse {
+  background: rgba(52, 211, 153, 0.14);
+  color: #6ee7b7;
+}
+
+.company-badge.rank-badge {
+  background: rgba(195, 189, 255, 0.16);
+  color: var(--accent);
+}
+
+.company-name-line {
+  font-size: 12px;
+  color: #d0d0d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.company-sub-line {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.company-price-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.company-price-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.company-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.company-change {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.company-change.up {
+  color: #34d399;
+}
+
+.company-change.down {
+  color: #f87171;
+}
+
+.company-change.flat {
+  color: var(--muted);
+}
+
+.range52-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.range52-bar {
+  position: relative;
+  height: 5px;
+  background: #2f2f2f;
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.range52-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #64748b, var(--accent));
+}
+
+.range52-dot {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid var(--accent);
+  transform: translate(-50%, -50%);
+}
+
+.range52-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.company-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+
+.cmetric-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  background: #151515;
+  border: 1px solid #262626;
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.cmetric-label {
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.cmetric-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmetric-val.pos {
+  color: #34d399;
+}
+
+.cmetric-val.neg {
+  color: #f87171;
+}
+
+.cmetric-val.warn {
+  color: var(--accent);
+}
+
+.company-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.company-more-btn {
+  appearance: none;
+  background: #242424;
+  border: 1px solid #3c3c3c;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.company-more-btn:hover {
+  background: #2e2e2e;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Company Detail Modal */
+.company-detail-dialog {
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.company-modal-header {
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.company-modal-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cmodal-logo {
+  width: 44px;
+  height: 44px;
+}
+
+.company-modal-submeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #d4d4d4;
+  margin-top: 3px;
+}
+
+.company-sector-text {
+  color: var(--muted);
+}
+
+.meta-dot {
+  color: #525252;
+}
+
+.company-modal-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.company-ext-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.company-ext-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #d4d4d4;
+  background: #242424;
+  border: 1px solid #353535;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.company-ext-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.company-tv-chart-wrap {
+  width: 100%;
+  height: 400px;
+  background: #141414;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.company-tv-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.company-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cdetail-card {
+  background: #171717;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.cdetail-card-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.cdetail-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.cdetail-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cdetail-k {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.cdetail-v {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+@media (max-width: 980px) {
+  .company-row {
+    grid-template-columns: 44px 1fr;
+    gap: 10px 12px;
+  }
+
+  .company-price-col,
+  .company-metrics-grid {
+    grid-column: 1 / -1;
+  }
+
+  .company-metrics-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .company-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .company-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cdetail-kv-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .company-tv-chart-wrap {
+    height: 300px;
+  }
+
+  .company-modal-header {
+    flex-direction: column;
+  }
+
+  .company-modal-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

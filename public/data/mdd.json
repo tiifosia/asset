@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15 01:12:29 UTC",
+  "updated_at": "2026-11-15 06:45:31 UTC",
   "benchmarks": [
     {
       "id": "SP500",
@@ -13,10 +13,10 @@
       "ath_date": "2026-10-06",
       "current_drawdown": -3.29,
       "current_dd_abs": 3.29,
-      "max_drawdown": -86.19,
-      "max_dd_abs": 86.19,
-      "mdd_peak_date": "1929-09-16",
-      "mdd_trough_date": "1932-06-01",
+      "max_drawdown": -56.78,
+      "max_dd_abs": 56.78,
+      "mdd_peak_date": "2007-10-09",
+      "mdd_trough_date": "2009-03-09",
       "last_date": "2026-11-13"
     },
     {
@@ -44,11 +44,11 @@
       "name": "Bitcoin",
       "name_ko": "비트코인",
       "history_file": "BTC.json",
-      "current_price": 62748.55,
+      "current_price": 64505.74,
       "ath_price": 124752.53,
       "ath_date": "2025-10-06",
-      "current_drawdown": -49.7,
-      "current_dd_abs": 49.7,
+      "current_drawdown": -48.29,
+      "current_dd_abs": 48.29,
       "max_drawdown": -83.4,
       "max_dd_abs": 83.4,
       "mdd_peak_date": "2017-12-16",
@@ -61,7 +61,9 @@
       "rank": 1,
       "ticker": "AAPL",
       "name": "Apple Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "apple",
       "market_cap": 5177380193450,
       "history_file": "AAPL.json",
       "current_price": 356.27,
@@ -73,14 +75,15 @@
       "max_dd_abs": 82.22,
       "mdd_peak_date": "1991-04-02",
       "mdd_trough_date": "1997-12-23",
-      "last_date": "2026-11-13",
-      "logoid": "apple"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 2,
       "ticker": "NVDA",
       "name": "NVIDIA Corporation",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "nvidia",
       "market_cap": 3924685147095,
       "history_file": "NVDA.json",
       "current_price": 162.85,
@@ -92,14 +95,15 @@
       "max_dd_abs": 89.72,
       "mdd_peak_date": "2002-01-03",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13",
-      "logoid": "nvidia"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 3,
       "ticker": "MSFT",
       "name": "Microsoft Corporation",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "microsoft",
       "market_cap": 3890434724972,
       "history_file": "MSFT.json",
       "current_price": 523.88,
@@ -111,14 +115,15 @@
       "max_dd_abs": 74.56,
       "mdd_peak_date": "1999-12-27",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13",
-      "logoid": "microsoft"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 4,
       "ticker": "GOOGL",
       "name": "Alphabet Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "alphabet",
       "market_cap": 3597233825714,
       "history_file": "GOOGL.json",
       "current_price": 295.77,
@@ -130,14 +135,15 @@
       "max_dd_abs": 65.29,
       "mdd_peak_date": "2007-11-06",
       "mdd_trough_date": "2008-11-24",
-      "last_date": "2026-11-13",
-      "logoid": "alphabet"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 5,
       "ticker": "AMZN",
       "name": "Amazon.com, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Retail Trade",
+      "logoid": "amazon",
       "market_cap": 2883431337431,
       "history_file": "AMZN.json",
       "current_price": 266.66,
@@ -149,14 +155,15 @@
       "max_dd_abs": 94.4,
       "mdd_peak_date": "1999-12-10",
       "mdd_trough_date": "2001-09-28",
-      "last_date": "2026-11-13",
-      "logoid": "amazon"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 6,
       "ticker": "SPCX",
       "name": "Space Exploration Technologies Corp",
+      "exchange": "NASDAQ",
       "sector": "Communications",
+      "logoid": "spacex",
       "market_cap": 1889261752696,
       "history_file": "SPCX.json",
       "current_price": 139.11,
@@ -168,14 +175,15 @@
       "max_dd_abs": 48.78,
       "mdd_peak_date": "2026-06-16",
       "mdd_trough_date": "2026-08-05",
-      "last_date": "2026-11-13",
-      "logoid": "spacex"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 7,
       "ticker": "AVGO",
       "name": "Broadcom Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "broadcom",
       "market_cap": 1656497352252,
       "history_file": "AVGO.json",
       "current_price": 347.01,
@@ -187,14 +195,15 @@
       "max_dd_abs": 48.79,
       "mdd_peak_date": "2019-12-12",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13",
-      "logoid": "broadcom"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 8,
       "ticker": "META",
       "name": "Meta Platforms, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "meta-platforms",
       "market_cap": 1640314328162,
       "history_file": "META.json",
       "current_price": 641.69,
@@ -206,14 +215,15 @@
       "max_dd_abs": 76.74,
       "mdd_peak_date": "2021-09-07",
       "mdd_trough_date": "2022-11-03",
-      "last_date": "2026-11-13",
-      "logoid": "meta-platforms"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 9,
       "ticker": "TSLA",
       "name": "Tesla, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Consumer Durables",
+      "logoid": "tesla",
       "market_cap": 1542445253687,
       "history_file": "TSLA.json",
       "current_price": 390.22,
@@ -225,14 +235,15 @@
       "max_dd_abs": 73.63,
       "mdd_peak_date": "2021-11-04",
       "mdd_trough_date": "2023-01-03",
-      "last_date": "2026-11-13",
-      "logoid": "tesla"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 10,
       "ticker": "LLY",
       "name": "Eli Lilly and Company",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "eli-lilly",
       "market_cap": 1357965400452,
       "history_file": "LLY.json",
       "current_price": 1443.5,
@@ -244,14 +255,15 @@
       "max_dd_abs": 74.69,
       "mdd_peak_date": "2000-08-08",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13",
-      "logoid": "eli-lilly"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 11,
       "ticker": "BRK-B",
       "name": "Berkshire Hathaway Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "berkshire-hathaway",
       "market_cap": 1259897167577,
       "history_file": "BRK-B.json",
       "current_price": 592.94,
@@ -263,14 +275,15 @@
       "max_dd_abs": 53.86,
       "mdd_peak_date": "2007-12-10",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13",
-      "logoid": "berkshire-hathaway"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 12,
       "ticker": "WMT",
       "name": "Walmart Inc.",
+      "exchange": "NASDAQ",
       "sector": "Retail Trade",
+      "logoid": "walmart",
       "market_cap": 1016233508094,
       "history_file": "WMT.json",
       "current_price": 128.09,
@@ -282,14 +295,15 @@
       "max_dd_abs": 77.14,
       "mdd_peak_date": "1972-11-27",
       "mdd_trough_date": "1974-12-10",
-      "last_date": "2026-11-13",
-      "logoid": "walmart"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 13,
       "ticker": "JPM",
       "name": "JP Morgan Chase & Co.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "jpmorgan-chase",
       "market_cap": 919345500534,
       "history_file": "JPM.json",
       "current_price": 346.19,
@@ -301,14 +315,15 @@
       "max_dd_abs": 81.67,
       "mdd_peak_date": "1986-03-27",
       "mdd_trough_date": "1990-10-31",
-      "last_date": "2026-11-13",
-      "logoid": "jpmorgan-chase"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 14,
       "ticker": "MU",
       "name": "Micron Technology, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "micron-technology",
       "market_cap": 880598001863,
       "history_file": "MU.json",
       "current_price": 778.31,
@@ -320,14 +335,15 @@
       "max_dd_abs": 98.25,
       "mdd_peak_date": "2000-07-14",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "micron-technology"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 15,
       "ticker": "AMD",
       "name": "Advanced Micro Devices, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "advanced-micro-devices",
       "market_cap": 875905008899,
       "history_file": "AMD.json",
       "current_price": 534.06,
@@ -339,14 +355,15 @@
       "max_dd_abs": 96.59,
       "mdd_peak_date": "2000-06-21",
       "mdd_trough_date": "2015-07-27",
-      "last_date": "2026-11-13",
-      "logoid": "advanced-micro-devices"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 16,
       "ticker": "V",
       "name": "Visa Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "visa",
       "market_cap": 789523953154,
       "history_file": "V.json",
       "current_price": 425.76,
@@ -358,14 +375,15 @@
       "max_dd_abs": 52.07,
       "mdd_peak_date": "2008-05-07",
       "mdd_trough_date": "2009-01-20",
-      "last_date": "2026-11-13",
-      "logoid": "visa"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 17,
       "ticker": "XOM",
       "name": "ExxonMobil Holdings Corporation",
+      "exchange": "NYSE",
       "sector": "Energy Minerals",
+      "logoid": "exxon",
       "market_cap": 695874536343,
       "history_file": "XOM.json",
       "current_price": 170.59,
@@ -377,14 +395,15 @@
       "max_dd_abs": 69.87,
       "mdd_peak_date": "2014-06-23",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13",
-      "logoid": "exxon"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 18,
       "ticker": "JNJ",
       "name": "Johnson & Johnson",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "johnson-and-johnson",
       "market_cap": 687888919006,
       "history_file": "JNJ.json",
       "current_price": 285.75,
@@ -396,14 +415,15 @@
       "max_dd_abs": 52.6,
       "mdd_peak_date": "1972-11-01",
       "mdd_trough_date": "1977-04-25",
-      "last_date": "2026-11-13",
-      "logoid": "johnson-and-johnson"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 19,
       "ticker": "MA",
       "name": "Mastercard Incorporated",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "mastercard",
       "market_cap": 576012933962,
       "history_file": "MA.json",
       "current_price": 661.19,
@@ -415,14 +435,15 @@
       "max_dd_abs": 62.76,
       "mdd_peak_date": "2008-06-02",
       "mdd_trough_date": "2009-01-20",
-      "last_date": "2026-11-13",
-      "logoid": "mastercard"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 20,
       "ticker": "ABBV",
       "name": "AbbVie Inc.",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "abbvie",
       "market_cap": 521499808555,
       "history_file": "ABBV.json",
       "current_price": 295.03,
@@ -434,14 +455,15 @@
       "max_dd_abs": 48.88,
       "mdd_peak_date": "2018-01-26",
       "mdd_trough_date": "2019-08-15",
-      "last_date": "2026-11-13",
-      "logoid": "abbvie"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 21,
       "ticker": "COST",
       "name": "Costco Wholesale Corporation",
+      "exchange": "NASDAQ",
       "sector": "Retail Trade",
+      "logoid": "costco-wholesale",
       "market_cap": 490194082697,
       "history_file": "COST.json",
       "current_price": 1106.21,
@@ -453,14 +475,15 @@
       "max_dd_abs": 61.72,
       "mdd_peak_date": "1991-08-29",
       "mdd_trough_date": "1995-01-11",
-      "last_date": "2026-11-13",
-      "logoid": "costco-wholesale"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 22,
       "ticker": "CVX",
       "name": "Chevron Corporation",
+      "exchange": "NYSE",
       "sector": "Energy Minerals",
+      "logoid": "chevron",
       "market_cap": 432176561210,
       "history_file": "CVX.json",
       "current_price": 219.89,
@@ -472,14 +495,15 @@
       "max_dd_abs": 59.79,
       "mdd_peak_date": "2014-07-24",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13",
-      "logoid": "chevron"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 23,
       "ticker": "KO",
       "name": "Coca-Cola Company (The)",
+      "exchange": "NYSE",
       "sector": "Consumer Non-Durables",
+      "logoid": "coca-cola",
       "market_cap": 426963807617,
       "history_file": "KO.json",
       "current_price": 99.25,
@@ -491,14 +515,15 @@
       "max_dd_abs": 69.06,
       "mdd_peak_date": "1973-01-04",
       "mdd_trough_date": "1974-10-04",
-      "last_date": "2026-11-13",
-      "logoid": "coca-cola"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 24,
       "ticker": "PLTR",
       "name": "Palantir Technologies Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "palantir",
       "market_cap": 404771468403,
       "history_file": "PLTR.json",
       "current_price": 167.99,
@@ -510,14 +535,15 @@
       "max_dd_abs": 84.62,
       "mdd_peak_date": "2021-01-27",
       "mdd_trough_date": "2022-12-27",
-      "last_date": "2026-11-13",
-      "logoid": "palantir"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 25,
       "ticker": "PG",
       "name": "Procter & Gamble Company (The)",
+      "exchange": "NYSE",
       "sector": "Consumer Non-Durables",
+      "logoid": "procter-and-gamble",
       "market_cap": 393559594964,
       "history_file": "PG.json",
       "current_price": 169.8,
@@ -529,14 +555,15 @@
       "max_dd_abs": 54.46,
       "mdd_peak_date": "2000-01-11",
       "mdd_trough_date": "2000-06-29",
-      "last_date": "2026-11-13",
-      "logoid": "procter-and-gamble"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 26,
       "ticker": "ORCL",
       "name": "Oracle Corporation",
+      "exchange": "NYSE",
       "sector": "Technology Services",
+      "logoid": "oracle",
       "market_cap": 379025313514,
       "history_file": "ORCL.json",
       "current_price": 125.35,
@@ -548,14 +575,15 @@
       "max_dd_abs": 84.19,
       "mdd_peak_date": "2000-09-01",
       "mdd_trough_date": "2002-06-03",
-      "last_date": "2026-11-13",
-      "logoid": "oracle"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 27,
       "ticker": "CSCO",
       "name": "Cisco Systems, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "cisco",
       "market_cap": 376532762929,
       "history_file": "CSCO.json",
       "current_price": 95.64,
@@ -567,14 +595,15 @@
       "max_dd_abs": 89.26,
       "mdd_peak_date": "2000-03-27",
       "mdd_trough_date": "2002-10-08",
-      "last_date": "2026-11-13",
-      "logoid": "cisco"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 28,
       "ticker": "UNH",
       "name": "UnitedHealth Group Incorporated",
+      "exchange": "NYSE",
       "sector": "Health Services",
+      "logoid": "unitedhealth",
       "market_cap": 365093378885,
       "history_file": "UNH.json",
       "current_price": 407.46,
@@ -586,14 +615,15 @@
       "max_dd_abs": 82.68,
       "mdd_peak_date": "1986-04-08",
       "mdd_trough_date": "1987-11-17",
-      "last_date": "2026-11-13",
-      "logoid": "unitedhealth"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 29,
       "ticker": "MRK",
       "name": "Merck & Company, Inc.",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "merck-and-co",
       "market_cap": 364264713196,
       "history_file": "MRK.json",
       "current_price": 147.76,
@@ -605,14 +635,15 @@
       "max_dd_abs": 77.88,
       "mdd_peak_date": "2000-11-29",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13",
-      "logoid": "merck-and-co"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 30,
       "ticker": "BAC",
       "name": "Bank of America Corporation",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "bank-of-america",
       "market_cap": 352048665541,
       "history_file": "BAC.json",
       "current_price": 51.02,
@@ -624,14 +655,15 @@
       "max_dd_abs": 94.28,
       "mdd_peak_date": "2006-11-16",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13",
-      "logoid": "bank-of-america"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 31,
       "ticker": "HD",
       "name": "Home Depot, Inc. (The)",
+      "exchange": "NYSE",
       "sector": "Retail Trade",
+      "logoid": "home-depot",
       "market_cap": 347884401693,
       "history_file": "HD.json",
       "current_price": 348.69,
@@ -643,14 +675,15 @@
       "max_dd_abs": 73.82,
       "mdd_peak_date": "1999-12-31",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13",
-      "logoid": "home-depot"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 32,
       "ticker": "GE",
       "name": "GE Aerospace",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "ge-aerospace",
       "market_cap": 342876500943,
       "history_file": "GE.json",
       "current_price": 331.81,
@@ -662,14 +695,15 @@
       "max_dd_abs": 90.48,
       "mdd_peak_date": "2000-08-28",
       "mdd_trough_date": "2020-05-15",
-      "last_date": "2026-11-13",
-      "logoid": "ge-aerospace"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 33,
       "ticker": "INTC",
       "name": "Intel Corporation",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "intel",
       "market_cap": 317092899189,
       "history_file": "INTC.json",
       "current_price": 59.66,
@@ -681,14 +715,15 @@
       "max_dd_abs": 83.87,
       "mdd_peak_date": "2000-08-31",
       "mdd_trough_date": "2009-02-23",
-      "last_date": "2026-11-13",
-      "logoid": "intel"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 34,
       "ticker": "PM",
       "name": "Philip Morris International Inc",
+      "exchange": "NYSE",
       "sector": "Consumer Non-Durables",
+      "logoid": "philip-morris",
       "market_cap": 310110136529,
       "history_file": "PM.json",
       "current_price": 198.96,
@@ -700,14 +735,15 @@
       "max_dd_abs": 51.2,
       "mdd_peak_date": "2017-06-19",
       "mdd_trough_date": "2020-03-23",
-      "last_date": "2026-11-13",
-      "logoid": "philip-morris"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 35,
       "ticker": "MS",
       "name": "Morgan Stanley",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "morgan-stanley",
       "market_cap": 297994295361,
       "history_file": "MS.json",
       "current_price": 190.65,
@@ -719,14 +755,15 @@
       "max_dd_abs": 91.59,
       "mdd_peak_date": "2000-09-11",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "morgan-stanley"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 36,
       "ticker": "AMAT",
       "name": "Applied Materials, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Producer Manufacturing",
+      "logoid": "applied-materials",
       "market_cap": 294027841187,
       "history_file": "AMAT.json",
       "current_price": 370.5,
@@ -738,14 +775,15 @@
       "max_dd_abs": 85.83,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "applied-materials"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 37,
       "ticker": "LRCX",
       "name": "Lam Research Corporation",
+      "exchange": "NASDAQ",
       "sector": "Producer Manufacturing",
+      "logoid": "lam-research",
       "market_cap": 282212714666,
       "history_file": "LRCX.json",
       "current_price": 225.92,
@@ -757,14 +795,15 @@
       "max_dd_abs": 87.91,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13",
-      "logoid": "lam-research"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 38,
       "ticker": "TXN",
       "name": "Texas Instruments Incorporated",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "texas-instruments",
       "market_cap": 277420676158,
       "history_file": "TXN.json",
       "current_price": 303.6,
@@ -776,14 +815,15 @@
       "max_dd_abs": 85.9,
       "mdd_peak_date": "2000-03-03",
       "mdd_trough_date": "2002-10-09",
-      "last_date": "2026-11-13",
-      "logoid": "texas-instruments"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 39,
       "ticker": "CAT",
       "name": "Caterpillar, Inc.",
+      "exchange": "NYSE",
       "sector": "Producer Manufacturing",
+      "logoid": "caterpillar",
       "market_cap": 274648030769,
       "history_file": "CAT.json",
       "current_price": 600.2,
@@ -795,14 +835,15 @@
       "max_dd_abs": 74.51,
       "mdd_peak_date": "2007-07-19",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13",
-      "logoid": "caterpillar"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 40,
       "ticker": "RTX",
       "name": "RTX Corporation",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "raytheon",
       "market_cap": 267971907239,
       "history_file": "RTX.json",
       "current_price": 198.58,
@@ -810,18 +851,19 @@
       "ath_date": "2026-08-18",
       "current_drawdown": -11.93,
       "current_dd_abs": 11.93,
-      "max_drawdown": -80.27,
-      "max_dd_abs": 80.27,
-      "mdd_peak_date": "1967-06-27",
+      "max_drawdown": -55.13,
+      "max_dd_abs": 55.13,
+      "mdd_peak_date": "1972-12-11",
       "mdd_trough_date": "1973-12-13",
-      "last_date": "2026-11-13",
-      "logoid": "raytheon"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 41,
       "ticker": "GS",
       "name": "Goldman Sachs Group, Inc. (The)",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "golden-sachs-etf-trust-goldman",
       "market_cap": 264367617033,
       "history_file": "GS.json",
       "current_price": 916.56,
@@ -833,14 +875,15 @@
       "max_dd_abs": 79.03,
       "mdd_peak_date": "2007-10-31",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "golden-sachs-etf-trust-goldman"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 42,
       "ticker": "PANW",
       "name": "Palo Alto Networks, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "palo-alto-networks",
       "market_cap": 263840954465,
       "history_file": "PANW.json",
       "current_price": 322.24,
@@ -852,14 +895,15 @@
       "max_dd_abs": 47.98,
       "mdd_peak_date": "2019-02-27",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13",
-      "logoid": "palo-alto-networks"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 43,
       "ticker": "TMO",
       "name": "Thermo Fisher Scientific Inc",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "thermo-fisher-scientific",
       "market_cap": 259442611035,
       "history_file": "TMO.json",
       "current_price": 700.22,
@@ -871,14 +915,15 @@
       "max_dd_abs": 71.16,
       "mdd_peak_date": "1997-12-30",
       "mdd_trough_date": "1999-04-15",
-      "last_date": "2026-11-13",
-      "logoid": "thermo-fisher-scientific"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 44,
       "ticker": "WFC",
       "name": "Wells Fargo & Company",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "wells-fargo",
       "market_cap": 258309231073,
       "history_file": "WFC.json",
       "current_price": 86.05,
@@ -890,14 +935,15 @@
       "max_dd_abs": 79.6,
       "mdd_peak_date": "2008-09-19",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13",
-      "logoid": "wells-fargo"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 45,
       "ticker": "NFLX",
       "name": "Netflix, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "netflix",
       "market_cap": 255208177848,
       "history_file": "NFLX.json",
       "current_price": 62.15,
@@ -909,14 +955,15 @@
       "max_dd_abs": 81.99,
       "mdd_peak_date": "2011-07-13",
       "mdd_trough_date": "2012-09-25",
-      "last_date": "2026-11-13",
-      "logoid": "netflix"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 46,
       "ticker": "AMGN",
       "name": "Amgen Inc.",
+      "exchange": "NASDAQ",
       "sector": "Health Technology",
+      "logoid": "amgen",
       "market_cap": 251886265013,
       "history_file": "AMGN.json",
       "current_price": 465.67,
@@ -928,14 +975,15 @@
       "max_dd_abs": 78.03,
       "mdd_peak_date": "1983-06-17",
       "mdd_trough_date": "1984-11-19",
-      "last_date": "2026-11-13",
-      "logoid": "amgen"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 47,
       "ticker": "ANET",
       "name": "Arista Networks, Inc.",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "arista-networks",
       "market_cap": 249256639916,
       "history_file": "ANET.json",
       "current_price": 197.29,
@@ -947,14 +995,15 @@
       "max_dd_abs": 52.2,
       "mdd_peak_date": "2019-04-16",
       "mdd_trough_date": "2020-03-16",
-      "last_date": "2026-11-13",
-      "logoid": "arista-networks"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 48,
       "ticker": "LIN",
       "name": "Linde plc",
+      "exchange": "NASDAQ",
       "sector": "Process Industries",
+      "logoid": "linde",
       "market_cap": 241505607321,
       "history_file": "LIN.json",
       "current_price": 526.06,
@@ -966,14 +1015,15 @@
       "max_dd_abs": 51.96,
       "mdd_peak_date": "2008-06-23",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "linde"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 49,
       "ticker": "IBM",
       "name": "International Business Machines Corporation",
+      "exchange": "NYSE",
       "sector": "Technology Services",
+      "logoid": "international-bus-mach",
       "market_cap": 233567705095,
       "history_file": "IBM.json",
       "current_price": 247.13,
@@ -985,14 +1035,15 @@
       "max_dd_abs": 76.54,
       "mdd_peak_date": "1987-08-20",
       "mdd_trough_date": "1993-08-16",
-      "last_date": "2026-11-13",
-      "logoid": "international-bus-mach"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 50,
       "ticker": "CRWD",
       "name": "CrowdStrike Holdings, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "crowdstrike",
       "market_cap": 232033868928,
       "history_file": "CRWD.json",
       "current_price": 226.61,
@@ -1004,14 +1055,15 @@
       "max_dd_abs": 67.69,
       "mdd_peak_date": "2021-11-09",
       "mdd_trough_date": "2023-01-06",
-      "last_date": "2026-11-13",
-      "logoid": "crowdstrike"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 51,
       "ticker": "DELL",
       "name": "Dell Technologies Inc.",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "dell",
       "market_cap": 219056569090,
       "history_file": "DELL.json",
       "current_price": 344.53,
@@ -1023,14 +1075,15 @@
       "max_dd_abs": 60.03,
       "mdd_peak_date": "2024-05-29",
       "mdd_trough_date": "2025-04-04",
-      "last_date": "2026-11-13",
-      "logoid": "dell"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 52,
       "ticker": "AXP",
       "name": "American Express Company",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "american-express",
       "market_cap": 214978975919,
       "history_file": "AXP.json",
       "current_price": 320.6,
@@ -1042,14 +1095,15 @@
       "max_dd_abs": 84.35,
       "mdd_peak_date": "2007-07-19",
       "mdd_trough_date": "2009-03-06",
-      "last_date": "2026-11-13",
-      "logoid": "american-express"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 53,
       "ticker": "GEV",
       "name": "GE Vernova Inc.",
+      "exchange": "NYSE",
       "sector": "Producer Manufacturing",
+      "logoid": "ge-verona",
       "market_cap": 212570090890,
       "history_file": "GEV.json",
       "current_price": 803.13,
@@ -1061,14 +1115,15 @@
       "max_dd_abs": 38.29,
       "mdd_peak_date": "2025-01-23",
       "mdd_trough_date": "2025-03-10",
-      "last_date": "2026-11-13",
-      "logoid": "ge-verona"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 54,
       "ticker": "GILD",
       "name": "Gilead Sciences, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Health Technology",
+      "logoid": "gilead",
       "market_cap": 208476118033,
       "history_file": "GILD.json",
       "current_price": 168.08,
@@ -1080,14 +1135,15 @@
       "max_dd_abs": 70.83,
       "mdd_peak_date": "1992-01-27",
       "mdd_trough_date": "1994-06-06",
-      "last_date": "2026-11-13",
-      "logoid": "gilead"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 55,
       "ticker": "DIS",
       "name": "Walt Disney Company (The)",
+      "exchange": "NYSE",
       "sector": "Consumer Services",
+      "logoid": "walt-disney",
       "market_cap": 205423941369,
       "history_file": "DIS.json",
       "current_price": 118.97,
@@ -1099,14 +1155,15 @@
       "max_dd_abs": 85.66,
       "mdd_peak_date": "1973-01-02",
       "mdd_trough_date": "1974-12-17",
-      "last_date": "2026-11-13",
-      "logoid": "walt-disney"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 56,
       "ticker": "C",
       "name": "Citigroup, Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "citigroup",
       "market_cap": 205261909584,
       "history_file": "C.json",
       "current_price": 124.01,
@@ -1118,14 +1175,15 @@
       "max_dd_abs": 98.27,
       "mdd_peak_date": "2000-08-28",
       "mdd_trough_date": "2009-03-05",
-      "last_date": "2026-11-13",
-      "logoid": "citigroup"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 57,
       "ticker": "KLAC",
       "name": "KLA Corporation",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "kla-tencor",
       "market_cap": 198467242668,
       "history_file": "KLAC.json",
       "current_price": 152.32,
@@ -1137,14 +1195,15 @@
       "max_dd_abs": 84.41,
       "mdd_peak_date": "2000-04-07",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "kla-tencor"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 58,
       "ticker": "PEP",
       "name": "PepsiCo, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Consumer Non-Durables",
+      "logoid": "pepsico",
       "market_cap": 198197067292,
       "history_file": "PEP.json",
       "current_price": 145.44,
@@ -1156,14 +1215,15 @@
       "max_dd_abs": 67.32,
       "mdd_peak_date": "1972-11-17",
       "mdd_trough_date": "1974-10-03",
-      "last_date": "2026-11-13",
-      "logoid": "pepsico"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 59,
       "ticker": "BLK",
       "name": "BlackRock, Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "blackrock",
       "market_cap": 198148532465,
       "history_file": "BLK.json",
       "current_price": 1222.91,
@@ -1175,14 +1235,15 @@
       "max_dd_abs": 60.75,
       "mdd_peak_date": "2008-08-11",
       "mdd_trough_date": "2009-03-03",
-      "last_date": "2026-11-13",
-      "logoid": "blackrock"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 60,
       "ticker": "APH",
       "name": "Amphenol Corporation",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "amphenol",
       "market_cap": 193170314349,
       "history_file": "APH.json",
       "current_price": 78.23,
@@ -1194,14 +1255,15 @@
       "max_dd_abs": 63.43,
       "mdd_peak_date": "2008-08-15",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "amphenol"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 61,
       "ticker": "ADI",
       "name": "Analog Devices, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "analog-devices",
       "market_cap": 192842516789,
       "history_file": "ADI.json",
       "current_price": 397.97,
@@ -1213,14 +1275,15 @@
       "max_dd_abs": 84.12,
       "mdd_peak_date": "2000-09-01",
       "mdd_trough_date": "2008-12-01",
-      "last_date": "2026-11-13",
-      "logoid": "analog-devices"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 62,
       "ticker": "VZ",
       "name": "Verizon Communications Inc.",
+      "exchange": "NYSE",
       "sector": "Communications",
+      "logoid": "verizon",
       "market_cap": 192143572510,
       "history_file": "VZ.json",
       "current_price": 46.36,
@@ -1232,14 +1295,15 @@
       "max_dd_abs": 62.37,
       "mdd_peak_date": "1999-10-04",
       "mdd_trough_date": "2008-10-24",
-      "last_date": "2026-11-13",
-      "logoid": "verizon"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 63,
       "ticker": "MCD",
       "name": "McDonald's Corporation",
+      "exchange": "NYSE",
       "sector": "Consumer Services",
+      "logoid": "mcdonalds",
       "market_cap": 191952273609,
       "history_file": "MCD.json",
       "current_price": 271.97,
@@ -1247,18 +1311,19 @@
       "ath_date": "2026-02-27",
       "current_drawdown": -20.26,
       "current_dd_abs": 20.26,
-      "max_drawdown": -77.47,
-      "max_dd_abs": 77.47,
-      "mdd_peak_date": "1968-05-07",
-      "mdd_trough_date": "1969-07-22",
-      "last_date": "2026-11-13",
-      "logoid": "mcdonalds"
+      "max_drawdown": -74.41,
+      "max_dd_abs": 74.41,
+      "mdd_peak_date": "1999-11-12",
+      "mdd_trough_date": "2003-03-12",
+      "last_date": "2026-11-13"
     },
     {
       "rank": 64,
       "ticker": "SHOP",
       "name": "Shopify Inc.",
+      "exchange": "NASDAQ",
       "sector": "Commercial Services",
+      "logoid": "shopify",
       "market_cap": 189234525080,
       "history_file": "SHOP.json",
       "current_price": 147.09,
@@ -1270,14 +1335,15 @@
       "max_dd_abs": 84.82,
       "mdd_peak_date": "2021-11-19",
       "mdd_trough_date": "2022-10-11",
-      "last_date": "2026-11-13",
-      "logoid": "shopify"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 65,
       "ticker": "ABT",
       "name": "Abbott Laboratories",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "abbott",
       "market_cap": 187950302086,
       "history_file": "ABT.json",
       "current_price": 108.52,
@@ -1289,14 +1355,15 @@
       "max_dd_abs": 46.27,
       "mdd_peak_date": "2002-01-31",
       "mdd_trough_date": "2002-07-23",
-      "last_date": "2026-11-13",
-      "logoid": "abbott"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 66,
       "ticker": "QCOM",
       "name": "QUALCOMM Incorporated",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "qualcomm",
       "market_cap": 184542901306,
       "history_file": "QCOM.json",
       "current_price": 172.47,
@@ -1308,14 +1375,15 @@
       "max_dd_abs": 86.75,
       "mdd_peak_date": "2000-01-03",
       "mdd_trough_date": "2002-08-05",
-      "last_date": "2026-11-13",
-      "logoid": "qualcomm"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 67,
       "ticker": "DE",
       "name": "Deere & Company",
+      "exchange": "NYSE",
       "sector": "Producer Manufacturing",
+      "logoid": "deere",
       "market_cap": 181603483788,
       "history_file": "DE.json",
       "current_price": 673.54,
@@ -1327,14 +1395,15 @@
       "max_dd_abs": 73.78,
       "mdd_peak_date": "2008-01-14",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13",
-      "logoid": "deere"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 68,
       "ticker": "TMUS",
       "name": "T-Mobile US, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Communications",
+      "logoid": "t-mobile",
       "market_cap": 180023372250,
       "history_file": "TMUS.json",
       "current_price": 169.95,
@@ -1346,14 +1415,15 @@
       "max_dd_abs": 86.29,
       "mdd_peak_date": "2007-07-17",
       "mdd_trough_date": "2010-01-28",
-      "last_date": "2026-11-13",
-      "logoid": "t-mobile"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 69,
       "ticker": "UNP",
       "name": "Union Pacific Corporation",
+      "exchange": "NYSE",
       "sector": "Transportation",
+      "logoid": "union-pacific",
       "market_cap": 179725100667,
       "history_file": "UNP.json",
       "current_price": 302.44,
@@ -1365,14 +1435,15 @@
       "max_dd_abs": 67.49,
       "mdd_peak_date": "1980-11-26",
       "mdd_trough_date": "1982-08-13",
-      "last_date": "2026-11-13",
-      "logoid": "union-pacific"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 70,
       "ticker": "WELL",
       "name": "Welltower Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "welltower-indrn",
       "market_cap": 179338272103,
       "history_file": "WELL.json",
       "current_price": 244.46,
@@ -1384,14 +1455,15 @@
       "max_dd_abs": 64.07,
       "mdd_peak_date": "2019-09-04",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13",
-      "logoid": "welltower-indrn"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 71,
       "ticker": "CRM",
       "name": "Salesforce, Inc.",
+      "exchange": "NYSE",
       "sector": "Technology Services",
+      "logoid": "salesforce",
       "market_cap": 179282316986,
       "history_file": "CRM.json",
       "current_price": 217.84,
@@ -1403,14 +1475,15 @@
       "max_dd_abs": 70.5,
       "mdd_peak_date": "2008-06-23",
       "mdd_trough_date": "2008-11-19",
-      "last_date": "2026-11-13",
-      "logoid": "salesforce"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 72,
       "ticker": "NEE",
       "name": "NextEra Energy, Inc.",
+      "exchange": "NYSE",
       "sector": "Utilities",
+      "logoid": "nextera-energy",
       "market_cap": 178522684667,
       "history_file": "NEE.json",
       "current_price": 85.12,
@@ -1422,14 +1495,15 @@
       "max_dd_abs": 64.89,
       "mdd_peak_date": "1973-03-13",
       "mdd_trough_date": "1974-09-13",
-      "last_date": "2026-11-13",
-      "logoid": "nextera-energy"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 73,
       "ticker": "COP",
       "name": "ConocoPhillips",
+      "exchange": "NYSE",
       "sector": "Energy Minerals",
+      "logoid": "conocophillips",
       "market_cap": 168222616799,
       "history_file": "COP.json",
       "current_price": 142.28,
@@ -1441,14 +1515,15 @@
       "max_dd_abs": 73.87,
       "mdd_peak_date": "2014-07-23",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13",
-      "logoid": "conocophillips"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 74,
       "ticker": "PFE",
       "name": "Pfizer, Inc.",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "pfizer",
       "market_cap": 164668764587,
       "history_file": "PFE.json",
       "current_price": 28.89,
@@ -1460,14 +1535,15 @@
       "max_dd_abs": 76.7,
       "mdd_peak_date": "1999-04-12",
       "mdd_trough_date": "2009-03-02",
-      "last_date": "2026-11-13",
-      "logoid": "pfizer"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 75,
       "ticker": "DHR",
       "name": "Danaher Corporation",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "danaher",
       "market_cap": 163936755324,
       "history_file": "DHR.json",
       "current_price": 233.02,
@@ -1479,14 +1555,15 @@
       "max_dd_abs": 65.31,
       "mdd_peak_date": "1979-08-28",
       "mdd_trough_date": "1982-06-23",
-      "last_date": "2026-11-13",
-      "logoid": "danaher"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 76,
       "ticker": "SCHW",
       "name": "Charles Schwab Corporation (The)",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "schwab",
       "market_cap": 160484200850,
       "history_file": "SCHW.json",
       "current_price": 92.98,
@@ -1498,14 +1575,15 @@
       "max_dd_abs": 86.92,
       "mdd_peak_date": "1999-04-13",
       "mdd_trough_date": "2003-03-11",
-      "last_date": "2026-11-13",
-      "logoid": "schwab"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 77,
       "ticker": "ISRG",
       "name": "Intuitive Surgical, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Health Technology",
+      "logoid": "intuitive-surgical",
       "market_cap": 153767680841,
       "history_file": "ISRG.json",
       "current_price": 443.59,
@@ -1517,14 +1595,15 @@
       "max_dd_abs": 82.25,
       "mdd_peak_date": "2000-07-31",
       "mdd_trough_date": "2001-04-11",
-      "last_date": "2026-11-13",
-      "logoid": "intuitive-surgical"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 78,
       "ticker": "T",
       "name": "AT&T Inc.",
+      "exchange": "NYSE",
       "sector": "Communications",
+      "logoid": "at-and-t",
       "market_cap": 149414987232,
       "history_file": "T.json",
       "current_price": 22.18,
@@ -1536,14 +1615,15 @@
       "max_dd_abs": 69.91,
       "mdd_peak_date": "1999-07-16",
       "mdd_trough_date": "2023-07-18",
-      "last_date": "2026-11-13",
-      "logoid": "at-and-t"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 79,
       "ticker": "BX",
       "name": "Blackstone Inc.",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "blackstone",
       "market_cap": 148359348740,
       "history_file": "BX.json",
       "current_price": 120.19,
@@ -1555,14 +1635,15 @@
       "max_dd_abs": 88.96,
       "mdd_peak_date": "2007-06-22",
       "mdd_trough_date": "2009-02-26",
-      "last_date": "2026-11-13",
-      "logoid": "blackstone"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 80,
       "ticker": "ACN",
       "name": "Accenture plc",
+      "exchange": "NYSE",
       "sector": "Technology Services",
+      "logoid": "accenture",
       "market_cap": 148049152144,
       "history_file": "ACN.json",
       "current_price": 250.49,
@@ -1574,14 +1655,15 @@
       "max_dd_abs": 70.04,
       "mdd_peak_date": "2021-12-29",
       "mdd_trough_date": "2026-06-30",
-      "last_date": "2026-11-13",
-      "logoid": "accenture"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 81,
       "ticker": "TJX",
       "name": "TJX Companies, Inc. (The)",
+      "exchange": "NYSE",
       "sector": "Retail Trade",
+      "logoid": "tjx-cos",
       "market_cap": 147803500878,
       "history_file": "TJX.json",
       "current_price": 134.37,
@@ -1593,14 +1675,15 @@
       "max_dd_abs": 69.2,
       "mdd_peak_date": "1989-06-14",
       "mdd_trough_date": "1990-10-11",
-      "last_date": "2026-11-13",
-      "logoid": "tjx-cos"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 82,
       "ticker": "CB",
       "name": "Chubb Limited",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "chubb",
       "market_cap": 143562443757,
       "history_file": "CB.json",
       "current_price": 375.74,
@@ -1612,14 +1695,15 @@
       "max_dd_abs": 65.13,
       "mdd_peak_date": "1998-07-15",
       "mdd_trough_date": "2000-03-07",
-      "last_date": "2026-11-13",
-      "logoid": "chubb"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 83,
       "ticker": "UBER",
       "name": "Uber Technologies, Inc.",
+      "exchange": "NYSE",
       "sector": "Transportation",
+      "logoid": "uber",
       "market_cap": 142299881573,
       "history_file": "UBER.json",
       "current_price": 69.69,
@@ -1631,14 +1715,15 @@
       "max_dd_abs": 68.05,
       "mdd_peak_date": "2019-06-28",
       "mdd_trough_date": "2020-03-18",
-      "last_date": "2026-11-13",
-      "logoid": "uber"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 84,
       "ticker": "SCCO",
       "name": "Southern Copper Corporation",
+      "exchange": "NYSE",
       "sector": "Non-Energy Minerals",
+      "logoid": "southern-copper",
       "market_cap": 140008371963,
       "history_file": "SCCO.json",
       "current_price": 164.08,
@@ -1650,14 +1735,15 @@
       "max_dd_abs": 80.5,
       "mdd_peak_date": "2007-10-29",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "southern-copper"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 85,
       "ticker": "IBKR",
       "name": "Interactive Brokers Group, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Finance",
+      "logoid": "interactive-brokers-group",
       "market_cap": 139152015192,
       "history_file": "IBKR.json",
       "current_price": 81.79,
@@ -1669,14 +1755,15 @@
       "max_dd_abs": 63.66,
       "mdd_peak_date": "2008-02-01",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13",
-      "logoid": "interactive-brokers-group"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 86,
       "ticker": "LMT",
       "name": "Lockheed Martin Corporation",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "lockheed-martin",
       "market_cap": 137687999758,
       "history_file": "LMT.json",
       "current_price": 596.04,
@@ -1684,18 +1771,19 @@
       "ath_date": "2026-03-02",
       "current_drawdown": -11.92,
       "current_dd_abs": 11.92,
-      "max_drawdown": -95.74,
-      "max_dd_abs": 95.74,
-      "mdd_peak_date": "1967-07-18",
+      "max_drawdown": -85.12,
+      "max_dd_abs": 85.12,
+      "mdd_peak_date": "1970-01-07",
       "mdd_trough_date": "1973-12-28",
-      "last_date": "2026-11-13",
-      "logoid": "lockheed-martin"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 87,
       "ticker": "MRVL",
       "name": "Marvell Technology, Inc.",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "marvell-tech",
       "market_cap": 137462843010,
       "history_file": "MRVL.json",
       "current_price": 156.76,
@@ -1707,14 +1795,15 @@
       "max_dd_abs": 91.59,
       "mdd_peak_date": "2000-09-13",
       "mdd_trough_date": "2001-04-04",
-      "last_date": "2026-11-13",
-      "logoid": "marvell-tech"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 88,
       "ticker": "SPGI",
       "name": "S&P Global Inc.",
+      "exchange": "NYSE",
       "sector": "Commercial Services",
+      "logoid": "s-and-p-global",
       "market_cap": 137293737048,
       "history_file": "SPGI.json",
       "current_price": 473.59,
@@ -1726,14 +1815,15 @@
       "max_dd_abs": 75.83,
       "mdd_peak_date": "2007-06-04",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13",
-      "logoid": "s-and-p-global"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 89,
       "ticker": "ETN",
       "name": "Eaton Corporation, PLC",
+      "exchange": "NYSE",
       "sector": "Producer Manufacturing",
+      "logoid": "eaton",
       "market_cap": 137128845474,
       "history_file": "ETN.json",
       "current_price": 352.97,
@@ -1745,14 +1835,15 @@
       "max_dd_abs": 70.48,
       "mdd_peak_date": "2007-07-23",
       "mdd_trough_date": "2009-03-09",
-      "last_date": "2026-11-13",
-      "logoid": "eaton"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 90,
       "ticker": "PGR",
       "name": "Progressive Corporation (The)",
+      "exchange": "NYSE",
       "sector": "Finance",
+      "logoid": "progressive-ohio",
       "market_cap": 136602014710,
       "history_file": "PGR.json",
       "current_price": 235.78,
@@ -1764,14 +1855,15 @@
       "max_dd_abs": 71.16,
       "mdd_peak_date": "1999-01-11",
       "mdd_trough_date": "2000-03-13",
-      "last_date": "2026-11-13",
-      "logoid": "progressive-ohio"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 91,
       "ticker": "VRTX",
       "name": "Vertex Pharmaceuticals Incorporated",
+      "exchange": "NASDAQ",
       "sector": "Health Technology",
+      "logoid": "vertex-pharmaceutical",
       "market_cap": 136555385000,
       "history_file": "VRTX.json",
       "current_price": 538.6,
@@ -1783,14 +1875,15 @@
       "max_dd_abs": 91.77,
       "mdd_peak_date": "2000-11-02",
       "mdd_trough_date": "2003-11-11",
-      "last_date": "2026-11-13",
-      "logoid": "vertex-pharmaceutical"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 92,
       "ticker": "BA",
       "name": "Boeing Company (The)",
+      "exchange": "NYSE",
       "sector": "Electronic Technology",
+      "logoid": "boeing",
       "market_cap": 135905166626,
       "history_file": "BA.json",
       "current_price": 171.5,
@@ -1798,18 +1891,19 @@
       "ath_date": "2019-03-01",
       "current_drawdown": -61.08,
       "current_dd_abs": 61.08,
-      "max_drawdown": -89.46,
-      "max_dd_abs": 89.46,
-      "mdd_peak_date": "1967-08-02",
-      "mdd_trough_date": "1974-01-08",
-      "last_date": "2026-11-13",
-      "logoid": "boeing"
+      "max_drawdown": -78.44,
+      "max_dd_abs": 78.44,
+      "mdd_peak_date": "2019-03-01",
+      "mdd_trough_date": "2020-03-20",
+      "last_date": "2026-11-13"
     },
     {
       "rank": 93,
       "ticker": "APP",
       "name": "Applovin Corporation",
+      "exchange": "NASDAQ",
       "sector": "Technology Services",
+      "logoid": "applovin-cdr-cad-hedged",
       "market_cap": 135543830424,
       "history_file": "APP.json",
       "current_price": 409.1,
@@ -1821,14 +1915,15 @@
       "max_dd_abs": 91.9,
       "mdd_peak_date": "2021-11-11",
       "mdd_trough_date": "2022-12-27",
-      "last_date": "2026-11-13",
-      "logoid": "applovin-cdr-cad-hedged"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 94,
       "ticker": "MDT",
       "name": "Medtronic plc.",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "medtronic",
       "market_cap": 131575418945,
       "history_file": "MDT.json",
       "current_price": 102.86,
@@ -1840,14 +1935,15 @@
       "max_dd_abs": 72.8,
       "mdd_peak_date": "1973-10-02",
       "mdd_trough_date": "1977-10-27",
-      "last_date": "2026-11-13",
-      "logoid": "medtronic"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 95,
       "ticker": "MO",
       "name": "Altria Group, Inc.",
+      "exchange": "NYSE",
       "sector": "Consumer Non-Durables",
+      "logoid": "altria",
       "market_cap": 130812675987,
       "history_file": "MO.json",
       "current_price": 78.64,
@@ -1859,14 +1955,15 @@
       "max_dd_abs": 83.84,
       "mdd_peak_date": "2007-01-11",
       "mdd_trough_date": "2008-11-20",
-      "last_date": "2026-11-13",
-      "logoid": "altria"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 96,
       "ticker": "BMY",
       "name": "Bristol-Myers Squibb Company",
+      "exchange": "NYSE",
       "sector": "Health Technology",
+      "logoid": "bristol-myers-squibb",
       "market_cap": 129656363897,
       "history_file": "BMY.json",
       "current_price": 63.43,
@@ -1878,14 +1975,15 @@
       "max_dd_abs": 76.73,
       "mdd_peak_date": "1999-10-28",
       "mdd_trough_date": "2008-10-16",
-      "last_date": "2026-11-13",
-      "logoid": "bristol-myers-squibb"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 97,
       "ticker": "LOW",
       "name": "Lowe's Companies, Inc.",
+      "exchange": "NYSE",
       "sector": "Retail Trade",
+      "logoid": "lowe-s",
       "market_cap": 127768828692,
       "history_file": "LOW.json",
       "current_price": 227.73,
@@ -1897,14 +1995,15 @@
       "max_dd_abs": 62.69,
       "mdd_peak_date": "1986-03-14",
       "mdd_trough_date": "1987-12-03",
-      "last_date": "2026-11-13",
-      "logoid": "lowe-s"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 98,
       "ticker": "MCK",
       "name": "McKesson Corporation",
+      "exchange": "NYSE",
       "sector": "Distribution Services",
+      "logoid": "mckesson",
       "market_cap": 127326771537,
       "history_file": "MCK.json",
       "current_price": 1102.81,
@@ -1916,14 +2015,15 @@
       "max_dd_abs": 83.04,
       "mdd_peak_date": "1998-10-06",
       "mdd_trough_date": "2000-05-26",
-      "last_date": "2026-11-13",
-      "logoid": "mckesson"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 99,
       "ticker": "SPOT",
       "name": "Spotify Technology S.A.",
+      "exchange": "NYSE",
       "sector": "Technology Services",
+      "logoid": "spotify-technology",
       "market_cap": 126129698639,
       "history_file": "SPOT.json",
       "current_price": 612.63,
@@ -1935,14 +2035,15 @@
       "max_dd_abs": 80.51,
       "mdd_peak_date": "2021-02-19",
       "mdd_trough_date": "2022-11-04",
-      "last_date": "2026-11-13",
-      "logoid": "spotify-technology"
+      "last_date": "2026-11-13"
     },
     {
       "rank": 100,
       "ticker": "SNDK",
       "name": "Sandisk Corporation",
+      "exchange": "NASDAQ",
       "sector": "Electronic Technology",
+      "logoid": "sandisk",
       "market_cap": 125927501172,
       "history_file": "SNDK.json",
       "current_price": 885.01,
@@ -1954,8 +2055,7 @@
       "max_dd_abs": 65.46,
       "mdd_peak_date": "2026-06-25",
       "mdd_trough_date": "2026-11-05",
-      "last_date": "2026-11-13",
-      "logoid": "sandisk"
+      "last_date": "2026-11-13"
     }
   ]
 }
