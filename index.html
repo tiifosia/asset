@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MY ASSET</title>
-  <link rel="stylesheet" href="./styles.css?v=20261115-17" />
+  <link rel="stylesheet" href="./styles.css?v=20261115-18" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js?v=20261115-17" defer></script>
+  <script src="./app.js?v=20261115-18" defer></script>
 </head>
 <body>
   <div class="container">
@@ -50,9 +50,6 @@
               </button>
               <button id="nav-mdd-btn" type="button" class="nav-switch-btn" data-view="mdd" aria-pressed="false">
                 MDD check
-              </button>
-              <button id="nav-company-btn" type="button" class="nav-switch-btn" data-view="company" aria-pressed="false">
-                COMPANY
               </button>
             </div>
           </div>
@@ -281,69 +278,6 @@
           </div>
         </section>
       </div>
-
-      <!-- SECONDARY VIEW 3: Full NYSE + NASDAQ Company Screener & Info -->
-      <div id="company-view" class="hidden">
-        <section class="section" aria-labelledby="company-heading">
-          <div class="section-header">
-            <div class="section-title-group">
-              <h2 id="company-heading">미국 전체 상장 기업 정보</h2>
-              <span id="company-count" class="count-badge">불러오는 중...</span>
-            </div>
-            <span id="company-view-note" class="section-note">기본 Top 100 · 검색 및 필터 적용 시 NYSE · NASDAQ 전체 기업 실시간 탐색</span>
-          </div>
-
-          <div class="company-controls-panel">
-            <div class="company-preset-row" role="group" aria-label="스크리너 프리셋">
-              <button type="button" class="preset-btn active" data-preset="all">전체 (Top 100)</button>
-              <button type="button" class="preset-btn" data-preset="low_per">저PER 가치주</button>
-              <button type="button" class="preset-btn" data-preset="high_div">고배당 (3%+)</button>
-              <button type="button" class="preset-btn" data-preset="rsi_oversold">RSI 과매도 (≤35)</button>
-              <button type="button" class="preset-btn" data-preset="near_52w_low">52주 신저가 근접</button>
-              <button type="button" class="preset-btn" data-preset="ytd_leaders">YTD 상승 TOP</button>
-            </div>
-
-            <div class="company-filter-row">
-              <div class="search-box">
-                <input
-                  id="company-search-input"
-                  type="search"
-                  placeholder="티커, 기업명, 섹터 검색 (예: AAPL, Semiconductor, Palantir)"
-                  aria-label="기업 검색"
-                  autocomplete="off"
-                />
-              </div>
-              <div class="company-dropdown-group">
-                <div class="exchange-group" role="group" aria-label="거래소 필터">
-                  <button type="button" class="exchange-btn active" data-exchange="ALL">전체</button>
-                  <button type="button" class="exchange-btn" data-exchange="NASDAQ">NASDAQ</button>
-                  <button type="button" class="exchange-btn" data-exchange="NYSE">NYSE</button>
-                </div>
-                <select id="company-sector-select" class="company-select" aria-label="섹터 필터">
-                  <option value="ALL">전체 섹터</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="company-sort-row" role="group" aria-label="기업 정렬 기준">
-              <button type="button" class="csort-btn active" data-csort="rank">시총 순</button>
-              <button type="button" class="csort-btn" data-csort="change_desc">일간 등락률 순</button>
-              <button type="button" class="csort-btn" data-csort="per_asc">저PER 순</button>
-              <button type="button" class="csort-btn" data-csort="div_desc">고배당 순</button>
-              <button type="button" class="csort-btn" data-csort="ytd_desc">YTD 수익률 순</button>
-              <button type="button" class="csort-btn" data-csort="rsi_asc">RSI 낮은 순</button>
-            </div>
-          </div>
-
-          <div id="company-list" class="company-list">
-            <div class="loading-state">전체 기업 데이터를 불러오는 중입니다...</div>
-          </div>
-
-          <div id="company-more-wrap" class="company-more-wrap hidden">
-            <button id="company-more-btn" type="button" class="company-more-btn">더 보기</button>
-          </div>
-        </section>
-      </div>
     </main>
 
     <footer id="site-footer" class="site-footer hidden">
@@ -474,42 +408,5 @@
       </div>
     </div>
   </div>
-  <!-- Company Full Financial & Chart Detail Modal -->
-  <div id="company-detail-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cmodal-title">
-    <div class="modal-dialog company-detail-dialog">
-      <div class="modal-header company-modal-header">
-        <div class="company-modal-identity">
-          <div id="cmodal-logo-wrap" class="stock-logo-circle cmodal-logo"></div>
-          <div class="modal-title-group">
-            <div class="modal-title-row">
-              <h3 id="cmodal-title" class="modal-title">-</h3>
-              <span id="cmodal-ticker" class="modal-ticker">-</span>
-              <span id="cmodal-exchange" class="company-badge">-</span>
-              <span id="cmodal-rank" class="company-badge rank-badge">-</span>
-            </div>
-            <div class="company-modal-submeta">
-              <span id="cmodal-sector" class="company-sector-text">-</span>
-              <span class="meta-dot">·</span>
-              <span id="cmodal-price" class="modal-stat-price tabular">-</span>
-              <span id="cmodal-change" class="tabular">-</span>
-              <span class="meta-dot">·</span>
-              <span id="cmodal-mcap" class="tabular">-</span>
-            </div>
-          </div>
-        </div>
-        <div class="company-modal-header-right">
-          <div id="cmodal-ext-links" class="company-ext-links"></div>
-          <button id="company-modal-close-btn" type="button" class="modal-close-btn" aria-label="기업 상세 닫기">✕</button>
-        </div>
-      </div>
-
-      <div id="company-tv-chart-wrap" class="company-tv-chart-wrap">
-        <div id="company-tv-chart" class="company-tv-chart"></div>
-      </div>
-
-      <div id="company-detail-grid" class="company-detail-grid"></div>
-    </div>
-  </div>
-
 </body>
 </html>
