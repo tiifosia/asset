@@ -43,6 +43,10 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/fetch_mdd.py
 
+      - name: Fetch daily index valuation & macro sentiment data
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: python scripts/fetch_macro.py
+
       - name: Fetch daily personal portfolio data
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:

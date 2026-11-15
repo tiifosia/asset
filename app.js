@@ -1,16 +1,21 @@
 const PORTFOLIO_DATA_URL = "./public/data/portfolio.json";
 const MDD_DATA_URL = "./public/data/mdd.json";
 const COMPANIES_DATA_URL = "./public/data/companies.json";
+const MACRO_DATA_URL = "./public/data/macro.json";
 const PORTFOLIO_PIN_SHA256 = "8e44d9bf2f3c1c43531adb5af938704486efc9224533583acb749390695dfe53";
 const MASKED_TEXT = "****";
 
 const state = {
-  activeView: "portfolio", // "portfolio" | "mdd"
+  activeView: "portfolio", // "portfolio" | "mdd" | "index"
   currency: "krw", // "krw" | "usd"
   portfolioUnlocked: false,
   portfolio: null,
   portfolioUpdatedAt: "",
   mddUpdatedAt: "",
+  macroUpdatedAt: "",
+  macro: null,
+  macroPromise: null,
+  macroError: "",
   benchmarks: [],
   stocks: [],
   searchQuery: "",
@@ -20,6 +25,8 @@ const state = {
   companiesPromise: null,
   companiesError: "",
 };
+
+let cnnChartInstance = null;
 
 async function verifyPortfolioPin(rawPin) {
   const pin = String(rawPin ?? "").trim();
@@ -714,8 +721,11 @@ function updatePortfolioAuthUi() {
 
 function updateHeaderForView() {
   const isPortfolio = state.activeView === "portfolio";
-  document.getElementById("portfolio-view").classList.toggle("hidden", !isPortfolio);
-  document.getElementById("mdd-view").classList.toggle("hidden", isPortfolio);
+  const isMdd = state.activeView === "mdd";
+  const isIndex = state.activeView === "index";
+  document.getElementById("portfolio-view")?.classList.toggle("hidden", !isPortfolio);
+  document.getElementById("mdd-view")?.classList.toggle("hidden", !isMdd);
+  document.getElementById("index-view")?.classList.toggle("hidden", !isIndex);
 
   const eyebrowEl = document.getElementById("header-eyebrow");
   const titleEl = document.getElementById("header-title");
@@ -725,17 +735,20 @@ function updateHeaderForView() {
   const footerEl = document.getElementById("site-footer");
   const portfolioBtn = document.getElementById("nav-portfolio-btn");
   const mddBtn = document.getElementById("nav-mdd-btn");
+  const indexBtn = document.getElementById("nav-index-btn");
   const updatedEl = document.getElementById("updated-at");
 
   eyebrowEl?.classList.toggle("hidden", isPortfolio);
   subtitleEl?.classList.add("hidden");
   currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
-  legendEl?.classList.toggle("hidden", isPortfolio);
-  footerEl?.classList.toggle("hidden", isPortfolio);
+  legendEl?.classList.toggle("hidden", !isMdd);
+  footerEl?.classList.toggle("hidden", !isMdd);
   portfolioBtn?.classList.toggle("active", isPortfolio);
   portfolioBtn?.setAttribute("aria-pressed", String(isPortfolio));
-  mddBtn?.classList.toggle("active", !isPortfolio);
-  mddBtn?.setAttribute("aria-pressed", String(!isPortfolio));
+  mddBtn?.classList.toggle("active", isMdd);
+  mddBtn?.setAttribute("aria-pressed", String(isMdd));
+  indexBtn?.classList.toggle("active", isIndex);
+  indexBtn?.setAttribute("aria-pressed", String(isIndex));
   updatePortfolioAuthUi();
 
   if (isPortfolio) {
@@ -744,6 +757,12 @@ function updateHeaderForView() {
     titleEl.textContent = "MY ASSET";
     subtitleEl.textContent = "";
     updatedEl.textContent = state.portfolioUpdatedAt ? formatUpdatedAt(state.portfolioUpdatedAt) : "-";
+  } else if (isIndex) {
+    document.title = "INDEX & MACRO VALUATION";
+    eyebrowEl.textContent = "INDEX VALUATION & SENTIMENT";
+    titleEl.textContent = "INDEX & MACRO";
+    subtitleEl.textContent = "";
+    updatedEl.textContent = state.macroUpdatedAt ? formatUpdatedAt(state.macroUpdatedAt) : "-";
   } else {
     document.title = "ASSET MDD TRACKER";
     eyebrowEl.textContent = "US MARKET DRAWDOWN DASHBOARD";
@@ -754,10 +773,11 @@ function updateHeaderForView() {
 }
 
 function switchMainView(nextView) {
-  state.activeView = nextView === "mdd" ? "mdd" : "portfolio";
+  state.activeView = nextView === "mdd" || nextView === "index" ? nextView : "portfolio";
   updateHeaderForView();
   if (window.history && window.history.replaceState) {
-    const hash = state.activeView === "mdd" ? "#mdd" : "#portfolio";
+    const hash =
+      state.activeView === "mdd" ? "#mdd" : state.activeView === "index" ? "#index" : "#portfolio";
     if (window.location.hash !== hash) {
       window.history.replaceState(null, "", hash);
     }
@@ -769,6 +789,16 @@ function switchMainView(nextView) {
         pfViewport?.scheduleCalloutsUpdate();
       }
       pfPieChartInstance?.resize();
+    });
+  } else if (state.activeView === "index") {
+    ensureMacroLoaded().then(() => {
+      if (state.activeView !== "index") return;
+      requestAnimationFrame(() => {
+        if (!cnnChartInstance && state.macro?.sentiment?.cnn?.history) {
+          renderCnnFearGreedChart(state.macro.sentiment.cnn.history);
+        }
+        cnnChartInstance?.resize();
+      });
     });
   }
 }
@@ -2252,6 +2282,501 @@ function findAssetFromElement(el) {
 }
 
 
+/* ---------- Index Valuation & Macro Dashboard Rendering ---------- */
+
+function formatMacroNum(val, digits = 2, suffix = "") {
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
+  return `${Number(val).toLocaleString("en-US", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })}${suffix}`;
+}
+
+function formatMacroDelta(val, digits = 2, suffix = "") {
+  if (val === null || val === undefined || !Number.isFinite(Number(val))) return "-";
+  const num = Number(val);
+  const sign = num > 0 ? "+" : "";
+  return `${sign}${num.toFixed(digits)}${suffix}`;
+}
+
+function getFearGreedBand(score) {
+  const num = Number(score);
+  if (!Number.isFinite(num)) {
+    return { pillCls: "fg-pill-neutral", color: "#8d8d8d", labelKo: "-" };
+  }
+  if (num < 25) return { pillCls: "fg-pill-extreme-fear", color: "#f87171", labelKo: "극단적 공포" };
+  if (num < 45) return { pillCls: "fg-pill-fear", color: "#fb923c", labelKo: "공포" };
+  if (num < 55) return { pillCls: "fg-pill-neutral", color: "#facc15", labelKo: "중립" };
+  if (num < 75) return { pillCls: "fg-pill-greed", color: "#4ade80", labelKo: "탐욕" };
+  return { pillCls: "fg-pill-extreme-greed", color: "#22c55e", labelKo: "극단적 탐욕" };
+}
+
+function translateWorldPeBand(band) {
+  const key = String(band || "").trim().toLowerCase();
+  const map = {
+    cheap: "저평가(싸다)",
+    undervalued: "저평가",
+    fair: "적정",
+    overvalued: "고평가",
+    expensive: "과열(비싸다)",
+  };
+  return map[key] || band || "-";
+}
+
+function renderCnnFearGreedChart(history) {
+  const chartEl = document.getElementById("cnn-fg-chart");
+  const rangeEl = document.getElementById("cnn-fg-range-label");
+  if (!chartEl || typeof echarts === "undefined") return;
+
+  if (!Array.isArray(history) || history.length === 0) {
+    if (rangeEl) rangeEl.textContent = "히스토리 없음";
+    return;
+  }
+
+  const dates = history.map((pt) => pt[0]);
+  const values = history.map((pt) => Number(pt[1]));
+  if (rangeEl) {
+    rangeEl.textContent = `${dates[0]} ~ ${dates[dates.length - 1]} (${dates.length}거래일)`;
+  }
+
+  if (!cnnChartInstance) {
+    cnnChartInstance = echarts.init(chartEl, null, { renderer: "canvas" });
+  }
+
+  cnnChartInstance.setOption(
+    {
+      animationDuration: 350,
+      grid: { left: 36, right: 16, top: 14, bottom: 26 },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#181818",
+        borderColor: "#333333",
+        textStyle: { color: "#F5F5F5", fontSize: 12 },
+        formatter(params) {
+          const pt = Array.isArray(params) ? params[0] : params;
+          if (!pt) return "";
+          const score = Number(pt.value);
+          const band = getFearGreedBand(score);
+          return `<div style="font-weight:700;margin-bottom:3px;">${escapeHtml(pt.axisValue)}</div>
+            <div>CNN 점수: <span style="color:${band.color};font-weight:700;">${score.toFixed(1)}</span> (${band.labelKo})</div>`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: dates,
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: "#2c2c2c" } },
+        axisTick: { show: false },
+        axisLabel: {
+          color: "#8d8d8d",
+          fontSize: 11,
+          formatter(val) {
+            return val.slice(2, 7);
+          },
+        },
+      },
+      yAxis: {
+        type: "value",
+        min: 0,
+        max: 100,
+        interval: 25,
+        splitLine: { lineStyle: { color: "#232323" } },
+        axisLabel: { color: "#8d8d8d", fontSize: 11 },
+      },
+      series: [
+        {
+          name: "CNN Fear & Greed",
+          type: "line",
+          showSymbol: false,
+          smooth: 0.15,
+          lineStyle: { color: "#C3BDFF", width: 2 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(195, 189, 255, 0.28)" },
+              { offset: 1, color: "rgba(195, 189, 255, 0.02)" },
+            ]),
+          },
+          data: values,
+          markArea: {
+            silent: true,
+            data: [
+              [{ yAxis: 0, itemStyle: { color: "rgba(239, 68, 68, 0.07)" } }, { yAxis: 25 }],
+              [{ yAxis: 25, itemStyle: { color: "rgba(249, 115, 22, 0.05)" } }, { yAxis: 45 }],
+              [{ yAxis: 55, itemStyle: { color: "rgba(74, 222, 128, 0.05)" } }, { yAxis: 75 }],
+              [{ yAxis: 75, itemStyle: { color: "rgba(34, 197, 94, 0.08)" } }, { yAxis: 100 }],
+            ],
+          },
+        },
+      ],
+    },
+    true
+  );
+}
+
+function renderIndexDashboard() {
+  const payload = state.macro;
+  const heroGrid = document.getElementById("sentiment-hero-grid");
+  const subGrid = document.getElementById("cnn-sub-grid");
+  const primaryGrid = document.getElementById("index-primary-grid");
+  const secondaryGrid = document.getElementById("index-secondary-grid");
+  const macroGrid = document.getElementById("macro-indicators-grid");
+  if (!heroGrid || !payload) return;
+
+  const cnn = payload.sentiment?.cnn || {};
+  const crypto = payload.sentiment?.crypto || {};
+  const cnnScore = Number(cnn.score);
+  const cnnBand = getFearGreedBand(cnnScore);
+  const cnnPos = Number.isFinite(cnnScore) ? Math.min(100, Math.max(0, cnnScore)) : 50;
+
+  const compareChip = (label, baseVal) => {
+    if (baseVal === null || baseVal === undefined || !Number.isFinite(Number(baseVal))) {
+      return `<div class="fg-compare-item"><span class="fg-compare-label">${label}</span><div class="fg-compare-val"><span>-</span></div></div>`;
+    }
+    const prev = Number(baseVal);
+    const diff = Number.isFinite(cnnScore) ? cnnScore - prev : null;
+    const diffCls = diff === null ? "" : diff >= 0 ? "is-up" : "is-down";
+    return `<div class="fg-compare-item">
+      <span class="fg-compare-label">${label}</span>
+      <div class="fg-compare-val">
+        <span>${prev.toFixed(1)}</span>
+        ${diff !== null ? `<span class="fg-compare-delta ${diffCls}">${formatMacroDelta(diff, 1)}</span>` : ""}
+      </div>
+    </div>`;
+  };
+
+  const cryptoScore = Number(crypto.score);
+  const cryptoBand = getFearGreedBand(cryptoScore);
+  const cryptoPos = Number.isFinite(cryptoScore) ? Math.min(100, Math.max(0, cryptoScore)) : 50;
+  const cryptoHist = Array.isArray(crypto.history) ? crypto.history : [];
+  const cryptoPrev1d = cryptoHist.length >= 2 ? cryptoHist[cryptoHist.length - 2][1] : null;
+  const cryptoPrev7d = cryptoHist.length >= 8 ? cryptoHist[cryptoHist.length - 8][1] : null;
+  const cryptoPrev30d = cryptoHist.length >= 1 ? cryptoHist[0][1] : null;
+
+  heroGrid.innerHTML = `
+    <article class="fg-hero-card">
+      <div class="fg-card-top">
+        <div>
+          <span class="fg-eyebrow">CNN Fear &amp; Greed Index</span>
+          <div class="fg-score-row">
+            <span class="fg-score-big">${Number.isFinite(cnnScore) ? cnnScore.toFixed(1) : "-"}</span>
+            <span class="fg-rating-pill ${cnnBand.pillCls}">${escapeHtml(cnn.rating_ko || cnnBand.labelKo)}</span>
+          </div>
+        </div>
+        <div class="fg-source-note">미국 주식시장 종합 심리<br />7개 정량 지표 가중 평균</div>
+      </div>
+      <div class="fg-meter-wrap">
+        <div class="fg-meter-track">
+          <div class="fg-meter-marker" style="left: ${cnnPos.toFixed(1)}%;"></div>
+        </div>
+        <div class="fg-meter-labels">
+          <span>0 극단적 공포</span>
+          <span>25 공포</span>
+          <span>50 중립</span>
+          <span>75 탐욕</span>
+          <span>100 극단적 탐욕</span>
+        </div>
+      </div>
+      <div class="fg-compare-grid">
+        ${compareChip("전일 종가", cnn.previous_close)}
+        ${compareChip("1주일 전", cnn.prev_1w)}
+        ${compareChip("1개월 전", cnn.prev_1m)}
+        ${compareChip("1년 전", cnn.prev_1y)}
+      </div>
+    </article>
+
+    <article class="fg-hero-card">
+      <div class="fg-card-top">
+        <div>
+          <span class="fg-eyebrow">Crypto Fear &amp; Greed</span>
+          <div class="fg-score-row">
+            <span class="fg-score-big">${Number.isFinite(cryptoScore) ? cryptoScore : "-"}</span>
+            <span class="fg-rating-pill ${cryptoBand.pillCls}">${escapeHtml(crypto.rating_ko || cryptoBand.labelKo)}</span>
+          </div>
+        </div>
+        <div class="fg-source-note">Alternative.me<br />가상자산 위험선호</div>
+      </div>
+      <div class="fg-meter-wrap">
+        <div class="fg-meter-track">
+          <div class="fg-meter-marker" style="left: ${cryptoPos.toFixed(1)}%;"></div>
+        </div>
+        <div class="fg-meter-labels">
+          <span>0 공포</span>
+          <span>50 중립</span>
+          <span>100 탐욕</span>
+        </div>
+      </div>
+      <p class="fg-crypto-desc">위험자산 전반의 리스크 온·오프 심리를 보조 확인하는 지표입니다.</p>
+      <div class="fg-crypto-history">
+        <div class="fg-compare-item"><span class="fg-compare-label">전일</span><div class="fg-compare-val"><span>${cryptoPrev1d ?? "-"}</span></div></div>
+        <div class="fg-compare-item"><span class="fg-compare-label">7일 전</span><div class="fg-compare-val"><span>${cryptoPrev7d ?? "-"}</span></div></div>
+        <div class="fg-compare-item"><span class="fg-compare-label">30일 전</span><div class="fg-compare-val"><span>${cryptoPrev30d ?? "-"}</span></div></div>
+      </div>
+    </article>
+  `;
+
+  if (state.activeView === "index") {
+    requestAnimationFrame(() => renderCnnFearGreedChart(cnn.history || []));
+  }
+
+  const subs = Array.isArray(cnn.sub_indicators) ? cnn.sub_indicators : [];
+  subGrid.innerHTML = subs
+    .map((item) => {
+      const s = Number(item.score);
+      const band = getFearGreedBand(s);
+      const pct = Number.isFinite(s) ? Math.min(100, Math.max(0, s)) : 0;
+      const rawVal = item.value !== null && item.value !== undefined ? Number(item.value).toLocaleString("en-US", { maximumFractionDigits: 2 }) : "-";
+      return `<article class="cnn-sub-card">
+        <div class="cnn-sub-top">
+          <span class="cnn-sub-name">${escapeHtml(item.name_ko || item.id)}</span>
+          <span class="fg-rating-pill ${band.pillCls}">${escapeHtml(item.rating_ko || band.labelKo)}</span>
+        </div>
+        <div class="cnn-sub-score-line">
+          <span class="cnn-sub-score" style="color:${band.color};">${Number.isFinite(s) ? s.toFixed(1) : "-"}</span>
+          <span class="section-sub">원지표: ${rawVal}</span>
+        </div>
+        <div class="cnn-sub-bar">
+          <div class="cnn-sub-bar-fill" style="width:${pct.toFixed(1)}%;background:${band.color};"></div>
+        </div>
+        <p class="cnn-sub-desc">${escapeHtml(item.description || "")}</p>
+      </article>`;
+    })
+    .join("");
+
+  const primary = payload.indices?.primary || [];
+  primaryGrid.innerHTML = primary
+    .map((idx) => {
+      const tech = idx.technicals || {};
+      const wpe = idx.world_pe || {};
+      const chg = Number(tech.change);
+      const chgCls = Number.isFinite(chg) ? (chg >= 0 ? "is-up" : "is-down") : "";
+      const chgText = Number.isFinite(chg) ? formatSignedPct(chg) : "-";
+      const peDiff52 =
+        idx.pe != null && idx.pe_52w_ago != null ? `${formatMacroDelta(idx.pe - idx.pe_52w_ago, 2)} (1Y전)` : "";
+
+      const extraTiles = [];
+      if (idx.shiller_cape != null) {
+        extraTiles.push(
+          `<div class="index-metric-tile"><span class="index-metric-label">Shiller CAPE</span><span class="index-metric-val">${formatMacroNum(idx.shiller_cape, 2)}x</span><span class="index-metric-sub">경기조정 10년 PER</span></div>`
+        );
+      } else {
+        extraTiles.push(
+          `<div class="index-metric-tile"><span class="index-metric-label">${escapeHtml(idx.etf_ref || "ETF")} Forward PER</span><span class="index-metric-val">${formatMacroNum(idx.etf_forward_pe, 2)}x</span><span class="index-metric-sub">ETF Trailing ${formatMacroNum(idx.etf_pe, 2)}x</span></div>`
+        );
+      }
+      if (idx.pbr != null) {
+        extraTiles.push(
+          `<div class="index-metric-tile"><span class="index-metric-label">PBR (주가순자산비율)</span><span class="index-metric-val">${formatMacroNum(idx.pbr, 2)}x</span><span class="index-metric-sub">S&amp;P 500 기준</span></div>`
+        );
+      } else {
+        extraTiles.push(
+          `<div class="index-metric-tile"><span class="index-metric-label">선행 이익수익률</span><span class="index-metric-val">${formatMacroNum(idx.forward_earnings_yield, 2, "%")}</span><span class="index-metric-sub">100 ÷ 선행 PER</span></div>`
+        );
+      }
+      const erpVal = idx.erp_forward;
+      const erpSub =
+        erpVal == null ? "10년물 국채 대비" : erpVal >= 0 ? "채권 대비 주식 우위" : "채권 금리 대비 저매력";
+      extraTiles.push(
+        `<div class="index-metric-tile"><span class="index-metric-label">주식위험프리미엄 (ERP)</span><span class="index-metric-val">${formatMacroDelta(erpVal, 2, "%p")}</span><span class="index-metric-sub">${erpSub}</span></div>`
+      );
+
+      const band1yKo = translateWorldPeBand(wpe.band_1y);
+      const band5yKo = translateWorldPeBand(wpe.band_5y);
+
+      return `<article class="index-val-card">
+        <div class="index-val-head">
+          <div>
+            <h3 class="index-val-title">${escapeHtml(idx.name)}</h3>
+            <span class="index-val-ticker">${escapeHtml(idx.ticker)} · 참고 ETF ${escapeHtml(idx.etf_ref || "-")}</span>
+          </div>
+          <div class="index-val-price-box">
+            <span class="index-val-price">${formatMacroNum(tech.close, 2)}</span>
+            <span class="index-val-chg ${chgCls}">${chgText}</span>
+          </div>
+        </div>
+
+        <div class="index-per-highlight">
+          <div class="index-metric-tile">
+            <span class="index-metric-label">Trailing PER</span>
+            <span class="index-metric-val">${formatMacroNum(idx.pe, 2)}x</span>
+            <span class="index-metric-sub">52주전 ${formatMacroNum(idx.pe_52w_ago, 2)}x ${peDiff52 ? `(${peDiff52.split(" ")[0]})` : ""}</span>
+          </div>
+          <div class="index-metric-tile is-accent">
+            <span class="index-metric-label">Forward PER (선행)</span>
+            <span class="index-metric-val">${formatMacroNum(idx.forward_pe, 2)}x</span>
+            <span class="index-metric-sub">ETF ${formatMacroNum(idx.etf_forward_pe, 2)}x</span>
+          </div>
+          <div class="index-metric-tile">
+            <span class="index-metric-label">1년 평균 대비 편차</span>
+            <span class="index-metric-val">${wpe.z_1y != null ? `${formatMacroDelta(wpe.z_1y, 2)}σ` : "-"}</span>
+            <span class="index-metric-sub">평균 ${formatMacroNum(wpe.mean_1y, 1)}x · ${escapeHtml(band1yKo)}</span>
+          </div>
+          <div class="index-metric-tile">
+            <span class="index-metric-label">5년 평균 대비 편차</span>
+            <span class="index-metric-val">${wpe.z_5y != null ? `${formatMacroDelta(wpe.z_5y, 2)}σ` : "-"}</span>
+            <span class="index-metric-sub">평균 ${formatMacroNum(wpe.mean_5y, 1)}x · ${escapeHtml(band5yKo)}</span>
+          </div>
+        </div>
+
+        <div class="index-extra-grid">
+          ${extraTiles.join("")}
+        </div>
+
+        <div class="index-tech-strip">
+          <span class="index-tech-chip">배당수익률 ${formatMacroNum(idx.div_yield, 2, "%")}</span>
+          <span class="index-tech-chip">RSI(14) ${formatMacroNum(tech.rsi, 1)}</span>
+          <span class="index-tech-chip">50일선 이격 ${formatMacroDelta(tech.dist_sma50, 2, "%")}</span>
+          <span class="index-tech-chip">200일선 이격 ${formatMacroDelta(tech.dist_sma200, 2, "%")}</span>
+          <span class="index-tech-chip">1M ${formatMacroDelta(tech.perf_1m, 2, "%")}</span>
+          <span class="index-tech-chip">YTD ${formatMacroDelta(tech.perf_ytd, 2, "%")}</span>
+          <span class="index-tech-chip">1Y ${formatMacroDelta(tech.perf_1y, 2, "%")}</span>
+        </div>
+      </article>`;
+    })
+    .join("");
+
+  const secondary = payload.indices?.secondary || [];
+  secondaryGrid.innerHTML = secondary
+    .map(
+      (idx) => `<article class="index-sec-card">
+        <div>
+          <div class="index-sec-name">${escapeHtml(idx.name)} (${escapeHtml(idx.ticker)})</div>
+          <span class="index-sec-sub">WSJ Market Data · 52주 전 PER ${formatMacroNum(idx.pe_52w_ago, 2)}x</span>
+        </div>
+        <div class="index-sec-metrics">
+          <div><span class="index-sec-m-label">Trailing PER</span><span class="index-sec-m-val">${formatMacroNum(idx.pe, 2)}x</span></div>
+          <div><span class="index-sec-m-label">Forward PER</span><span class="index-sec-m-val">${formatMacroNum(idx.forward_pe, 2)}x</span></div>
+          <div><span class="index-sec-m-label">배당률</span><span class="index-sec-m-val">${formatMacroNum(idx.div_yield, 2, "%")}</span></div>
+        </div>
+      </article>`
+    )
+    .join("");
+
+  const m = payload.macro || {};
+  const vix = m.vix || {};
+  const us10y = m.us10y || {};
+  const us2y = m.us2y || {};
+  const sp = m.spread_10y2y || {};
+  const hy = m.hy_spread || {};
+  const dxy = m.dxy || {};
+
+  const vixVal = Number(vix.value);
+  const vixBadge = !Number.isFinite(vixVal)
+    ? { cls: "", txt: "-" }
+    : vixVal >= 30
+    ? { cls: "is-alert", txt: "고변동성 공포" }
+    : vixVal >= 20
+    ? { cls: "is-warn", txt: "변동성 경계" }
+    : { cls: "is-good", txt: "안정 구간" };
+
+  const spVal = Number(sp.value);
+  const spBadge = !Number.isFinite(spVal)
+    ? { cls: "", txt: "-" }
+    : spVal < 0
+    ? { cls: "is-alert", txt: "장단기 역전" }
+    : { cls: "is-good", txt: "정상 (우상향)" };
+
+  const hyVal = Number(hy.value);
+  const hyBadge = !Number.isFinite(hyVal)
+    ? { cls: "", txt: "-" }
+    : hyVal >= 5.0
+    ? { cls: "is-alert", txt: "신용 스트레스" }
+    : hyVal >= 4.0
+    ? { cls: "is-warn", txt: "경계 구간" }
+    : { cls: "is-good", txt: "신용시장 안정" };
+
+  const cards = [
+    {
+      title: "VIX 변동성 지수",
+      badge: vixBadge,
+      value: formatMacroNum(vix.value, 2),
+      delta: vix.change != null ? `전일비 ${formatMacroDelta(vix.change, 2, "%")} · SMA50 ${formatMacroNum(vix.sma50, 1)}` : "-",
+      desc: "S&P 500 옵션 내재변동성. 20 이하는 안정, 30 이상은 패닉 구간입니다.",
+    },
+    {
+      title: "미국채 10년물 금리",
+      badge: { cls: us10y.value >= 5.0 ? "is-warn" : "", txt: us10y.date || "US Treasury" },
+      value: formatMacroNum(us10y.value, 2, "%"),
+      delta: us10y.delta != null ? `전일비 ${formatMacroDelta(us10y.delta, 2, "%p")}` : "-",
+      desc: "주식 밸류에이션 할인율과 위험프리미엄(ERP) 산정의 핵심 기준 금리입니다.",
+    },
+    {
+      title: "미국채 2년물 금리",
+      badge: { cls: "", txt: us2y.date || "US Treasury" },
+      value: formatMacroNum(us2y.value, 2, "%"),
+      delta: us2y.delta != null ? `전일비 ${formatMacroDelta(us2y.delta, 2, "%p")}` : "-",
+      desc: "연준(Fed) 기준금리 기대를 가장 민감하게 반영하는 단기 국채 금리입니다.",
+    },
+    {
+      title: "장단기 금리차 (10Y - 2Y)",
+      badge: spBadge,
+      value: formatMacroDelta(sp.value, 2, "%p"),
+      delta: sp.delta != null ? `전일비 ${formatMacroDelta(sp.delta, 2, "%p")}` : "-",
+      desc: "음수(-) 전환 시 경기 침체 선행 신호로 해석되는 대표 수익률 곡선 지표입니다.",
+    },
+    {
+      title: "하이일드 채권 스프레드",
+      badge: hyBadge,
+      value: formatMacroNum(hy.value, 2, "%p"),
+      delta: hy.delta != null ? `전일비 ${formatMacroDelta(hy.delta, 2, "%p")} · ${hy.date || "FRED"}` : "-",
+      desc: "투기등급 회사채와 국채의 금리차. 3%p 전후면 양호, 5%p 이상이면 신용 경색 신호입니다.",
+    },
+    {
+      title: "달러 인덱스 (DXY)",
+      badge: { cls: dxy.dist_sma200 > 3 ? "is-warn" : "", txt: `200일선 ${formatMacroDelta(dxy.dist_sma200, 1, "%")}` },
+      value: formatMacroNum(dxy.value, 2),
+      delta: dxy.change != null ? `전일비 ${formatMacroDelta(dxy.change, 2, "%")} · YTD ${formatMacroDelta(dxy.perf_ytd, 2, "%")}` : "-",
+      desc: "주요 6개 통화 대비 달러 가치. 강달러는 미국 외 매출 비중이 큰 기술주에 부담으로 작용합니다.",
+    },
+  ];
+
+  macroGrid.innerHTML = cards
+    .map(
+      (c) => `<article class="macro-card">
+        <div class="macro-card-top">
+          <span class="macro-card-title">${escapeHtml(c.title)}</span>
+          <span class="macro-badge ${c.badge.cls}">${escapeHtml(c.badge.txt)}</span>
+        </div>
+        <div class="macro-card-val-row">
+          <span class="macro-card-val">${escapeHtml(c.value)}</span>
+          <span class="macro-card-delta">${escapeHtml(c.delta)}</span>
+        </div>
+        <p class="macro-card-desc">${escapeHtml(c.desc)}</p>
+      </article>`
+    )
+    .join("");
+}
+
+function ensureMacroLoaded() {
+  if (state.macro) {
+    renderIndexDashboard();
+    return Promise.resolve(state.macro);
+  }
+  if (state.macroPromise) return state.macroPromise;
+
+  state.macroPromise = fetch(MACRO_DATA_URL, { cache: "no-cache" })
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((payload) => {
+      state.macro = payload;
+      state.macroUpdatedAt = payload.updated_at || "";
+      state.macroError = "";
+      renderIndexDashboard();
+      if (state.activeView === "index") updateHeaderForView();
+      return payload;
+    })
+    .catch((err) => {
+      state.macroError = err?.message || "오류";
+      const msg = `<div class="error-state">지수·매크로 데이터를 불러오지 못했습니다 (${escapeHtml(state.macroError)}).</div>`;
+      const heroGrid = document.getElementById("sentiment-hero-grid");
+      if (heroGrid) heroGrid.innerHTML = msg;
+      return null;
+    });
+
+  return state.macroPromise;
+}
+
 /* ---------- Control Bindings ---------- */
 
 function bindControls() {
@@ -2324,6 +2849,9 @@ function bindControls() {
   });
   document.getElementById("nav-mdd-btn")?.addEventListener("click", () => {
     if (state.activeView !== "mdd") switchMainView("mdd");
+  });
+  document.getElementById("nav-index-btn")?.addEventListener("click", () => {
+    if (state.activeView !== "index") switchMainView("index");
   });
 
   // Currency Toggle
@@ -2513,6 +3041,9 @@ function bindControls() {
       }
       pfPieChartInstance?.resize();
     }
+    if (state.activeView === "index" && cnnChartInstance) {
+      cnnChartInstance.resize();
+    }
     if (modalChartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
       modalChartInstance.resize();
       modalViewport.scheduleCalloutsUpdate();
@@ -2527,15 +3058,21 @@ async function init() {
 
   if (window.location.hash === "#mdd") {
     state.activeView = "mdd";
+  } else if (window.location.hash === "#index") {
+    state.activeView = "index";
   }
   updateHeaderForView();
 
-  const [pfResult, mddResult] = await Promise.allSettled([
+  const [pfResult, mddResult, macroResult] = await Promise.allSettled([
     fetch(PORTFOLIO_DATA_URL, { cache: "no-cache" }).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     }),
     fetch(MDD_DATA_URL, { cache: "no-cache" }).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }),
+    fetch(MACRO_DATA_URL, { cache: "no-cache" }).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     }),
@@ -2565,6 +3102,19 @@ async function init() {
     const msg = `MDD 데이터를 불러오지 못했습니다 (${escapeHtml(mddResult.reason?.message || "오류")}).`;
     document.getElementById("benchmarks-grid").innerHTML = `<div class="error-state">${msg}</div>`;
     document.getElementById("stocks-list").innerHTML = `<div class="error-state">${msg}</div>`;
+  }
+
+  if (macroResult.status === "fulfilled") {
+    const macroPayload = macroResult.value;
+    state.macro = macroPayload;
+    state.macroUpdatedAt = macroPayload.updated_at || "";
+    renderIndexDashboard();
+  } else {
+    state.macroError = macroResult.reason?.message || "오류";
+    const heroGrid = document.getElementById("sentiment-hero-grid");
+    if (heroGrid) {
+      heroGrid.innerHTML = `<div class="error-state">지수·매크로 데이터를 불러오지 못했습니다 (${escapeHtml(state.macroError)}).</div>`;
+    }
   }
 
   updateHeaderForView();
