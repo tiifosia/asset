@@ -2531,7 +2531,7 @@ function renderPeTrendChart(idx) {
         itemWidth: 12,
         itemHeight: 8,
         textStyle: { color: "#b5b5b5", fontSize: 11 },
-        data: ["Trailing PER", "Forward PER (선행)"],
+        data: ["PER", "Forward PER (선행)"],
       },
       tooltip: {
         trigger: "axis",
@@ -2594,7 +2594,7 @@ function renderPeTrendChart(idx) {
       },
       series: [
         {
-          name: "Trailing PER",
+          name: "PER",
           type: "line",
           showSymbol: false,
           smooth: 0.15,
@@ -2700,7 +2700,7 @@ function renderPeCompareChart(primary, secondary) {
         itemWidth: 12,
         itemHeight: 10,
         textStyle: { color: "#b5b5b5", fontSize: 11 },
-        data: ["52주 전 PER", "현재 Trailing PER", "Forward PER (선행)"],
+        data: ["52주 전 PER", "현재 PER", "Forward PER (선행)"],
       },
       tooltip: {
         trigger: "axis",
@@ -2736,7 +2736,7 @@ function renderPeCompareChart(primary, secondary) {
           data: pe52w,
         },
         {
-          name: "현재 Trailing PER",
+          name: "현재 PER",
           type: "bar",
           barMaxWidth: 26,
           itemStyle: { color: "#C3BDFF", borderRadius: [5, 5, 0, 0] },
@@ -2895,11 +2895,6 @@ function renderIndexDashboard() {
         )
         .join("");
 
-      const fwdDiff =
-        idx.forward_pe != null && idx.pe != null
-          ? `${formatMacroDelta(idx.forward_pe - idx.pe, 2)}x`
-          : "";
-
       return `<article class="index-val-card">
         <div class="index-val-head">
           <div>
@@ -2909,29 +2904,6 @@ function renderIndexDashboard() {
           <div class="index-val-price-box">
             <span class="index-val-price">${formatMacroNum(tech.close, 2)}</span>
             <span class="index-val-chg ${chgCls}">${chgText}</span>
-          </div>
-        </div>
-
-        <div class="index-per-kpis">
-          <div class="index-kpi-pill">
-            <div class="index-kpi-label-wrap">
-              <span class="index-kpi-dot is-trailing"></span>
-              <span class="index-kpi-label">Trailing PER</span>
-            </div>
-            <div class="index-kpi-num-wrap">
-              <strong class="index-kpi-num">${formatMacroNum(idx.pe, 2)}x</strong>
-              <span class="index-kpi-sub">52주전 ${formatMacroNum(idx.pe_52w_ago, 2)}x</span>
-            </div>
-          </div>
-          <div class="index-kpi-pill is-forward">
-            <div class="index-kpi-label-wrap">
-              <span class="index-kpi-dot is-forward"></span>
-              <span class="index-kpi-label">선행 PER (Forward)</span>
-            </div>
-            <div class="index-kpi-num-wrap">
-              <strong class="index-kpi-num">${formatMacroNum(idx.forward_pe, 2)}x</strong>
-              <span class="index-kpi-sub">${fwdDiff ? `현재 대비 ${fwdDiff}` : `ETF ${formatMacroNum(idx.etf_forward_pe, 2)}x`}</span>
-            </div>
           </div>
         </div>
 
@@ -2945,7 +2917,7 @@ function renderIndexDashboard() {
           <div id="index-pe-chart-${escapeHtml(idx.id)}" class="index-pe-chart-stage" aria-label="${escapeHtml(
         idx.name
       )} PER 차트"></div>
-          <p class="index-chart-note">Trailing PER: WorldPERatio 월별 장기 추이 + 일별 누적 · 선행 PER: WSJ 현재 기준선 및 매일 일별 누적</p>
+          <p class="index-chart-note">PER: WorldPERatio 월별 장기 추이 + 일별 누적 · 선행 PER: WSJ 현재 기준선 및 매일 일별 누적</p>
         </div>
       </article>`;
     })
@@ -2960,7 +2932,7 @@ function renderIndexDashboard() {
           <span class="index-sec-sub">WSJ Market Data · 52주 전 PER ${formatMacroNum(idx.pe_52w_ago, 2)}x</span>
         </div>
         <div class="index-sec-metrics">
-          <div><span class="index-sec-m-label">Trailing PER</span><span class="index-sec-m-val">${formatMacroNum(idx.pe, 2)}x</span></div>
+          <div><span class="index-sec-m-label">PER</span><span class="index-sec-m-val">${formatMacroNum(idx.pe, 2)}x</span></div>
           <div><span class="index-sec-m-label">Forward PER</span><span class="index-sec-m-val">${formatMacroNum(idx.forward_pe, 2)}x</span></div>
           <div><span class="index-sec-m-label">배당률</span><span class="index-sec-m-val">${formatMacroNum(idx.div_yield, 2, "%")}</span></div>
         </div>
