@@ -1,9 +1,12 @@
 const PORTFOLIO_DATA_URL = "./public/data/portfolio.json";
 const MDD_DATA_URL = "./public/data/mdd.json";
+const PORTFOLIO_PIN_SHA256 = "8e44d9bf2f3c1c43531adb5af938704486efc9224533583acb749390695dfe53";
+const MASKED_TEXT = "****";
 
 const state = {
   activeView: "portfolio", // "portfolio" | "mdd"
   currency: "krw", // "krw" | "usd"
+  portfolioUnlocked: false,
   portfolio: null,
   portfolioUpdatedAt: "",
   mddUpdatedAt: "",
@@ -12,6 +15,27 @@ const state = {
   searchQuery: "",
   sortBy: "rank",
 };
+
+async function verifyPortfolioPin(rawPin) {
+  const pin = String(rawPin ?? "").trim();
+  if (!pin) return false;
+  if (window.crypto?.subtle?.digest) {
+    const bytes = new TextEncoder().encode(pin);
+    const buf = await window.crypto.subtle.digest("SHA-256", bytes);
+    const hex = Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return hex === PORTFOLIO_PIN_SHA256;
+  }
+  let h1 = 2166136261;
+  let h2 = 5381;
+  for (let i = 0; i < pin.length; i += 1) {
+    const c = pin.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+    h2 = ((h2 << 5) + h2 + c) >>> 0;
+  }
+  return h1.toString(16) === "5ba3537f" && h2.toString(16) === "82690bfb";
+}
 
 const historyCache = new Map();
 
@@ -363,6 +387,7 @@ function createChartViewportController(cfg) {
     const grid = cfg.getGrid();
     const plotMinX = grid.left;
     const plotMaxX = stageWidth - grid.right - 4;
+    const masked = Boolean(cfg.isMasked && cfg.isMasked());
 
     if (
       Array.isArray(peakPx) &&
@@ -374,7 +399,10 @@ function createChartViewportController(cfg) {
       peakPx[1] <= stageHeight - grid.bottom - 4
     ) {
       const peakDate = formatShortDate(peakAnchor.date);
-      cfg.peakEl.innerHTML = `<div class="callout-label">${cfg.formatCalloutPrice(peakPrice)} (${formatSignedPct(peakPct)}, ${peakDate})</div><div class="callout-arrow">↓</div>`;
+      const peakText = masked
+        ? `${MASKED_TEXT} (${peakDate})`
+        : `${cfg.formatCalloutPrice(peakPrice)} (${formatSignedPct(peakPct)}, ${peakDate})`;
+      cfg.peakEl.innerHTML = `<div class="callout-label">${peakText}</div><div class="callout-arrow">↓</div>`;
       cfg.peakEl.classList.remove("hidden");
       const w = cfg.peakEl.offsetWidth;
       const h = cfg.peakEl.offsetHeight;
@@ -399,7 +427,10 @@ function createChartViewportController(cfg) {
       troughPx[1] <= stageHeight - grid.bottom - 4
     ) {
       const troughDate = formatShortDate(troughAnchor.date);
-      cfg.troughEl.innerHTML = `<div class="callout-arrow">↑</div><div class="callout-label">${cfg.formatCalloutPrice(troughPrice)} (${formatSignedPct(troughPct)}, ${troughDate})</div>`;
+      const troughText = masked
+        ? `${MASKED_TEXT} (${troughDate})`
+        : `${cfg.formatCalloutPrice(troughPrice)} (${formatSignedPct(troughPct)}, ${troughDate})`;
+      cfg.troughEl.innerHTML = `<div class="callout-arrow">↑</div><div class="callout-label">${troughText}</div>`;
       cfg.troughEl.classList.remove("hidden");
       const w = cfg.troughEl.offsetWidth;
       const h = cfg.troughEl.offsetHeight;
@@ -668,6 +699,14 @@ function createChartViewportController(cfg) {
 
 /* ---------- View Switcher (Portfolio Main <-> MDD Tracker) ---------- */
 
+function updatePortfolioAuthUi() {
+  const isPortfolio = state.activeView === "portfolio";
+  const pinFormEl = document.getElementById("portfolio-pin-form");
+  const lockBtnEl = document.getElementById("portfolio-lock-btn");
+  pinFormEl?.classList.toggle("hidden", !isPortfolio || state.portfolioUnlocked);
+  lockBtnEl?.classList.toggle("hidden", !isPortfolio || !state.portfolioUnlocked);
+}
+
 function updateHeaderForView() {
   const isPortfolio = state.activeView === "portfolio";
   document.getElementById("portfolio-view").classList.toggle("hidden", !isPortfolio);
@@ -687,6 +726,7 @@ function updateHeaderForView() {
   currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
   legendEl?.classList.toggle("hidden", isPortfolio);
   footerEl?.classList.toggle("hidden", isPortfolio);
+  updatePortfolioAuthUi();
 
   if (isPortfolio) {
     document.title = "MY ASSET";
@@ -803,10 +843,11 @@ function updatePortfolioHoverBar(idx) {
   }
   const r = pfRows[idx];
   const cur = state.currency;
-  const totalTxt = formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur);
-  const gateTxt = formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur);
-  const tossTxt = formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur);
-  const kisTxt = formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur);
+  const unlocked = state.portfolioUnlocked;
+  const totalTxt = unlocked ? formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur) : MASKED_TEXT;
+  const gateTxt = unlocked ? formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur) : MASKED_TEXT;
+  const tossTxt = unlocked ? formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur) : MASKED_TEXT;
+  const kisTxt = unlocked ? formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur) : MASKED_TEXT;
   const fx = Number(r.usdkrw || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
   const usdtFx = r.usdt_krw ? Number(r.usdt_krw).toLocaleString("en-US", { maximumFractionDigits: 2 }) : null;
 
@@ -886,11 +927,14 @@ function renderPortfolioSummaryCards() {
   const s = data.summary;
   const cur = state.currency;
   const alt = cur === "krw" ? "usd" : "krw";
+  const unlocked = state.portfolioUnlocked;
+  const maskVal = (formatted) => (unlocked ? formatted : MASKED_TEXT);
+  const maskCls = (cls) => (unlocked ? cls : "is-neutral");
 
-  const totalMain = formatMoney(cur === "krw" ? s.total_krw : s.total_usd, cur);
-  const totalAlt = formatMoney(alt === "krw" ? s.total_krw : s.total_usd, alt);
+  const totalMain = maskVal(formatMoney(cur === "krw" ? s.total_krw : s.total_usd, cur));
+  const totalAlt = maskVal(formatMoney(alt === "krw" ? s.total_krw : s.total_usd, alt));
   const dailyDeltaNum = cur === "krw" ? Number(s.daily_change_krw || 0) : Number(s.daily_change_usd || 0);
-  const dailyDelta = formatSignedMoney(dailyDeltaNum, cur);
+  const dailyDelta = maskVal(formatSignedMoney(dailyDeltaNum, cur));
   const dailyPctNum = Number(s.daily_change_pct || 0);
 
   const gatePnlNum = cur === "krw" ? Number(s.gateio?.unrealized_pnl_krw || 0) : Number(s.gateio?.unrealized_pnl_usd || 0);
@@ -898,25 +942,25 @@ function renderPortfolioSummaryCards() {
   const kisPnlNum = cur === "krw" ? Number(s.kis?.pnl_krw || 0) : Number(s.kis?.pnl_usd || 0);
   const totalPnlNum = gatePnlNum + tossPnlNum + kisPnlNum;
 
-  const gateMain = formatMoney(cur === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, cur);
-  const gateAlt = formatMoney(alt === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, alt);
+  const gateMain = maskVal(formatMoney(cur === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, cur));
+  const gateAlt = maskVal(formatMoney(alt === "krw" ? s.gateio?.total_krw || 0 : s.gateio?.total_usd || 0, alt));
   const gateSpotRaw = cur === "krw" ? Number(s.gateio?.spot_krw || 0) : Number(s.gateio?.spot_usd || 0);
   const gateOtherRaw = cur === "krw" ? Number(s.gateio?.other_krw || 0) : Number(s.gateio?.other_usd || 0);
   const gateSpotLabel = gateOtherRaw > 0 ? "현물 · 기타(Earn)" : "현물 (Spot)";
-  const gateSpotVal = formatMoney(gateSpotRaw + gateOtherRaw, cur);
-  const gateFut = formatMoney(cur === "krw" ? s.gateio?.futures_krw || 0 : s.gateio?.futures_usd || 0, cur);
+  const gateSpotVal = maskVal(formatMoney(gateSpotRaw + gateOtherRaw, cur));
+  const gateFut = maskVal(formatMoney(cur === "krw" ? s.gateio?.futures_krw || 0 : s.gateio?.futures_usd || 0, cur));
 
   const toss = s.toss || {};
-  const tossMain = formatMoney(cur === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, cur);
-  const tossAlt = formatMoney(alt === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, alt);
-  const tossStocks = formatMoney(cur === "krw" ? toss.stocks_krw || 0 : toss.stocks_usd || 0, cur);
-  const tossCash = formatMoney(cur === "krw" ? toss.cash_krw || 0 : toss.cash_usd || 0, cur);
+  const tossMain = maskVal(formatMoney(cur === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, cur));
+  const tossAlt = maskVal(formatMoney(alt === "krw" ? toss.total_krw || 0 : toss.total_usd || 0, alt));
+  const tossStocks = maskVal(formatMoney(cur === "krw" ? toss.stocks_krw || 0 : toss.stocks_usd || 0, cur));
+  const tossCash = maskVal(formatMoney(cur === "krw" ? toss.cash_krw || 0 : toss.cash_usd || 0, cur));
 
   const kis = s.kis || {};
-  const kisMain = formatMoney(cur === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, cur);
-  const kisAlt = formatMoney(alt === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, alt);
-  const kisStocks = formatMoney(cur === "krw" ? kis.stocks_krw || 0 : kis.stocks_usd || 0, cur);
-  const kisCash = formatMoney(cur === "krw" ? kis.cash_krw || 0 : kis.cash_usd || 0, cur);
+  const kisMain = maskVal(formatMoney(cur === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, cur));
+  const kisAlt = maskVal(formatMoney(alt === "krw" ? kis.total_krw || 0 : kis.total_usd || 0, alt));
+  const kisStocks = maskVal(formatMoney(cur === "krw" ? kis.stocks_krw || 0 : kis.stocks_usd || 0, cur));
+  const kisCash = maskVal(formatMoney(cur === "krw" ? kis.cash_krw || 0 : kis.cash_usd || 0, cur));
 
   grid.innerHTML = [
     buildAccountSummaryCardHtml({
@@ -925,9 +969,9 @@ function renderPortfolioSummaryCards() {
       totalMain,
       totalAlt,
       stats: [
-        { label: "총 평가손익", value: formatSignedMoney(totalPnlNum, cur), colorClass: getPnlColorClass(totalPnlNum) },
-        { label: "전일 대비", value: dailyDelta, colorClass: getPnlColorClass(dailyDeltaNum) },
-        { label: "전일 등락률", value: formatSignedPct(dailyPctNum), colorClass: getPnlColorClass(dailyPctNum) },
+        { label: "총 평가손익", value: maskVal(formatSignedMoney(totalPnlNum, cur)), colorClass: maskCls(getPnlColorClass(totalPnlNum)) },
+        { label: "전일 대비", value: dailyDelta, colorClass: maskCls(getPnlColorClass(dailyDeltaNum)) },
+        { label: "전일 등락률", value: maskVal(formatSignedPct(dailyPctNum)), colorClass: maskCls(getPnlColorClass(dailyPctNum)) },
       ],
     }),
     buildAccountSummaryCardHtml({
@@ -936,7 +980,7 @@ function renderPortfolioSummaryCards() {
       totalMain: gateMain,
       totalAlt: gateAlt,
       stats: [
-        { label: "미실현 손익", value: formatSignedMoney(gatePnlNum, cur), colorClass: getPnlColorClass(gatePnlNum) },
+        { label: "미실현 손익", value: maskVal(formatSignedMoney(gatePnlNum, cur)), colorClass: maskCls(getPnlColorClass(gatePnlNum)) },
         { label: gateSpotLabel, value: gateSpotVal },
         { label: "선물 (Futures)", value: gateFut },
       ],
@@ -947,7 +991,7 @@ function renderPortfolioSummaryCards() {
       totalMain: tossMain,
       totalAlt: tossAlt,
       stats: [
-        { label: "평가 손익", value: formatSignedMoney(tossPnlNum, cur), colorClass: getPnlColorClass(tossPnlNum) },
+        { label: "평가 손익", value: maskVal(formatSignedMoney(tossPnlNum, cur)), colorClass: maskCls(getPnlColorClass(tossPnlNum)) },
         { label: "보유 주식", value: tossStocks },
         { label: "예수금 (KRW + USD)", value: tossCash },
       ],
@@ -957,7 +1001,7 @@ function renderPortfolioSummaryCards() {
       totalMain: kisMain,
       totalAlt: kisAlt,
       stats: [
-        { label: "평가 손익", value: formatSignedMoney(kisPnlNum, cur), colorClass: getPnlColorClass(kisPnlNum) },
+        { label: "평가 손익", value: maskVal(formatSignedMoney(kisPnlNum, cur)), colorClass: maskCls(getPnlColorClass(kisPnlNum)) },
         { label: "ISA 보유 종목", value: kisStocks },
         { label: "ISA 예수금 (KRW)", value: kisCash },
       ],
@@ -994,14 +1038,16 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
   }
 
   const cur = state.currency;
+  const unlocked = state.portfolioUnlocked;
   listEl.innerHTML = rows
     .map((item) => {
       const primaryName = getSliceDisplayName(item);
-      const valMain = formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur);
-      const valSub = getSubText(item, cur);
+      const valMain = unlocked ? formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur) : MASKED_TEXT;
+      const valSub = getSubText(item, cur, unlocked);
       const hasPnl = item.pnl_krw != null || item.pnl_usd != null;
-      const pnlColorClass = hasPnl ? getPnlColorClass(cur === "krw" ? item.pnl_krw : item.pnl_usd) : "";
-      const metaSub = `${item.symbol !== primaryName ? `${item.symbol} · ` : ""}수량 ${formatQuantity(item.quantity)}`;
+      const pnlColorClass = unlocked && hasPnl ? getPnlColorClass(cur === "krw" ? item.pnl_krw : item.pnl_usd) : "";
+      const qtyTxt = unlocked ? formatQuantity(item.quantity) : MASKED_TEXT;
+      const metaSub = `${item.symbol !== primaryName ? `${item.symbol} · ` : ""}수량 ${qtyTxt}`;
       const linkUrl = getHoldingLinkUrl(item);
       const tagOpen = linkUrl
         ? `<a class="holding-row holding-row-link" href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer">`
@@ -1033,15 +1079,21 @@ function renderPortfolioHoldings() {
     data.providers?.gateio,
     data.holdings?.gateio,
     "표시할 Gate.io 보유 자산 또는 포지션이 없습니다.",
-    (item, cur) =>
+    (item, cur, unlocked) =>
       item.pnl_usd != null
-        ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
-        : `단가 ${formatMoney(item.price_usd, "usd")}`
+        ? unlocked
+          ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+          : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
+        : unlocked
+          ? `단가 ${formatMoney(item.price_usd, "usd")}`
+          : `단가 ${MASKED_TEXT}`
   );
 
-  const stockSubFormatter = (item, cur) =>
+  const stockSubFormatter = (item, cur, unlocked) =>
     item.pnl_krw != null
-      ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+      ? unlocked
+        ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+        : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
       : `${item.currency || "KRW"} 현금성 잔고`;
 
   renderHoldingsPanel(
@@ -1074,6 +1126,7 @@ function renderPortfolioHistoryLog() {
   }
 
   const recent = history.slice().reverse();
+  const unlocked = state.portfolioUnlocked;
   listEl.innerHTML = recent
     .map((row, revIdx) => {
       const origIdx = history.length - 1 - revIdx;
@@ -1086,24 +1139,28 @@ function renderPortfolioHistoryLog() {
 
       let deltaHtml = `<span class="history-sub">-</span>`;
       if (prev) {
-        const prevVal = cur === "krw" ? Number(prev.total_krw || 0) : Number(prev.total_usd || 0);
-        const diff = totalVal - prevVal;
-        const pct = prevVal > 0 ? (diff / prevVal) * 100 : 0;
-        deltaHtml = `<span class="pf-accent">${escapeHtml(formatSignedMoney(diff, cur))}</span><span class="history-sub">${formatSignedPct(pct)}</span>`;
+        if (unlocked) {
+          const prevVal = cur === "krw" ? Number(prev.total_krw || 0) : Number(prev.total_usd || 0);
+          const diff = totalVal - prevVal;
+          const pct = prevVal > 0 ? (diff / prevVal) * 100 : 0;
+          deltaHtml = `<span class="pf-accent">${escapeHtml(formatSignedMoney(diff, cur))}</span><span class="history-sub">${formatSignedPct(pct)}</span>`;
+        } else {
+          deltaHtml = `<span class="history-sub">${MASKED_TEXT}</span><span class="history-sub">${MASKED_TEXT}</span>`;
+        }
       }
 
-      const gateSpot = formatMoney(row.gate_spot_usd || 0, "usd");
-      const gateFut = formatMoney(row.gate_futures_usd || 0, "usd");
+      const gateSpot = unlocked ? formatMoney(row.gate_spot_usd || 0, "usd") : MASKED_TEXT;
+      const gateFut = unlocked ? formatMoney(row.gate_futures_usd || 0, "usd") : MASKED_TEXT;
       const fxTxt = `₩${Number(row.usdkrw || 1400).toLocaleString("en-US")}`;
       const usdtTxt = row.usdt_krw ? ` · USDT ₩${Number(row.usdt_krw).toLocaleString("en-US")}` : "";
 
       return `
         <div class="history-row tabular">
           <div class="history-date">${escapeHtml(row.date)}<span class="history-sub">${escapeHtml(fxTxt + usdtTxt)}</span></div>
-          <div class="text-right"><strong>${escapeHtml(formatMoney(totalVal, cur))}</strong></div>
-          <div class="text-right">${escapeHtml(formatMoney(gateVal, cur))}<span class="history-sub">현 ${escapeHtml(gateSpot)} / 선 ${escapeHtml(gateFut)}</span></div>
-          <div class="text-right">${escapeHtml(formatMoney(tossVal, cur))}</div>
-          <div class="text-right">${escapeHtml(formatMoney(kisVal, cur))}</div>
+          <div class="text-right"><strong>${escapeHtml(unlocked ? formatMoney(totalVal, cur) : MASKED_TEXT)}</strong></div>
+          <div class="text-right">${escapeHtml(unlocked ? formatMoney(gateVal, cur) : MASKED_TEXT)}<span class="history-sub">현 ${escapeHtml(gateSpot)} / 선 ${escapeHtml(gateFut)}</span></div>
+          <div class="text-right">${escapeHtml(unlocked ? formatMoney(tossVal, cur) : MASKED_TEXT)}</div>
+          <div class="text-right">${escapeHtml(unlocked ? formatMoney(kisVal, cur) : MASKED_TEXT)}</div>
           <div class="text-right">${deltaHtml}</div>
         </div>
       `;
@@ -1180,6 +1237,7 @@ function renderPortfolioChart() {
 
   const { start: initZoomStart, end: initZoomEnd } = pfViewport.initWindow(initStart, initEnd);
   const vs = pfViewport.viewState;
+  const unlocked = state.portfolioUnlocked;
 
   const option = {
     animation: false,
@@ -1203,7 +1261,7 @@ function renderPortfolioChart() {
           fontSize: 11,
           formatter: (params) => {
             if (params.axisDimension === "y") {
-              return formatPortfolioAxisMoney(fromChartY(params.value, pfScaleMode), cur);
+              return unlocked ? formatPortfolioAxisMoney(fromChartY(params.value, pfScaleMode), cur) : MASKED_TEXT;
             }
             return params.value || "";
           },
@@ -1239,7 +1297,7 @@ function renderPortfolioChart() {
       axisLabel: {
         color: "#8d8d8d",
         fontSize: 11,
-        formatter: (value) => formatPortfolioAxisMoney(fromChartY(value, pfScaleMode), cur),
+        formatter: (value) => (unlocked ? formatPortfolioAxisMoney(fromChartY(value, pfScaleMode), cur) : MASKED_TEXT),
       },
     },
     dataZoom: [
@@ -1278,7 +1336,7 @@ function renderPortfolioChart() {
           label: {
             show: true,
             position: "end",
-            formatter: () => formatPortfolioAxisMoney(latestVal, cur),
+            formatter: () => (unlocked ? formatPortfolioAxisMoney(latestVal, cur) : MASKED_TEXT),
             backgroundColor: "#3182f6",
             color: "#ffffff",
             fontSize: 11,
@@ -1433,6 +1491,7 @@ function renderPortfolioAllocationPie() {
   }
 
   const total = slices.reduce((acc, s) => acc + s.val, 0);
+  const unlocked = state.portfolioUnlocked;
   listEl.innerHTML = slices
     .map((item, idx) => {
       const color = PIE_PALETTE[idx % PIE_PALETTE.length];
@@ -1447,8 +1506,8 @@ function renderPortfolioAllocationPie() {
             </div>
           </div>
           <div class="allocation-val tabular">
-            <div class="allocation-money">${escapeHtml(formatMoney(item.val, cur))}</div>
-            <div class="allocation-pct">${pct.toFixed(1)}%</div>
+            <div class="allocation-money">${escapeHtml(unlocked ? formatMoney(item.val, cur) : MASKED_TEXT)}</div>
+            <div class="allocation-pct">${unlocked ? `${pct.toFixed(1)}%` : MASKED_TEXT}</div>
           </div>
         </div>
       `;
@@ -1472,7 +1531,9 @@ function renderPortfolioAllocationPie() {
         borderColor: "#333333",
         textStyle: { color: "#F5F5F5", fontSize: 12 },
         formatter: (params) =>
-          `<strong>${escapeHtml(params.name)}</strong><br/>${escapeHtml(formatMoney(params.value, cur))} (${params.percent.toFixed(1)}%)`,
+          unlocked
+            ? `<strong>${escapeHtml(params.name)}</strong><br/>${escapeHtml(formatMoney(params.value, cur))} (${params.percent.toFixed(1)}%)`
+            : `<strong>${escapeHtml(params.name)}</strong><br/>${MASKED_TEXT}`,
       },
       series: [
         {
@@ -1490,7 +1551,7 @@ function renderPortfolioAllocationPie() {
             color: "#F5F5F5",
             fontSize: 11,
             lineHeight: 15,
-            formatter: "{b}\n{d}%",
+            formatter: unlocked ? "{b}\n{d}%" : "{b}",
           },
           labelLine: {
             show: showOutsideLabels,
@@ -2070,6 +2131,7 @@ function bindControls() {
     },
     getRefPrice: () => (pfRows.length ? pfRows[pfRows.length - 1].val : 0),
     formatCalloutPrice: (val) => formatMoney(val, state.currency),
+    isMasked: () => !state.portfolioUnlocked,
   });
 
   modalViewport = createChartViewportController({
@@ -2116,6 +2178,46 @@ function bindControls() {
       state.currency = btn.dataset.currency === "usd" ? "usd" : "krw";
       renderPortfolioDashboard();
     });
+  });
+
+  // Portfolio Privacy PIN Lock / Unlock
+  const pinForm = document.getElementById("portfolio-pin-form");
+  const pinInput = document.getElementById("portfolio-pin-input");
+  const lockBtn = document.getElementById("portfolio-lock-btn");
+
+  const unlockPortfolioIfValid = async (showError = false) => {
+    if (!pinInput || state.portfolioUnlocked) return;
+    const ok = await verifyPortfolioPin(pinInput.value);
+    if (ok) {
+      state.portfolioUnlocked = true;
+      pinInput.value = "";
+      pinForm?.classList.remove("is-error");
+      updatePortfolioAuthUi();
+      renderPortfolioDashboard();
+    } else if (showError) {
+      pinForm?.classList.add("is-error");
+      pinInput.value = "";
+      pinInput.focus();
+      setTimeout(() => pinForm?.classList.remove("is-error"), 700);
+    }
+  };
+
+  pinInput?.addEventListener("input", () => {
+    pinForm?.classList.remove("is-error");
+    unlockPortfolioIfValid(false);
+  });
+
+  pinForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    unlockPortfolioIfValid(true);
+  });
+
+  lockBtn?.addEventListener("click", () => {
+    state.portfolioUnlocked = false;
+    if (pinInput) pinInput.value = "";
+    updatePortfolioAuthUi();
+    renderPortfolioDashboard();
+    pinInput?.focus();
   });
 
   // Portfolio Chart Filter Buttons

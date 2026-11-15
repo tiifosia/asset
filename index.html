@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MY ASSET</title>
-  <link rel="stylesheet" href="./styles.css?v=20261115-11" />
+  <link rel="stylesheet" href="./styles.css?v=20261115-12" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js?v=20261115-11" defer></script>
+  <script src="./app.js?v=20261115-12" defer></script>
 </head>
 <body>
   <div class="container">
@@ -20,6 +20,21 @@
               <button id="currency-krw-btn" type="button" class="currency-btn active" data-currency="krw">KRW ₩</button>
               <button id="currency-usd-btn" type="button" class="currency-btn" data-currency="usd">USD $</button>
             </div>
+            <form id="portfolio-pin-form" class="pin-box" autocomplete="off">
+              <input
+                id="portfolio-pin-input"
+                type="password"
+                inputmode="numeric"
+                class="pin-input"
+                placeholder="비밀번호"
+                aria-label="MY ASSET 비밀번호"
+                maxlength="16"
+              />
+              <button id="portfolio-pin-btn" type="submit" class="pin-btn">확인</button>
+            </form>
+            <button id="portfolio-lock-btn" type="button" class="pin-lock-btn hidden" title="다시 잠그기">
+              잠금
+            </button>
           </div>
           <p id="header-subtitle" class="subtitle hidden"></p>
         </div>
