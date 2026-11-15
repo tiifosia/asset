@@ -434,8 +434,29 @@ function createChartViewportController(cfg) {
     updateCallouts();
   };
 
+  let wheelAccumX = 0;
+  let wheelAccumY = 0;
+  let wheelLockTimer = null;
+
+  const normalizeWheel = (e) => {
+    let normX = (Number(e.deltaX) || 0) / 100;
+    let normY = (Number(e.deltaY) || 0) / 100;
+    if (e.deltaMode === 2) {
+      normX *= 120;
+      normY *= 120;
+    } else if (e.deltaMode === 1) {
+      normX *= 32;
+      normY *= 32;
+    }
+    if (e.ctrlKey) {
+      normX = 0;
+      normY *= 2;
+    }
+    return { normX, normY };
+  };
+
   const scheduleViewUpdate = () => {
-    if (viewRafId) cancelAnimationFrame(viewRafId);
+    if (viewRafId) return;
     viewRafId = requestAnimationFrame(() => {
       viewRafId = null;
       applyViewState();
@@ -488,21 +509,43 @@ function createChartViewportController(cfg) {
       const rect = cfg.canvasEl.getBoundingClientRect();
       const plotWidth = Math.max(1, rect.width - grid.left - grid.right);
       const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left - grid.left) / plotWidth));
-      const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
 
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-        const deltaBars = (e.deltaX / plotWidth) * spanX;
+      let { normX, normY } = normalizeWheel(e);
+      if (normX === 0 && normY === 0) return;
+
+      // Match TradingView (Toss Invest) 3x directional axis lock over a short decaying gesture window
+      wheelAccumX = wheelAccumX * 0.6 + Math.abs(normX);
+      wheelAccumY = wheelAccumY * 0.6 + Math.abs(normY);
+      if (wheelLockTimer) clearTimeout(wheelLockTimer);
+      wheelLockTimer = setTimeout(() => {
+        wheelAccumX = 0;
+        wheelAccumY = 0;
+      }, 120);
+
+      if (wheelAccumX >= 3 * wheelAccumY) {
+        normY = 0;
+      } else if (wheelAccumY >= 3 * wheelAccumX) {
+        normX = 0;
+      }
+
+      if (normX !== 0) {
+        const spanX = Math.max(1, viewState.xEnd - viewState.xStart);
+        const scrollPx = normX * 80;
+        const deltaBars = (scrollPx / plotWidth) * spanX;
         const clamped = clampXWindow(viewState.xStart + deltaBars, viewState.xEnd + deltaBars);
         viewState.xStart = clamped.start;
         viewState.xEnd = clamped.end;
-      } else {
+      }
+
+      if (normY !== 0) {
         const n = cfg.getRowsLength();
         const minSpan = Math.min(Math.max(4, n), cfg.getMinZoomSpan());
         const maxSpan = Math.max(n * 1.8, 30);
-        const factor = e.deltaY > 0 ? 1.15 : 0.87;
-        const nextSpan = Math.max(minSpan, Math.min(maxSpan, spanX * factor));
+        const curSpan = Math.max(1, viewState.xEnd - viewState.xStart);
+        const zoomScale = Math.sign(-normY) * Math.min(1, Math.abs(normY));
+        const nextSpan = Math.max(minSpan, Math.min(maxSpan, curSpan / (1 + zoomScale * 0.1)));
 
-        const anchor = viewState.xStart + ratio * spanX;
+        const anchor = viewState.xStart + ratio * curSpan;
         const rawStart = anchor - ratio * nextSpan;
         const rawEnd = rawStart + nextSpan;
         const clamped = clampXWindow(rawStart, rawEnd);
@@ -527,7 +570,10 @@ function createChartViewportController(cfg) {
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      zoomYByFactor(e.deltaY > 0 ? 1.12 : 0.89);
+      const { normY } = normalizeWheel(e);
+      if (normY === 0) return;
+      const zoomScale = Math.sign(-normY) * Math.min(1, Math.abs(normY));
+      zoomYByFactor(1 / (1 + zoomScale * 0.1));
     },
     { passive: false }
   );
