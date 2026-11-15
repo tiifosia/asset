@@ -63,16 +63,28 @@ let pfSeriesMode = "total"; // "total" | "gate" | "toss" | "kis"
 let pfPieMode = "asset"; // "asset" | "account" | "category"
 const PIE_PALETTE = [
   "#C3BDFF",
-  "#3182f6",
-  "#6366f1",
-  "#38bdf8",
-  "#a78bfa",
-  "#14b8a6",
-  "#f59e0b",
-  "#f04452",
-  "#ec4899",
+  "#F5F5F5",
+  "#8A83D6",
   "#8d8d8d",
+  "#E3E0FF",
+  "#5E5E5E",
+  "#6C66B0",
+  "#BDBDBD",
+  "#A49DF0",
+  "#474747",
 ];
+
+// Shared ECharts theme: match page typography
+const CHART_FONT_FAMILY =
+  '"Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", sans-serif';
+let chartThemeRegistered = false;
+function initThemedChart(el, opts) {
+  if (!chartThemeRegistered && window.echarts) {
+    window.echarts.registerTheme("asset", { textStyle: { fontFamily: CHART_FONT_FAMILY } });
+    chartThemeRegistered = true;
+  }
+  return window.echarts.init(el, "asset", opts);
+}
 let pfInterval = "daily"; // "daily" | "weekly" | "yearly"
 let pfScaleMode = "linear"; // "linear" | "log"
 let pfRows = [];
@@ -1257,7 +1269,7 @@ function renderPortfolioChart() {
   const cur = state.currency;
 
   if (!pfChartInstance) {
-    pfChartInstance = window.echarts.init(canvasEl);
+    pfChartInstance = initThemedChart(canvasEl);
     pfChartInstance.on("finished", () => pfViewport?.scheduleCalloutsUpdate());
     pfChartInstance.on("updateAxisPointer", (event) => {
       const catIdx = event?.axesInfo?.[0]?.value;
@@ -1554,7 +1566,7 @@ function renderPortfolioAllocationPie() {
 
   if (typeof window.echarts === "undefined") return;
   if (!pfPieChartInstance) {
-    pfPieChartInstance = window.echarts.init(pieCanvasEl);
+    pfPieChartInstance = initThemedChart(pieCanvasEl);
   }
 
   const showOutsideLabels = pieCanvasEl.clientWidth >= 300;
@@ -1983,7 +1995,7 @@ function renderModalChart() {
   const isIndex = modalAsset.ticker.startsWith("^");
 
   if (!modalChartInstance) {
-    modalChartInstance = window.echarts.init(canvasEl);
+    modalChartInstance = initThemedChart(canvasEl);
     modalChartInstance.on("finished", () => modalViewport?.scheduleCalloutsUpdate());
     modalChartInstance.on("updateAxisPointer", (event) => {
       const catIdx = event?.axesInfo?.[0]?.value;
@@ -2305,11 +2317,11 @@ function getFearGreedBand(score) {
   if (!Number.isFinite(num)) {
     return { pillCls: "fg-pill-neutral", color: "#8d8d8d", labelKo: "-" };
   }
-  if (num < 25) return { pillCls: "fg-pill-extreme-fear", color: "#f87171", labelKo: "극단적 공포" };
-  if (num < 45) return { pillCls: "fg-pill-fear", color: "#fb923c", labelKo: "공포" };
-  if (num < 55) return { pillCls: "fg-pill-neutral", color: "#facc15", labelKo: "중립" };
-  if (num < 75) return { pillCls: "fg-pill-greed", color: "#4ade80", labelKo: "탐욕" };
-  return { pillCls: "fg-pill-extreme-greed", color: "#22c55e", labelKo: "극단적 탐욕" };
+  if (num < 25) return { pillCls: "fg-pill-extreme-fear", color: "#C3BDFF", labelKo: "극단적 공포" };
+  if (num < 45) return { pillCls: "fg-pill-fear", color: "#F5F5F5", labelKo: "공포" };
+  if (num < 55) return { pillCls: "fg-pill-neutral", color: "#F5F5F5", labelKo: "중립" };
+  if (num < 75) return { pillCls: "fg-pill-greed", color: "#F5F5F5", labelKo: "탐욕" };
+  return { pillCls: "fg-pill-extreme-greed", color: "#C3BDFF", labelKo: "극단적 탐욕" };
 }
 
 function translateWorldPeBand(band) {
@@ -2341,7 +2353,7 @@ function renderCnnFearGreedChart(history) {
   }
 
   if (!cnnChartInstance) {
-    cnnChartInstance = echarts.init(chartEl, null, { renderer: "canvas" });
+    cnnChartInstance = initThemedChart(chartEl, { renderer: "canvas" });
   }
 
   cnnChartInstance.setOption(
@@ -2398,14 +2410,12 @@ function renderCnnFearGreedChart(history) {
             ]),
           },
           data: values,
-          markArea: {
+          markLine: {
+            symbol: "none",
             silent: true,
-            data: [
-              [{ yAxis: 0, itemStyle: { color: "rgba(239, 68, 68, 0.07)" } }, { yAxis: 25 }],
-              [{ yAxis: 25, itemStyle: { color: "rgba(249, 115, 22, 0.05)" } }, { yAxis: 45 }],
-              [{ yAxis: 55, itemStyle: { color: "rgba(74, 222, 128, 0.05)" } }, { yAxis: 75 }],
-              [{ yAxis: 75, itemStyle: { color: "rgba(34, 197, 94, 0.08)" } }, { yAxis: 100 }],
-            ],
+            label: { show: false },
+            lineStyle: { color: "#262626", type: "dashed", width: 1 },
+            data: [{ yAxis: 25 }, { yAxis: 50 }, { yAxis: 75 }],
           },
         },
       ],
@@ -2460,7 +2470,7 @@ function renderPeTrendChart(idx) {
 
   let inst = echarts.getInstanceByDom(chartEl);
   if (!inst) {
-    inst = echarts.init(chartEl, null, { renderer: "canvas" });
+    inst = initThemedChart(chartEl, { renderer: "canvas" });
   }
   peTrendChartInstances[idx.id] = inst;
 
@@ -2489,12 +2499,12 @@ function renderPeTrendChart(idx) {
   if (fwdCur != null && Number.isFinite(fwdCur)) {
     markLineData.push({
       yAxis: fwdCur,
-      lineStyle: { color: "#4ade80", type: "dashed", width: 1.5 },
+      lineStyle: { color: "rgba(245, 245, 245, 0.55)", type: "dashed", width: 1.5 },
       label: {
         show: true,
         position: "end",
         formatter: `선행 ${fwdCur.toFixed(2)}x`,
-        backgroundColor: "#4ade80",
+        backgroundColor: "#F5F5F5",
         color: "#111111",
         fontSize: 13,
         fontWeight: 800,
@@ -2506,12 +2516,12 @@ function renderPeTrendChart(idx) {
   if (mean5y != null && Number.isFinite(mean5y)) {
     markLineData.push({
       yAxis: mean5y,
-      lineStyle: { color: "#71717a", type: "dotted", width: 1.2 },
+      lineStyle: { color: "#5e5e5e", type: "dotted", width: 1.2 },
       label: {
         show: true,
         position: "insideStartTop",
         formatter: `5Y 평균 ${mean5y.toFixed(1)}x`,
-        color: "#a1a1aa",
+        color: "#8d8d8d",
         fontSize: 10,
       },
     });
@@ -2528,7 +2538,7 @@ function renderPeTrendChart(idx) {
         left: 0,
         itemWidth: 12,
         itemHeight: 8,
-        textStyle: { color: "#b5b5b5", fontSize: 11 },
+        textStyle: { color: "#8d8d8d", fontSize: 11 },
         data: ["PER", "Forward PER (선행)"],
       },
       tooltip: {
@@ -2550,7 +2560,7 @@ function renderPeTrendChart(idx) {
             );
           if (fwdCur != null && !list.some((p) => p.seriesName === "Forward PER (선행)" && p.value != null)) {
             lines.push(
-              `<div style="color:#4ade80;">현재 선행 PER 기준: <b>${fwdCur.toFixed(2)}x</b></div>`
+              `<div style="color:#F5F5F5;">현재 선행 PER 기준: <b>${fwdCur.toFixed(2)}x</b></div>`
             );
           }
           return `<div style="font-weight:700;margin-bottom:4px;">${escapeHtml(dt)}</div>${lines.join("")}`;
@@ -2616,7 +2626,7 @@ function renderPeTrendChart(idx) {
                   show: true,
                   position: "top",
                   distance: 4,
-                  color: "#e5e5e5",
+                  color: "#F5F5F5",
                   fontSize: 10,
                   fontWeight: 700,
                   formatter: (p) => `최고 ${Number(p.value).toFixed(1)}x`,
@@ -2629,7 +2639,7 @@ function renderPeTrendChart(idx) {
                   show: true,
                   position: "bottom",
                   distance: 4,
-                  color: "#a1a1aa",
+                  color: "#8d8d8d",
                   fontSize: 10,
                   fontWeight: 700,
                   formatter: (p) => `최저 ${Number(p.value).toFixed(1)}x`,
@@ -2651,8 +2661,8 @@ function renderPeTrendChart(idx) {
           showSymbol: fwdCount <= 10,
           symbolSize: 8,
           connectNulls: true,
-          lineStyle: { color: "#4ade80", width: 2 },
-          itemStyle: { color: "#4ade80" },
+          lineStyle: { color: "#F5F5F5", width: 2, type: "dashed" },
+          itemStyle: { color: "#F5F5F5" },
           data: fwdSeries,
         },
       ],
