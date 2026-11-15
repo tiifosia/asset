@@ -2815,41 +2815,9 @@ function renderIndexDashboard() {
   primaryGrid.innerHTML = primary
     .map((idx) => {
       const tech = idx.technicals || {};
-      const wpe = idx.world_pe || {};
       const chg = Number(tech.change);
       const chgCls = Number.isFinite(chg) ? (chg >= 0 ? "is-up" : "is-down") : "";
       const chgText = Number.isFinite(chg) ? formatSignedPct(chg) : "-";
-      const peDiff52 =
-        idx.pe != null && idx.pe_52w_ago != null ? `${formatMacroDelta(idx.pe - idx.pe_52w_ago, 2)} (1Y전)` : "";
-
-      const extraTiles = [];
-      if (idx.shiller_cape != null) {
-        extraTiles.push(
-          `<div class="index-metric-tile"><span class="index-metric-label">Shiller CAPE</span><span class="index-metric-val">${formatMacroNum(idx.shiller_cape, 2)}x</span><span class="index-metric-sub">경기조정 10년 PER</span></div>`
-        );
-      } else {
-        extraTiles.push(
-          `<div class="index-metric-tile"><span class="index-metric-label">${escapeHtml(idx.etf_ref || "ETF")} Forward PER</span><span class="index-metric-val">${formatMacroNum(idx.etf_forward_pe, 2)}x</span><span class="index-metric-sub">ETF Trailing ${formatMacroNum(idx.etf_pe, 2)}x</span></div>`
-        );
-      }
-      if (idx.pbr != null) {
-        extraTiles.push(
-          `<div class="index-metric-tile"><span class="index-metric-label">PBR (주가순자산비율)</span><span class="index-metric-val">${formatMacroNum(idx.pbr, 2)}x</span><span class="index-metric-sub">S&amp;P 500 기준</span></div>`
-        );
-      } else {
-        extraTiles.push(
-          `<div class="index-metric-tile"><span class="index-metric-label">선행 이익수익률</span><span class="index-metric-val">${formatMacroNum(idx.forward_earnings_yield, 2, "%")}</span><span class="index-metric-sub">100 ÷ 선행 PER</span></div>`
-        );
-      }
-      const erpVal = idx.erp_forward;
-      const erpSub =
-        erpVal == null ? "10년물 국채 대비" : erpVal >= 0 ? "채권 대비 주식 우위" : "채권 금리 대비 저매력";
-      extraTiles.push(
-        `<div class="index-metric-tile"><span class="index-metric-label">주식위험프리미엄 (ERP)</span><span class="index-metric-val">${formatMacroDelta(erpVal, 2, "%p")}</span><span class="index-metric-sub">${erpSub}</span></div>`
-      );
-
-      const band1yKo = translateWorldPeBand(wpe.band_1y);
-      const band5yKo = translateWorldPeBand(wpe.band_5y);
       const activeRange = indexPeRangeById[idx.id] || "5y";
       const rangeBtns = [
         ["1y", "1Y"],
@@ -2870,49 +2838,15 @@ function renderIndexDashboard() {
         <div class="index-val-head">
           <div>
             <h3 class="index-val-title">${escapeHtml(idx.name)}</h3>
-            <span class="index-val-ticker">${escapeHtml(idx.ticker)} · 참고 ETF ${escapeHtml(idx.etf_ref || "-")}</span>
+            <span class="index-val-ticker">${escapeHtml(idx.ticker)} · Trailing ${formatMacroNum(
+        idx.pe,
+        2
+      )}x · 선행 ${formatMacroNum(idx.forward_pe, 2)}x</span>
           </div>
           <div class="index-val-price-box">
             <span class="index-val-price">${formatMacroNum(tech.close, 2)}</span>
             <span class="index-val-chg ${chgCls}">${chgText}</span>
           </div>
-        </div>
-
-        <div class="index-per-highlight">
-          <div class="index-metric-tile">
-            <span class="index-metric-label">Trailing PER</span>
-            <span class="index-metric-val">${formatMacroNum(idx.pe, 2)}x</span>
-            <span class="index-metric-sub">52주전 ${formatMacroNum(idx.pe_52w_ago, 2)}x ${peDiff52 ? `(${peDiff52.split(" ")[0]})` : ""}</span>
-          </div>
-          <div class="index-metric-tile is-accent">
-            <span class="index-metric-label">Forward PER (선행)</span>
-            <span class="index-metric-val">${formatMacroNum(idx.forward_pe, 2)}x</span>
-            <span class="index-metric-sub">ETF ${formatMacroNum(idx.etf_forward_pe, 2)}x</span>
-          </div>
-          <div class="index-metric-tile">
-            <span class="index-metric-label">1년 평균 대비 편차</span>
-            <span class="index-metric-val">${wpe.z_1y != null ? `${formatMacroDelta(wpe.z_1y, 2)}σ` : "-"}</span>
-            <span class="index-metric-sub">평균 ${formatMacroNum(wpe.mean_1y, 1)}x · ${escapeHtml(band1yKo)}</span>
-          </div>
-          <div class="index-metric-tile">
-            <span class="index-metric-label">5년 평균 대비 편차</span>
-            <span class="index-metric-val">${wpe.z_5y != null ? `${formatMacroDelta(wpe.z_5y, 2)}σ` : "-"}</span>
-            <span class="index-metric-sub">평균 ${formatMacroNum(wpe.mean_5y, 1)}x · ${escapeHtml(band5yKo)}</span>
-          </div>
-        </div>
-
-        <div class="index-extra-grid">
-          ${extraTiles.join("")}
-        </div>
-
-        <div class="index-tech-strip">
-          <span class="index-tech-chip">배당수익률 ${formatMacroNum(idx.div_yield, 2, "%")}</span>
-          <span class="index-tech-chip">RSI(14) ${formatMacroNum(tech.rsi, 1)}</span>
-          <span class="index-tech-chip">50일선 이격 ${formatMacroDelta(tech.dist_sma50, 2, "%")}</span>
-          <span class="index-tech-chip">200일선 이격 ${formatMacroDelta(tech.dist_sma200, 2, "%")}</span>
-          <span class="index-tech-chip">1M ${formatMacroDelta(tech.perf_1m, 2, "%")}</span>
-          <span class="index-tech-chip">YTD ${formatMacroDelta(tech.perf_ytd, 2, "%")}</span>
-          <span class="index-tech-chip">1Y ${formatMacroDelta(tech.perf_1y, 2, "%")}</span>
         </div>
 
         <div class="index-chart-wrap">
