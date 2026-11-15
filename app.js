@@ -235,8 +235,13 @@ function createChartViewportController(cfg) {
     if (!n) return [0, 0];
     const padLeft = cfg.getPadLeft();
     const maxRealIdx = n - 1;
-    const s = Math.max(0, Math.min(maxRealIdx, Math.round(viewState.xStart - padLeft)));
-    const e = Math.max(s, Math.min(maxRealIdx, Math.round(viewState.xEnd - padLeft)));
+    const rawStart = Math.ceil(viewState.xStart - padLeft);
+    const rawEnd = Math.floor(viewState.xEnd - padLeft);
+    const s = Math.max(0, Math.min(maxRealIdx, rawStart));
+    const e = Math.max(
+      s,
+      Math.min(maxRealIdx, rawEnd >= rawStart ? rawEnd : Math.round(viewState.xEnd - padLeft))
+    );
     return [s, e];
   };
 
@@ -356,24 +361,30 @@ function createChartViewportController(cfg) {
     const stageWidth = cfg.stageEl.clientWidth;
     const stageHeight = cfg.stageEl.clientHeight;
     const grid = cfg.getGrid();
+    const plotMinX = grid.left;
     const plotMaxX = stageWidth - grid.right - 4;
 
     if (
       Array.isArray(peakPx) &&
       Number.isFinite(peakPx[0]) &&
       Number.isFinite(peakPx[1]) &&
+      peakPx[0] >= plotMinX &&
+      peakPx[0] <= stageWidth - grid.right &&
       peakPx[1] >= 18 &&
       peakPx[1] <= stageHeight - grid.bottom - 4
     ) {
       const peakDate = formatShortDate(peakAnchor.date);
-      cfg.peakEl.innerHTML = `${cfg.formatCalloutPrice(peakPrice)} (${formatSignedPct(peakPct)}, ${peakDate})<br>↓`;
+      cfg.peakEl.innerHTML = `<div class="callout-label">${cfg.formatCalloutPrice(peakPrice)} (${formatSignedPct(peakPct)}, ${peakDate})</div><div class="callout-arrow">↓</div>`;
       cfg.peakEl.classList.remove("hidden");
       const w = cfg.peakEl.offsetWidth;
       const h = cfg.peakEl.offsetHeight;
       const left = Math.max(8, Math.min(plotMaxX - w, peakPx[0] - w / 2));
-      const top = Math.max(6, peakPx[1] - h - 4);
+      const top = Math.max(6, peakPx[1] - h - 2);
+      const arrowX = Math.max(6, Math.min(w - 6, peakPx[0] - left));
       cfg.peakEl.style.left = `${left}px`;
       cfg.peakEl.style.top = `${top}px`;
+      const arrowEl = cfg.peakEl.querySelector(".callout-arrow");
+      if (arrowEl) arrowEl.style.left = `${arrowX}px`;
     } else {
       cfg.peakEl.classList.add("hidden");
     }
@@ -382,18 +393,23 @@ function createChartViewportController(cfg) {
       Array.isArray(troughPx) &&
       Number.isFinite(troughPx[0]) &&
       Number.isFinite(troughPx[1]) &&
+      troughPx[0] >= plotMinX &&
+      troughPx[0] <= stageWidth - grid.right &&
       troughPx[1] >= 18 &&
       troughPx[1] <= stageHeight - grid.bottom - 4
     ) {
       const troughDate = formatShortDate(troughAnchor.date);
-      cfg.troughEl.innerHTML = `↑<br>${cfg.formatCalloutPrice(troughPrice)} (${formatSignedPct(troughPct)}, ${troughDate})`;
+      cfg.troughEl.innerHTML = `<div class="callout-arrow">↑</div><div class="callout-label">${cfg.formatCalloutPrice(troughPrice)} (${formatSignedPct(troughPct)}, ${troughDate})</div>`;
       cfg.troughEl.classList.remove("hidden");
       const w = cfg.troughEl.offsetWidth;
       const h = cfg.troughEl.offsetHeight;
       const left = Math.max(8, Math.min(plotMaxX - w, troughPx[0] - w / 2));
-      const top = Math.min(stageHeight - h - 6, troughPx[1] + 4);
+      const top = Math.min(stageHeight - grid.bottom - h - 2, troughPx[1] + 2);
+      const arrowX = Math.max(6, Math.min(w - 6, troughPx[0] - left));
       cfg.troughEl.style.left = `${left}px`;
       cfg.troughEl.style.top = `${top}px`;
+      const arrowEl = cfg.troughEl.querySelector(".callout-arrow");
+      if (arrowEl) arrowEl.style.left = `${arrowX}px`;
     } else {
       cfg.troughEl.classList.add("hidden");
     }
@@ -1816,6 +1832,10 @@ function renderModalChart() {
         name: modalAsset.ticker,
         type: "candlestick",
         data: paddedCandles,
+        large: false,
+        barWidth: "62%",
+        barMinWidth: 2,
+        barMaxWidth: 24,
         itemStyle: {
           color: "#f04452",
           color0: "#3182f6",

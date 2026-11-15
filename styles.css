@@ -855,7 +855,7 @@ body.modal-open {
   position: absolute;
   top: 0;
   right: 0;
-  bottom: 30px;
+  bottom: 0;
   width: 86px;
   cursor: ns-resize;
   z-index: 12;
@@ -875,8 +875,19 @@ body.modal-open {
   white-space: nowrap;
   z-index: 10;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
-  line-height: 1.25;
-  text-align: center;
+  line-height: 1.2;
+}
+
+.callout-label {
+  display: block;
+}
+
+.callout-arrow {
+  position: relative;
+  display: block;
+  width: fit-content;
+  transform: translateX(-50%);
+  line-height: 1;
 }
 
 .chart-callout-peak {
