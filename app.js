@@ -723,7 +723,7 @@ function updateHeaderForView() {
   const updatedEl = document.getElementById("updated-at");
 
   eyebrowEl?.classList.toggle("hidden", isPortfolio);
-  subtitleEl?.classList.toggle("hidden", isPortfolio);
+  subtitleEl?.classList.add("hidden");
   currencyGroupEl?.classList.toggle("hidden", !isPortfolio);
   legendEl?.classList.toggle("hidden", isPortfolio);
   footerEl?.classList.toggle("hidden", isPortfolio);
@@ -743,8 +743,7 @@ function updateHeaderForView() {
     document.title = "ASSET MDD TRACKER";
     eyebrowEl.textContent = "US MARKET DRAWDOWN DASHBOARD";
     titleEl.textContent = "ASSET MDD TRACKER";
-    subtitleEl.textContent =
-      "미국 3대 주요 지수 및 시가총액 상위 100대 기업의 전고점(ATH) 대비 현재 낙폭과 역대 최대 낙폭(MDD)";
+    subtitleEl.textContent = "";
     updatedEl.textContent = state.mddUpdatedAt ? formatUpdatedAt(state.mddUpdatedAt) : "-";
   }
 }
