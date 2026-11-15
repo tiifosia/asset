@@ -1091,14 +1091,19 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
   const unlocked = state.portfolioUnlocked;
   listEl.innerHTML = rows
     .map((item) => {
-      const primaryName = getSliceDisplayName(item);
+      const rawPrimaryName = getSliceDisplayName(item);
+      const primaryName = unlocked ? rawPrimaryName : MASKED_TEXT;
+      const titleText = unlocked ? (item.name || item.symbol || "") : MASKED_TEXT;
+      const catHtml = unlocked ? `<span class="holding-cat">${escapeHtml(item.category)}</span>` : "";
       const valMain = unlocked ? formatMoney(cur === "krw" ? item.value_krw : item.value_usd, cur) : MASKED_TEXT;
       const valSub = getSubText(item, cur, unlocked);
       const hasPnl = item.pnl_krw != null || item.pnl_usd != null;
       const pnlColorClass = unlocked && hasPnl ? getPnlColorClass(cur === "krw" ? item.pnl_krw : item.pnl_usd) : "";
       const qtyTxt = unlocked ? formatQuantity(item.quantity) : MASKED_TEXT;
-      const metaSub = `${item.symbol !== primaryName ? `${item.symbol} · ` : ""}수량 ${qtyTxt}`;
-      const linkUrl = getHoldingLinkUrl(item);
+      const metaSub = unlocked
+        ? `${item.symbol !== rawPrimaryName ? `${item.symbol} · ` : ""}수량 ${qtyTxt}`
+        : `수량 ${MASKED_TEXT}`;
+      const linkUrl = unlocked ? getHoldingLinkUrl(item) : "";
       const tagOpen = linkUrl
         ? `<a class="holding-row holding-row-link" href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer">`
         : `<div class="holding-row">`;
@@ -1106,7 +1111,7 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
       return `
         ${tagOpen}
           <div class="holding-info">
-            <div class="holding-sym" title="${escapeHtml(item.name || item.symbol)}">${escapeHtml(primaryName)}<span class="holding-cat">${escapeHtml(item.category)}</span></div>
+            <div class="holding-sym" title="${escapeHtml(titleText)}">${escapeHtml(primaryName)}${catHtml}</div>
             <div class="holding-sub tabular">${escapeHtml(metaSub)}</div>
           </div>
           <div class="holding-val tabular">
@@ -1144,7 +1149,9 @@ function renderPortfolioHoldings() {
       ? unlocked
         ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
         : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
-      : `${item.currency || "KRW"} 현금성 잔고`;
+      : unlocked
+        ? `${item.currency || "KRW"} 현금성 잔고`
+        : MASKED_TEXT;
 
   renderHoldingsPanel(
     "toss-provider-badge",
@@ -1551,8 +1558,8 @@ function renderPortfolioAllocationPie() {
           <div class="allocation-label">
             <span class="allocation-dot" style="background-color: ${color};"></span>
             <div>
-              <div class="allocation-name">${escapeHtml(item.name)}</div>
-              <div class="allocation-sub">${escapeHtml(item.sub)}</div>
+              <div class="allocation-name">${escapeHtml(unlocked ? item.name : MASKED_TEXT)}</div>
+              <div class="allocation-sub">${escapeHtml(unlocked ? item.sub : MASKED_TEXT)}</div>
             </div>
           </div>
           <div class="allocation-val tabular">
@@ -1583,7 +1590,7 @@ function renderPortfolioAllocationPie() {
         formatter: (params) =>
           unlocked
             ? `<strong>${escapeHtml(params.name)}</strong><br/>${escapeHtml(formatMoney(params.value, cur))} (${params.percent.toFixed(1)}%)`
-            : `<strong>${escapeHtml(params.name)}</strong><br/>${MASKED_TEXT}`,
+            : MASKED_TEXT,
       },
       series: [
         {
@@ -1601,7 +1608,7 @@ function renderPortfolioAllocationPie() {
             color: "#F5F5F5",
             fontSize: 11,
             lineHeight: 15,
-            formatter: unlocked ? "{b}\n{d}%" : "{b}",
+            formatter: unlocked ? "{b}\n{d}%" : MASKED_TEXT,
           },
           labelLine: {
             show: showOutsideLabels,
@@ -1610,7 +1617,7 @@ function renderPortfolioAllocationPie() {
             lineStyle: { color: "#8d8d8d" },
           },
           data: slices.map((item, idx) => ({
-            name: item.name,
+            name: unlocked ? item.name : MASKED_TEXT,
             value: item.val,
             itemStyle: { color: PIE_PALETTE[idx % PIE_PALETTE.length] },
           })),
