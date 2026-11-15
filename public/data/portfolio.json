@@ -1,8 +1,8 @@
 {
-  "updated_at": "2026-11-14 16:59 UTC",
+  "updated_at": "2026-11-15 01:12 UTC",
   "is_demo": false,
-  "usdkrw": 1336.18,
-  "usdt_krw": 1378.0,
+  "usdkrw": 1336.06,
+  "usdt_krw": 1388.0,
   "providers": {
     "gateio": {
       "status": "connected",
@@ -21,10 +21,10 @@
     }
   },
   "summary": {
-    "total_krw": 14624198,
-    "total_usd": 10735.99,
-    "ath_krw": 14624198,
-    "ath_usd": 10735.99,
+    "total_krw": 14600506,
+    "total_usd": 10671.22,
+    "ath_krw": 14600506,
+    "ath_usd": 10671.22,
     "ath_date": "2026-11-15",
     "current_drawdown": 0.0,
     "current_dd_abs": 0.0,
@@ -37,43 +37,43 @@
     "daily_change_pct": 0.0,
     "total_return_pct": 0.0,
     "gateio": {
-      "usdt_krw": 1378.0,
-      "total_usd": 6671.06,
-      "total_krw": 9192718,
-      "spot_usd": 655.41,
-      "spot_krw": 903154,
-      "futures_usd": 4863.5,
-      "futures_krw": 6701905,
+      "usdt_krw": 1388.0,
+      "total_usd": 6606.11,
+      "total_krw": 9169284,
+      "spot_usd": 629.64,
+      "spot_krw": 873942,
+      "futures_usd": 4867.82,
+      "futures_krw": 6756538,
       "margin_usd": 0.0,
-      "other_usd": 1152.15,
-      "other_krw": 1587659,
+      "other_usd": 1108.65,
+      "other_krw": 1538804,
       "details_breakdown": {
-        "finance": 1152.15,
-        "futures": 4863.5,
-        "spot": 655.41
+        "finance": 1108.65,
+        "futures": 4867.82,
+        "spot": 629.64
       },
-      "unrealized_pnl_usd": -788.71,
-      "unrealized_pnl_krw": -1086839
+      "unrealized_pnl_usd": -847.68,
+      "unrealized_pnl_krw": -1176581
     },
     "toss": {
-      "total_krw": 4760530,
-      "total_usd": 3562.79,
-      "stocks_krw": 4716869,
-      "stocks_usd": 3530.11,
-      "cash_krw": 43661,
+      "total_krw": 4760272,
+      "total_usd": 3562.92,
+      "stocks_krw": 4716615,
+      "stocks_usd": 3530.24,
+      "cash_krw": 43657,
       "cash_usd": 32.68,
-      "pnl_krw": -1421892,
-      "pnl_usd": -1064.15
+      "pnl_krw": -1421825,
+      "pnl_usd": -1064.19
     },
     "kis": {
       "total_krw": 670950,
-      "total_usd": 502.14,
+      "total_usd": 502.19,
       "stocks_krw": 670950,
-      "stocks_usd": 502.14,
+      "stocks_usd": 502.19,
       "cash_krw": 0,
       "cash_usd": 0.0,
       "pnl_krw": -155221,
-      "pnl_usd": -116.17
+      "pnl_usd": -116.18
     }
   },
   "holdings": {
@@ -84,14 +84,14 @@
         "symbol": "NAS100_USDT",
         "name": "NAS100/USDT Perpetual",
         "quantity": 7841.0,
-        "price_usd": 27623.88,
+        "price_usd": 27553.27,
         "entry_price_usd": 28618.509694,
-        "value_usd": 4508.35,
-        "value_krw": 6212500,
-        "notional_usd": 21659.88,
-        "pnl_usd": -779.89,
-        "pnl_krw": -1074687,
-        "pnl_pct": -17.3
+        "value_usd": 4512.67,
+        "value_krw": 6263584,
+        "notional_usd": 21604.52,
+        "pnl_usd": -835.25,
+        "pnl_krw": -1159333,
+        "pnl_pct": -18.51
       },
       {
         "exchange": "Gate.io",
@@ -99,14 +99,14 @@
         "symbol": "SPX500_USDT",
         "name": "SPX500/USDT Perpetual",
         "quantity": 221.0,
-        "price_usd": 7515.95,
+        "price_usd": 7516.07,
         "entry_price_usd": 7555.485068,
         "value_usd": 335.2,
-        "value_krw": 461912,
-        "notional_usd": 1661.02,
-        "pnl_usd": -8.74,
-        "pnl_krw": -12040,
-        "pnl_pct": -2.61
+        "value_krw": 465264,
+        "notional_usd": 1661.05,
+        "pnl_usd": -8.71,
+        "pnl_krw": -12090,
+        "pnl_pct": -2.6
       },
       {
         "exchange": "Gate.io",
@@ -114,14 +114,14 @@
         "symbol": "BTC_USDT",
         "name": "BTC/USDT Perpetual",
         "quantity": 15.0,
-        "price_usd": 65350.77,
+        "price_usd": 62927.65,
         "entry_price_usd": 65404.7,
         "value_usd": 9.95,
-        "value_krw": 13712,
-        "notional_usd": 98.03,
-        "pnl_usd": -0.08,
-        "pnl_krw": -111,
-        "pnl_pct": -0.81
+        "value_krw": 13810,
+        "notional_usd": 94.39,
+        "pnl_usd": -3.72,
+        "pnl_krw": -5157,
+        "pnl_pct": -37.35
       },
       {
         "exchange": "Gate.io",
@@ -129,9 +129,9 @@
         "symbol": "GTBTC",
         "name": "GTBTC (Spot)",
         "quantity": 0.00995823,
-        "price_usd": 65731.9,
-        "value_usd": 654.57,
-        "value_krw": 902002,
+        "price_usd": 63106.1,
+        "value_usd": 628.43,
+        "value_krw": 872254,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -140,10 +140,10 @@
         "category": "현물",
         "symbol": "USDT",
         "name": "USDT (Spot)",
-        "quantity": 0.39756018,
+        "quantity": 0.79668658,
         "price_usd": 1.0,
-        "value_usd": 0.4,
-        "value_krw": 548,
+        "value_usd": 0.8,
+        "value_krw": 1106,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -153,9 +153,9 @@
         "symbol": "GT",
         "name": "GT (Spot)",
         "quantity": 0.04875776,
-        "price_usd": 8.0,
-        "value_usd": 0.39,
-        "value_krw": 538,
+        "price_usd": 7.62,
+        "value_usd": 0.37,
+        "value_krw": 516,
         "pnl_usd": null,
         "pnl_pct": null
       },
@@ -165,9 +165,9 @@
         "symbol": "BTC",
         "name": "BTC (Spot)",
         "quantity": 7.5e-07,
-        "price_usd": 65425.0,
+        "price_usd": 62914.8,
         "value_usd": 0.05,
-        "value_krw": 68,
+        "value_krw": 66,
         "pnl_usd": null,
         "pnl_pct": null
       }
@@ -182,9 +182,9 @@
         "quantity": 12.960553,
         "price_native": 141.65,
         "avg_price_native": 184.99,
-        "value_krw": 2453043,
+        "value_krw": 2452822,
         "value_usd": 1835.86,
-        "pnl_krw": -750505,
+        "pnl_krw": -750437,
         "pnl_usd": -561.68,
         "pnl_pct": -23.42
       },
@@ -198,9 +198,9 @@
         "price_native": 6150.0,
         "avg_price_native": 8353.97,
         "value_krw": 1894200,
-        "value_usd": 1417.62,
+        "value_usd": 1417.75,
         "pnl_krw": -678824,
-        "pnl_usd": -508.03,
+        "pnl_usd": -508.08,
         "pnl_pct": -26.38
       },
       {
@@ -212,7 +212,7 @@
         "quantity": 1.319275,
         "price_native": 119.03,
         "avg_price_native": 118.08,
-        "value_krw": 209825,
+        "value_krw": 209806,
         "value_usd": 157.03,
         "pnl_krw": 1680,
         "pnl_usd": 1.26,
@@ -227,9 +227,9 @@
         "quantity": 0.285308,
         "price_native": 214.34,
         "avg_price_native": 208.34,
-        "value_krw": 81711,
+        "value_krw": 81704,
         "value_usd": 61.15,
-        "pnl_krw": 2286,
+        "pnl_krw": 2285,
         "pnl_usd": 1.71,
         "pnl_pct": 2.87
       },
@@ -242,7 +242,7 @@
         "quantity": 0.492897,
         "price_native": 118.57,
         "avg_price_native": 113.3,
-        "value_krw": 78090,
+        "value_krw": 78083,
         "value_usd": 58.44,
         "pnl_krw": 3471,
         "pnl_usd": 2.6,
@@ -255,8 +255,8 @@
         "name": "외화(USD) 예수금",
         "currency": "USD",
         "quantity": 32.67,
-        "price_native": 1336.18,
-        "value_krw": 43653,
+        "price_native": 1336.06,
+        "value_krw": 43649,
         "value_usd": 32.67,
         "pnl_krw": null,
         "pnl_usd": null,
@@ -288,9 +288,9 @@
         "price_native": 37275.0,
         "avg_price_native": 45898.39,
         "value_krw": 670950,
-        "value_usd": 502.14,
+        "value_usd": 502.19,
         "pnl_krw": -155221,
-        "pnl_usd": -116.17,
+        "pnl_usd": -116.18,
         "pnl_pct": -18.78
       }
     ]
@@ -298,18 +298,18 @@
   "history": [
     {
       "date": "2026-11-15",
-      "total_krw": 14624198,
-      "total_usd": 10735.99,
-      "gate_krw": 9192718,
-      "gate_usd": 6671.06,
-      "gate_spot_usd": 655.41,
-      "gate_futures_usd": 4863.5,
-      "toss_krw": 4760530,
-      "toss_usd": 3562.79,
+      "total_krw": 14600506,
+      "total_usd": 10671.22,
+      "gate_krw": 9169284,
+      "gate_usd": 6606.11,
+      "gate_spot_usd": 629.64,
+      "gate_futures_usd": 4867.82,
+      "toss_krw": 4760272,
+      "toss_usd": 3562.92,
       "kis_krw": 670950,
-      "kis_usd": 502.14,
-      "usdkrw": 1336.18,
-      "usdt_krw": 1378.0
+      "kis_usd": 502.19,
+      "usdkrw": 1336.06,
+      "usdt_krw": 1388.0
     }
   ]
 }
