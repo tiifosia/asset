@@ -2416,7 +2416,6 @@ function renderCnnFearGreedChart(history) {
 function renderIndexDashboard() {
   const payload = state.macro;
   const heroGrid = document.getElementById("sentiment-hero-grid");
-  const subGrid = document.getElementById("cnn-sub-grid");
   const primaryGrid = document.getElementById("index-primary-grid");
   const secondaryGrid = document.getElementById("index-secondary-grid");
   const macroGrid = document.getElementById("macro-indicators-grid");
@@ -2517,30 +2516,6 @@ function renderIndexDashboard() {
   if (state.activeView === "index") {
     requestAnimationFrame(() => renderCnnFearGreedChart(cnn.history || []));
   }
-
-  const subs = Array.isArray(cnn.sub_indicators) ? cnn.sub_indicators : [];
-  subGrid.innerHTML = subs
-    .map((item) => {
-      const s = Number(item.score);
-      const band = getFearGreedBand(s);
-      const pct = Number.isFinite(s) ? Math.min(100, Math.max(0, s)) : 0;
-      const rawVal = item.value !== null && item.value !== undefined ? Number(item.value).toLocaleString("en-US", { maximumFractionDigits: 2 }) : "-";
-      return `<article class="cnn-sub-card">
-        <div class="cnn-sub-top">
-          <span class="cnn-sub-name">${escapeHtml(item.name_ko || item.id)}</span>
-          <span class="fg-rating-pill ${band.pillCls}">${escapeHtml(item.rating_ko || band.labelKo)}</span>
-        </div>
-        <div class="cnn-sub-score-line">
-          <span class="cnn-sub-score" style="color:${band.color};">${Number.isFinite(s) ? s.toFixed(1) : "-"}</span>
-          <span class="section-sub">원지표: ${rawVal}</span>
-        </div>
-        <div class="cnn-sub-bar">
-          <div class="cnn-sub-bar-fill" style="width:${pct.toFixed(1)}%;background:${band.color};"></div>
-        </div>
-        <p class="cnn-sub-desc">${escapeHtml(item.description || "")}</p>
-      </article>`;
-    })
-    .join("");
 
   const primary = payload.indices?.primary || [];
   primaryGrid.innerHTML = primary
