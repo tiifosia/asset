@@ -2010,6 +2010,17 @@ body.modal-open {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.index-val-card {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.index-val-card:hover,
+.index-val-card:focus-visible {
+  background-color: var(--bg-raised);
+  outline: none;
+}
+
 .index-val-head {
   display: flex;
   align-items: flex-start;

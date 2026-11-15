@@ -2184,7 +2184,7 @@ async function openAssetModal(asset) {
 
   const isIndex = asset.ticker.startsWith("^");
   const titleText = asset.name_ko || asset.name || asset.ticker;
-  const tickerText = asset.display_ticker ? `${asset.display_ticker} (${asset.ticker})` : asset.ticker;
+  const tickerText = asset.display_ticker ? "" : asset.ticker;
 
   document.getElementById("modal-title").textContent = titleText;
   document.getElementById("modal-ticker").textContent = tickerText;
@@ -2807,7 +2807,7 @@ function renderIndexDashboard() {
         )
         .join("");
 
-      return `<article class="index-val-card">
+      return `<article class="index-val-card" data-asset-type="benchmark" data-asset-key="${escapeHtml(idx.id)}" tabindex="0" role="button" aria-label="${escapeHtml(idx.name)} 차트 보기">
         <div class="index-val-head">
           <div>
             <h3 class="index-val-title">${escapeHtml(idx.name)}</h3>
@@ -3042,20 +3042,37 @@ function bindControls() {
     if (state.activeView !== "index") switchMainView("index");
   });
 
-  // Index PE Chart Range Switcher
-  document.getElementById("index-primary-grid")?.addEventListener("click", (e) => {
+  // Index PE Chart Range Switcher & Index Benchmark Chart Modal
+  const indexPrimaryGrid = document.getElementById("index-primary-grid");
+  indexPrimaryGrid?.addEventListener("click", (e) => {
     const btn = e.target.closest(".pe-range-btn");
-    if (!btn) return;
-    const idxId = btn.dataset.indexId;
-    const nextRange = btn.dataset.peRange;
-    if (!idxId || !nextRange) return;
-    indexPeRangeById[idxId] = nextRange;
-    btn
-      .closest(".pe-range-group")
-      ?.querySelectorAll(".pe-range-btn")
-      .forEach((b) => b.classList.toggle("active", b === btn));
-    const idxObj = state.macro?.indices?.primary?.find((item) => item.id === idxId);
-    if (idxObj) renderPeTrendChart(idxObj);
+    if (btn) {
+      const idxId = btn.dataset.indexId;
+      const nextRange = btn.dataset.peRange;
+      if (!idxId || !nextRange) return;
+      indexPeRangeById[idxId] = nextRange;
+      btn
+        .closest(".pe-range-group")
+        ?.querySelectorAll(".pe-range-btn")
+        .forEach((b) => b.classList.toggle("active", b === btn));
+      const idxObj = state.macro?.indices?.primary?.find((item) => item.id === idxId);
+      if (idxObj) renderPeTrendChart(idxObj);
+      return;
+    }
+    if (e.target.closest(".pe-range-group")) return;
+    const card = e.target.closest(".index-val-card");
+    if (!card) return;
+    const asset = findAssetFromElement(card);
+    if (asset) openAssetModal(asset);
+  });
+  indexPrimaryGrid?.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.target.closest(".pe-range-group")) return;
+    const card = e.target.closest(".index-val-card");
+    if (!card) return;
+    e.preventDefault();
+    const asset = findAssetFromElement(card);
+    if (asset) openAssetModal(asset);
   });
 
   // Currency Toggle
