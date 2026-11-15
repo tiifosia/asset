@@ -16,6 +16,7 @@ import requests
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = ROOT_DIR / "public" / "data" / "macro.json"
+PE_HISTORY_PATH = ROOT_DIR / "public" / "data" / "pe_history.json"
 
 REQUEST_HEADERS = {
     "User-Agent": (
@@ -241,10 +242,54 @@ def fetch_world_pe(slug: str) -> dict[str, Any]:
             out["mean_5y"] = _to_float(m5y.group(1), 2)
             out["z_5y"] = _to_float(m5y.group(3), 2)
             out["band_5y"] = m5y.group(4)
+
+        idx = r.text.find("detailPE_data = ")
+        if idx >= 0:
+            end_idx = r.text.find("\n", idx)
+            line = r.text[idx : end_idx if end_idx > idx else idx + 500000]
+            hist: list[list[Any]] = []
+            for yr_s, mo_s, dy_s, val_s in re.findall(
+                r"\[Date\.UTC\((\d+),\s*(\d+),\s*(\d+)\),\s*([0-9.]+)\]", line
+            ):
+                yr = int(yr_s)
+                if yr < 1990:
+                    continue
+                dt_str = f"{yr:04d}-{int(mo_s) + 1:02d}-{int(dy_s):02d}"
+                val_f = _to_float(val_s, 2)
+                if val_f is not None:
+                    hist.append([dt_str, val_f])
+            out["history"] = hist
         return out
     except Exception as exc:
         print(f"[Warn] WorldPE {slug} fetch failed: {exc}")
         return {}
+
+
+def update_pe_history(today_str: str, entries: dict[str, tuple[float | None, float | None]]) -> dict[str, list[list[Any]]]:
+    """Maintain persistent daily Trailing PER and Forward PER time series."""
+    data: dict[str, list[list[Any]]] = {}
+    if PE_HISTORY_PATH.exists():
+        try:
+            loaded = json.loads(PE_HISTORY_PATH.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+        except Exception:
+            data = {}
+
+    for key, (pe_val, fwd_val) in entries.items():
+        if pe_val is None and fwd_val is None:
+            continue
+        series = data.get(key) if isinstance(data.get(key), list) else []
+        by_date: dict[str, list[Any]] = {}
+        for row in series:
+            if isinstance(row, list) and len(row) >= 3 and row[0]:
+                by_date[str(row[0])] = [str(row[0]), row[1], row[2]]
+        by_date[today_str] = [today_str, pe_val, fwd_val]
+        data[key] = [by_date[d] for d in sorted(by_date.keys())]
+
+    PE_HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PE_HISTORY_PATH.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return data
 
 
 def fetch_tv_macro() -> dict[str, dict[str, Any]]:
@@ -437,6 +482,15 @@ def fetch_all_macro() -> dict[str, Any]:
     dxy_tv = tv.get("TVC:DXY") or {}
     dxy_close = dxy_tv.get("close") or fetch_yahoo_price("DX-Y.NYB")
 
+    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    pe_hist = update_pe_history(
+        today_str,
+        {
+            "SP500": (spx_pe, spx_fwd_pe),
+            "NASDAQ100": (ndx_pe, ndx_fwd_pe),
+        },
+    )
+
     payload: dict[str, Any] = {
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         "sentiment": {
@@ -463,6 +517,7 @@ def fetch_all_macro() -> dict[str, Any]:
                     "erp_forward": spx_erp_fwd,
                     "erp_trailing": spx_erp_trailing,
                     "world_pe": world_sp,
+                    "daily_history": pe_hist.get("SP500") or [],
                     "technicals": tv.get("SP:SPX") or {},
                 },
                 {
@@ -479,6 +534,7 @@ def fetch_all_macro() -> dict[str, Any]:
                     "forward_earnings_yield": ndx_fwd_ey,
                     "erp_forward": ndx_erp_fwd,
                     "world_pe": world_ndx,
+                    "daily_history": pe_hist.get("NASDAQ100") or [],
                     "technicals": tv.get("NASDAQ:NDX") or {},
                 },
             ],

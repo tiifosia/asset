@@ -27,6 +27,9 @@ const state = {
 };
 
 let cnnChartInstance = null;
+const peTrendChartInstances = {};
+let peCompareChartInstance = null;
+const indexPeRangeById = { SP500: "5y", NASDAQ100: "5y" };
 
 async function verifyPortfolioPin(rawPin) {
   const pin = String(rawPin ?? "").trim();
@@ -794,10 +797,10 @@ function switchMainView(nextView) {
     ensureMacroLoaded().then(() => {
       if (state.activeView !== "index") return;
       requestAnimationFrame(() => {
-        if (!cnnChartInstance && state.macro?.sentiment?.cnn?.history) {
-          renderCnnFearGreedChart(state.macro.sentiment.cnn.history);
-        }
+        renderAllIndexCharts();
         cnnChartInstance?.resize();
+        Object.values(peTrendChartInstances).forEach((inst) => inst?.resize());
+        peCompareChartInstance?.resize();
       });
     });
   }
@@ -2413,6 +2416,297 @@ function renderCnnFearGreedChart(history) {
   );
 }
 
+function buildIndexPeSeries(idx, rangeKey) {
+  const monthly = Array.isArray(idx?.world_pe?.history) ? idx.world_pe.history : [];
+  const daily = Array.isArray(idx?.daily_history) ? idx.daily_history : [];
+
+  const merged = new Map();
+  monthly.forEach(([dt, pe]) => {
+    if (dt && pe != null && Number.isFinite(Number(pe))) {
+      merged.set(dt, { date: dt, pe: Number(pe), fwd: null });
+    }
+  });
+  daily.forEach(([dt, pe, fwd]) => {
+    if (!dt) return;
+    const prev = merged.get(dt) || { date: dt, pe: null, fwd: null };
+    if (pe != null && Number.isFinite(Number(pe))) prev.pe = Number(pe);
+    if (fwd != null && Number.isFinite(Number(fwd))) prev.fwd = Number(fwd);
+    merged.set(dt, prev);
+  });
+
+  const sorted = Array.from(merged.values()).sort((a, b) => a.date.localeCompare(b.date));
+  if (!sorted.length) return { dates: [], peSeries: [], fwdSeries: [] };
+
+  const lastDateStr = sorted[sorted.length - 1].date;
+  const lastYear = Number(lastDateStr.slice(0, 4));
+  const lastMonthDay = lastDateStr.slice(4);
+  const yearsBack = rangeKey === "1y" ? 1 : rangeKey === "3y" ? 3 : rangeKey === "5y" ? 5 : rangeKey === "10y" ? 10 : null;
+  const cutoff = yearsBack ? `${String(lastYear - yearsBack)}${lastMonthDay}` : "";
+
+  const filtered = cutoff ? sorted.filter((row) => row.date >= cutoff) : sorted;
+  return {
+    dates: filtered.map((r) => r.date),
+    peSeries: filtered.map((r) => r.pe),
+    fwdSeries: filtered.map((r) => r.fwd),
+  };
+}
+
+function renderPeTrendChart(idx) {
+  if (!idx || typeof echarts === "undefined") return;
+  const chartEl = document.getElementById(`index-pe-chart-${idx.id}`);
+  if (!chartEl) return;
+
+  const rangeKey = indexPeRangeById[idx.id] || "5y";
+  const { dates, peSeries, fwdSeries } = buildIndexPeSeries(idx, rangeKey);
+  if (!dates.length) return;
+
+  let inst = echarts.getInstanceByDom(chartEl);
+  if (!inst) {
+    inst = echarts.init(chartEl, null, { renderer: "canvas" });
+  }
+  peTrendChartInstances[idx.id] = inst;
+
+  const mean5y = idx.world_pe?.mean_5y != null ? Number(idx.world_pe.mean_5y) : null;
+  const fwdCur = idx.forward_pe != null ? Number(idx.forward_pe) : null;
+
+  const markLineData = [];
+  if (fwdCur != null && Number.isFinite(fwdCur)) {
+    markLineData.push({
+      yAxis: fwdCur,
+      lineStyle: { color: "#4ade80", type: "dashed", width: 1.5 },
+      label: {
+        show: true,
+        position: "insideEndTop",
+        formatter: `선행 PER ${fwdCur.toFixed(2)}x`,
+        color: "#4ade80",
+        fontSize: 11,
+        fontWeight: 700,
+      },
+    });
+  }
+  if (mean5y != null && Number.isFinite(mean5y)) {
+    markLineData.push({
+      yAxis: mean5y,
+      lineStyle: { color: "#71717a", type: "dotted", width: 1.2 },
+      label: {
+        show: true,
+        position: "insideStartTop",
+        formatter: `5Y 평균 ${mean5y.toFixed(1)}x`,
+        color: "#a1a1aa",
+        fontSize: 10,
+      },
+    });
+  }
+
+  const fwdCount = fwdSeries.filter((v) => v != null).length;
+
+  inst.setOption(
+    {
+      animationDuration: 300,
+      grid: { left: 40, right: 16, top: 28, bottom: 26 },
+      legend: {
+        top: 0,
+        right: 4,
+        itemWidth: 12,
+        itemHeight: 8,
+        textStyle: { color: "#b5b5b5", fontSize: 11 },
+        data: ["Trailing PER", "Forward PER (선행)"],
+      },
+      tooltip: {
+        trigger: "axis",
+        backgroundColor: "#181818",
+        borderColor: "#333333",
+        textStyle: { color: "#F5F5F5", fontSize: 12 },
+        formatter(params) {
+          const list = Array.isArray(params) ? params : [params];
+          if (!list.length) return "";
+          const dt = list[0].axisValue || "";
+          const lines = list
+            .filter((p) => p.value != null)
+            .map(
+              (p) =>
+                `<div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>${escapeHtml(
+                  p.seriesName
+                )}: <b>${Number(p.value).toFixed(2)}x</b></div>`
+            );
+          if (fwdCur != null && !list.some((p) => p.seriesName === "Forward PER (선행)" && p.value != null)) {
+            lines.push(
+              `<div style="color:#4ade80;">현재 선행 PER 기준: <b>${fwdCur.toFixed(2)}x</b></div>`
+            );
+          }
+          return `<div style="font-weight:700;margin-bottom:4px;">${escapeHtml(dt)}</div>${lines.join("")}`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: dates,
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: "#2c2c2c" } },
+        axisTick: { show: false },
+        axisLabel: {
+          color: "#8d8d8d",
+          fontSize: 10,
+          formatter(val) {
+            return val.slice(2, 7);
+          },
+        },
+      },
+      yAxis: {
+        type: "value",
+        scale: true,
+        splitLine: { lineStyle: { color: "#232323" } },
+        axisLabel: {
+          color: "#8d8d8d",
+          fontSize: 10,
+          formatter(v) {
+            return `${v}x`;
+          },
+        },
+      },
+      series: [
+        {
+          name: "Trailing PER",
+          type: "line",
+          showSymbol: false,
+          smooth: 0.15,
+          lineStyle: { color: "#C3BDFF", width: 2 },
+          itemStyle: { color: "#C3BDFF" },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(195, 189, 255, 0.24)" },
+              { offset: 1, color: "rgba(195, 189, 255, 0.02)" },
+            ]),
+          },
+          data: peSeries,
+          markLine: markLineData.length
+            ? {
+                symbol: "none",
+                silent: true,
+                data: markLineData,
+              }
+            : undefined,
+        },
+        {
+          name: "Forward PER (선행)",
+          type: "line",
+          showSymbol: fwdCount <= 10,
+          symbolSize: 7,
+          connectNulls: true,
+          lineStyle: { color: "#4ade80", width: 2 },
+          itemStyle: { color: "#4ade80" },
+          data: fwdSeries,
+        },
+      ],
+    },
+    true
+  );
+}
+
+function renderPeCompareChart(primary, secondary) {
+  const el = document.getElementById("index-pe-compare-chart");
+  if (!el || typeof echarts === "undefined") return;
+
+  const all = [...(primary || []), ...(secondary || [])].filter((item) => item && item.name);
+  if (!all.length) return;
+
+  let inst = echarts.getInstanceByDom(el);
+  if (!inst) {
+    inst = echarts.init(el, null, { renderer: "canvas" });
+  }
+  peCompareChartInstance = inst;
+
+  const names = all.map((x) => `${x.name}`);
+  const pe52w = all.map((x) => (x.pe_52w_ago != null ? Number(x.pe_52w_ago) : null));
+  const peCur = all.map((x) => (x.pe != null ? Number(x.pe) : null));
+  const peFwd = all.map((x) => (x.forward_pe != null ? Number(x.forward_pe) : null));
+
+  const labelOpt = {
+    show: true,
+    position: "top",
+    color: "#d4d4d4",
+    fontSize: 11,
+    fontWeight: 700,
+    formatter: ({ value }) => (value != null ? `${Number(value).toFixed(1)}x` : ""),
+  };
+
+  inst.setOption(
+    {
+      animationDuration: 300,
+      grid: { left: 40, right: 16, top: 34, bottom: 28 },
+      legend: {
+        top: 0,
+        right: 4,
+        itemWidth: 12,
+        itemHeight: 10,
+        textStyle: { color: "#b5b5b5", fontSize: 11 },
+        data: ["52주 전 PER", "현재 Trailing PER", "Forward PER (선행)"],
+      },
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        backgroundColor: "#181818",
+        borderColor: "#333333",
+        textStyle: { color: "#F5F5F5", fontSize: 12 },
+        valueFormatter: (v) => (v != null ? `${Number(v).toFixed(2)}x` : "-"),
+      },
+      xAxis: {
+        type: "category",
+        data: names,
+        axisLine: { lineStyle: { color: "#2c2c2c" } },
+        axisTick: { show: false },
+        axisLabel: { color: "#e5e5e5", fontSize: 12, fontWeight: 700 },
+      },
+      yAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: "#232323" } },
+        axisLabel: {
+          color: "#8d8d8d",
+          fontSize: 11,
+          formatter: (v) => `${v}x`,
+        },
+      },
+      series: [
+        {
+          name: "52주 전 PER",
+          type: "bar",
+          barMaxWidth: 26,
+          itemStyle: { color: "#52525b", borderRadius: [5, 5, 0, 0] },
+          label: labelOpt,
+          data: pe52w,
+        },
+        {
+          name: "현재 Trailing PER",
+          type: "bar",
+          barMaxWidth: 26,
+          itemStyle: { color: "#C3BDFF", borderRadius: [5, 5, 0, 0] },
+          label: labelOpt,
+          data: peCur,
+        },
+        {
+          name: "Forward PER (선행)",
+          type: "bar",
+          barMaxWidth: 26,
+          itemStyle: { color: "#4ade80", borderRadius: [5, 5, 0, 0] },
+          label: { ...labelOpt, color: "#4ade80" },
+          data: peFwd,
+        },
+      ],
+    },
+    true
+  );
+}
+
+function renderAllIndexCharts() {
+  const payload = state.macro;
+  if (!payload || state.activeView !== "index") return;
+  const cnnHist = payload.sentiment?.cnn?.history;
+  if (cnnHist) renderCnnFearGreedChart(cnnHist);
+  const primary = payload.indices?.primary || [];
+  const secondary = payload.indices?.secondary || [];
+  primary.forEach((idx) => renderPeTrendChart(idx));
+  renderPeCompareChart(primary, secondary);
+}
+
 function renderIndexDashboard() {
   const payload = state.macro;
   const heroGrid = document.getElementById("sentiment-hero-grid");
@@ -2556,6 +2850,21 @@ function renderIndexDashboard() {
 
       const band1yKo = translateWorldPeBand(wpe.band_1y);
       const band5yKo = translateWorldPeBand(wpe.band_5y);
+      const activeRange = indexPeRangeById[idx.id] || "5y";
+      const rangeBtns = [
+        ["1y", "1Y"],
+        ["3y", "3Y"],
+        ["5y", "5Y"],
+        ["10y", "10Y"],
+        ["all", "전체"],
+      ]
+        .map(
+          ([k, label]) =>
+            `<button type="button" class="pe-range-btn${activeRange === k ? " active" : ""}" data-index-id="${escapeHtml(
+              idx.id
+            )}" data-pe-range="${k}">${label}</button>`
+        )
+        .join("");
 
       return `<article class="index-val-card">
         <div class="index-val-head">
@@ -2605,6 +2914,19 @@ function renderIndexDashboard() {
           <span class="index-tech-chip">YTD ${formatMacroDelta(tech.perf_ytd, 2, "%")}</span>
           <span class="index-tech-chip">1Y ${formatMacroDelta(tech.perf_1y, 2, "%")}</span>
         </div>
+
+        <div class="index-chart-wrap">
+          <div class="index-chart-head">
+            <span class="index-chart-title">PER · 선행 PER 추이</span>
+            <div class="pe-range-group" role="group" aria-label="${escapeHtml(idx.name)} PER 기간 선택">
+              ${rangeBtns}
+            </div>
+          </div>
+          <div id="index-pe-chart-${escapeHtml(idx.id)}" class="index-pe-chart-stage" aria-label="${escapeHtml(
+        idx.name
+      )} PER 차트"></div>
+          <p class="index-chart-note">Trailing PER: WorldPERatio 월별 장기 추이 + 일별 누적 · 선행 PER: WSJ 현재 기준선 및 매일 일별 누적</p>
+        </div>
       </article>`;
     })
     .join("");
@@ -2625,6 +2947,10 @@ function renderIndexDashboard() {
       </article>`
     )
     .join("");
+
+  if (state.activeView === "index") {
+    requestAnimationFrame(() => renderAllIndexCharts());
+  }
 
   const m = payload.macro || {};
   const vix = m.vix || {};
@@ -2829,6 +3155,22 @@ function bindControls() {
     if (state.activeView !== "index") switchMainView("index");
   });
 
+  // Index PE Chart Range Switcher
+  document.getElementById("index-primary-grid")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".pe-range-btn");
+    if (!btn) return;
+    const idxId = btn.dataset.indexId;
+    const nextRange = btn.dataset.peRange;
+    if (!idxId || !nextRange) return;
+    indexPeRangeById[idxId] = nextRange;
+    btn
+      .closest(".pe-range-group")
+      ?.querySelectorAll(".pe-range-btn")
+      .forEach((b) => b.classList.toggle("active", b === btn));
+    const idxObj = state.macro?.indices?.primary?.find((item) => item.id === idxId);
+    if (idxObj) renderPeTrendChart(idxObj);
+  });
+
   // Currency Toggle
   document.querySelectorAll(".currency-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -3016,8 +3358,10 @@ function bindControls() {
       }
       pfPieChartInstance?.resize();
     }
-    if (state.activeView === "index" && cnnChartInstance) {
-      cnnChartInstance.resize();
+    if (state.activeView === "index") {
+      cnnChartInstance?.resize();
+      Object.values(peTrendChartInstances).forEach((inst) => inst?.resize());
+      peCompareChartInstance?.resize();
     }
     if (modalChartInstance && !document.getElementById("chart-modal").classList.contains("hidden")) {
       modalChartInstance.resize();

@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MY ASSET</title>
-  <link rel="stylesheet" href="./styles.css?v=20261115-20" />
+  <link rel="stylesheet" href="./styles.css?v=20261115-21" />
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js" defer></script>
-  <script src="./app.js?v=20261115-20" defer></script>
+  <script src="./app.js?v=20261115-21" defer></script>
 </head>
 <body>
   <div class="container">
@@ -314,6 +314,17 @@
 
           <div id="index-primary-grid" class="index-val-grid">
             <div class="loading-state">지수 밸류에이션을 불러오는 중입니다...</div>
+          </div>
+
+          <div class="pe-compare-card">
+            <div class="fg-chart-head">
+              <div>
+                <h3 class="fg-chart-title">4대 주요 지수 PER vs 선행 PER 비교</h3>
+                <span class="section-sub">52주 전 Trailing PER · 현재 Trailing PER · Forward PER(선행)</span>
+              </div>
+              <span class="section-sub">WSJ Market Data 기준</span>
+            </div>
+            <div id="index-pe-compare-chart" class="pe-compare-chart-stage" aria-label="4대 주요 지수 PER 비교 차트"></div>
           </div>
 
           <div id="index-secondary-grid" class="index-secondary-grid"></div>
