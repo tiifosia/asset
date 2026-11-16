@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-15 06:45:31 UTC",
+  "updated_at": "2026-11-16 00:50:14 UTC",
   "benchmarks": [
     {
       "id": "SP500",
@@ -13,10 +13,10 @@
       "ath_date": "2026-10-06",
       "current_drawdown": -3.29,
       "current_dd_abs": 3.29,
-      "max_drawdown": -56.78,
-      "max_dd_abs": 56.78,
-      "mdd_peak_date": "2007-10-09",
-      "mdd_trough_date": "2009-03-09",
+      "max_drawdown": -86.19,
+      "max_dd_abs": 86.19,
+      "mdd_peak_date": "1929-09-16",
+      "mdd_trough_date": "1932-06-01",
       "last_date": "2026-11-13"
     },
     {
@@ -44,16 +44,16 @@
       "name": "Bitcoin",
       "name_ko": "비트코인",
       "history_file": "BTC.json",
-      "current_price": 64505.74,
+      "current_price": 64933.52,
       "ath_price": 124752.53,
       "ath_date": "2025-10-06",
-      "current_drawdown": -48.29,
-      "current_dd_abs": 48.29,
+      "current_drawdown": -47.95,
+      "current_dd_abs": 47.95,
       "max_drawdown": -83.4,
       "max_dd_abs": 83.4,
       "mdd_peak_date": "2017-12-16",
       "mdd_trough_date": "2018-12-15",
-      "last_date": "2026-11-15"
+      "last_date": "2026-11-16"
     }
   ],
   "stocks": [
@@ -851,9 +851,9 @@
       "ath_date": "2026-08-18",
       "current_drawdown": -11.93,
       "current_dd_abs": 11.93,
-      "max_drawdown": -55.13,
-      "max_dd_abs": 55.13,
-      "mdd_peak_date": "1972-12-11",
+      "max_drawdown": -80.27,
+      "max_dd_abs": 80.27,
+      "mdd_peak_date": "1967-06-27",
       "mdd_trough_date": "1973-12-13",
       "last_date": "2026-11-13"
     },
@@ -1311,10 +1311,10 @@
       "ath_date": "2026-02-27",
       "current_drawdown": -20.26,
       "current_dd_abs": 20.26,
-      "max_drawdown": -74.41,
-      "max_dd_abs": 74.41,
-      "mdd_peak_date": "1999-11-12",
-      "mdd_trough_date": "2003-03-12",
+      "max_drawdown": -77.47,
+      "max_dd_abs": 77.47,
+      "mdd_peak_date": "1968-05-07",
+      "mdd_trough_date": "1969-07-22",
       "last_date": "2026-11-13"
     },
     {
@@ -1771,9 +1771,9 @@
       "ath_date": "2026-03-02",
       "current_drawdown": -11.92,
       "current_dd_abs": 11.92,
-      "max_drawdown": -85.12,
-      "max_dd_abs": 85.12,
-      "mdd_peak_date": "1970-01-07",
+      "max_drawdown": -95.74,
+      "max_dd_abs": 95.74,
+      "mdd_peak_date": "1967-07-18",
       "mdd_trough_date": "1973-12-28",
       "last_date": "2026-11-13"
     },
@@ -1891,10 +1891,10 @@
       "ath_date": "2019-03-01",
       "current_drawdown": -61.08,
       "current_dd_abs": 61.08,
-      "max_drawdown": -78.44,
-      "max_dd_abs": 78.44,
-      "mdd_peak_date": "2019-03-01",
-      "mdd_trough_date": "2020-03-20",
+      "max_drawdown": -89.46,
+      "max_dd_abs": 89.46,
+      "mdd_peak_date": "1967-08-02",
+      "mdd_trough_date": "1974-01-08",
       "last_date": "2026-11-13"
     },
     {
