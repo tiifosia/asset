@@ -4,8 +4,16 @@ on:
   push:
     branches: ["main"]
   schedule:
-    # Run daily at 21:30 UTC (06:30 KST, after US market close)
-    - cron: "30 21 * * *"
+    # Off-peak staggered KST 06:11 ~ 09:17 slots (after US market close)
+    # Avoiding :00/:30 avoids GitHub Actions queue congestion; once today's
+    # snapshot succeeds, remaining backup slots exit in ~3s.
+    - cron: "11 21 * * *" # 06:11 KST
+    - cron: "29 21 * * *" # 06:29 KST
+    - cron: "47 21 * * *" # 06:47 KST
+    - cron: "13 22 * * *" # 07:13 KST
+    - cron: "43 22 * * *" # 07:43 KST
+    - cron: "17 23 * * *" # 08:17 KST
+    - cron: "17 0 * * *"  # 09:17 KST
   workflow_dispatch:
 
 permissions:
@@ -28,27 +36,119 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check if today's KST snapshot already synced
+        id: freshness
+        if: github.event_name == 'schedule'
+        run: |
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          KST = timezone(timedelta(hours=9))
+          now_kst = datetime.now(KST)
+          cutoff_kst = now_kst.replace(hour=5, minute=30, second=0, microsecond=0)
+          if now_kst < cutoff_kst:
+              cutoff_kst -= timedelta(days=1)
+          today_str = now_kst.strftime("%Y-%m-%d")
+
+          def parse_utc_to_kst(ts: str):
+              for fmt in ("%Y-%m-%d %H:%M:%S UTC", "%Y-%m-%d %H:%M UTC"):
+                  try:
+                      return datetime.strptime(ts.strip(), fmt).replace(tzinfo=timezone.utc).astimezone(KST)
+                  except ValueError:
+                      pass
+              return None
+
+          def check_all_fresh():
+              pf_path = Path("public/data/portfolio.json")
+              mdd_path = Path("public/data/mdd.json")
+              macro_path = Path("public/data/macro.json")
+              if not (pf_path.exists() and mdd_path.exists() and macro_path.exists()):
+                  return False, "missing data file"
+
+              pf = json.loads(pf_path.read_text(encoding="utf-8"))
+              mdd = json.loads(mdd_path.read_text(encoding="utf-8"))
+              macro = json.loads(macro_path.read_text(encoding="utf-8"))
+
+              pf_dt = parse_utc_to_kst(pf.get("updated_at", ""))
+              mdd_dt = parse_utc_to_kst(mdd.get("updated_at", ""))
+              macro_dt = parse_utc_to_kst(macro.get("updated_at", ""))
+              if not pf_dt or pf_dt < cutoff_kst:
+                  return False, f"portfolio stale ({pf.get('updated_at')})"
+              if not mdd_dt or mdd_dt < cutoff_kst:
+                  return False, f"mdd stale ({mdd.get('updated_at')})"
+              if not macro_dt or macro_dt < cutoff_kst:
+                  return False, f"macro stale ({macro.get('updated_at')})"
+
+              hist = pf.get("history") or []
+              last_hist_date = hist[-1].get("date") if hist else None
+              if last_hist_date != today_str:
+                  return False, f"portfolio history last date={last_hist_date}, want={today_str}"
+
+              providers = pf.get("providers") or {}
+              for name, info in providers.items():
+                  if isinstance(info, dict) and info.get("status") == "error":
+                      return False, f"provider {name} in error state"
+
+              return True, f"all datasets synced for {today_str}"
+
+          try:
+              fresh, reason = check_all_fresh()
+          except Exception as exc:
+              fresh, reason = False, f"check failed: {exc}"
+
+          print(f"::notice::Freshness check -> skip={str(fresh).lower()} ({reason})")
+          print(f"skip={'true' if fresh else 'false'}")
+          PY
+
       - name: Set up Python
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
         run: pip install -r requirements.txt
 
       - name: Fetch daily market cap and MDD data
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        run: python scripts/fetch_mdd.py
+        id: fetch_mdd
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3; do
+            echo "fetch_mdd attempt $attempt..."
+            if python scripts/fetch_mdd.py; then
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
 
       - name: Fetch daily index valuation & macro sentiment data
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        run: python scripts/fetch_macro.py
+        id: fetch_macro
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
+        continue-on-error: true
+        run: |
+          for attempt in 1 2 3; do
+            echo "fetch_macro attempt $attempt..."
+            if python scripts/fetch_macro.py; then
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
 
       - name: Fetch daily personal portfolio data
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        id: fetch_portfolio
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
+        continue-on-error: true
         env:
           GATE_API_KEY: ${{ secrets.GATE_API_KEY }}
           GATE_API_SECRET: ${{ secrets.GATE_API_SECRET }}
@@ -58,21 +158,36 @@ jobs:
           KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
           KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
           KIS_ACCOUNT_NO: ${{ secrets.KIS_ACCOUNT_NO }}
-        run: python scripts/fetch_portfolio.py
+        run: |
+          for attempt in 1 2 3; do
+            echo "fetch_portfolio attempt $attempt..."
+            if python scripts/fetch_portfolio.py; then
+              exit 0
+            fi
+            sleep 15
+          done
+          exit 1
 
       - name: Commit updated data
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A public/data/
           if ! git diff --staged --quiet; then
             git commit -m "chore(data): update daily portfolio and MDD data"
-            git pull --rebase origin main || true
-            git push origin HEAD:main
+            for attempt in 1 2 3; do
+              if git pull --rebase -X theirs origin main && git push origin HEAD:main; then
+                exit 0
+              fi
+              git rebase --abort || true
+              sleep 5
+            done
+            exit 1
           fi
 
       - name: Prepare static site bundle
+        if: steps.freshness.outputs.skip != 'true'
         run: |
           mkdir -p _site/public
           cp index.html styles.css app.js _site/
@@ -80,13 +195,24 @@ jobs:
           touch _site/.nojekyll
 
       - name: Setup Pages
+        if: steps.freshness.outputs.skip != 'true'
         uses: actions/configure-pages@v5
 
       - name: Upload Pages artifact
+        if: steps.freshness.outputs.skip != 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./_site
 
       - name: Deploy to GitHub Pages
         id: deployment
+        if: steps.freshness.outputs.skip != 'true'
         uses: actions/deploy-pages@v4
+
+      - name: Fail if any data fetch step failed
+        if: |
+          (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')) &&
+          (steps.fetch_mdd.outcome == 'failure' || steps.fetch_macro.outcome == 'failure' || steps.fetch_portfolio.outcome == 'failure')
+        run: |
+          echo "One or more fetch steps failed: mdd=${{ steps.fetch_mdd.outcome }}, macro=${{ steps.fetch_macro.outcome }}, portfolio=${{ steps.fetch_portfolio.outcome }}"
+          exit 1
