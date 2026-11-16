@@ -190,10 +190,17 @@
         <section class="section" aria-labelledby="allocation-heading">
           <div class="section-header">
             <h2 id="allocation-heading">자산별 비중</h2>
-            <div class="pf-pie-group" role="group" aria-label="비중 기준 선택">
-              <button type="button" class="pf-pie-btn active" data-pie-mode="asset">종목 · 자산별</button>
-              <button type="button" class="pf-pie-btn" data-pie-mode="account">계좌별</button>
-              <button type="button" class="pf-pie-btn" data-pie-mode="category">자산군별</button>
+            <div class="toolbar-controls">
+              <div class="pf-scope-group" role="group" aria-label="비중 모수 계좌 선택">
+                <button type="button" class="pf-scope-btn active" data-scope="gateio" aria-pressed="true">Gate.io</button>
+                <button type="button" class="pf-scope-btn active" data-scope="toss" aria-pressed="true">토스증권</button>
+                <button type="button" class="pf-scope-btn active" data-scope="kis" aria-pressed="true">한국투자증권</button>
+              </div>
+              <div class="pf-pie-group" role="group" aria-label="비중 기준 선택">
+                <button type="button" class="pf-pie-btn active" data-pie-mode="asset">종목 · 자산별</button>
+                <button type="button" class="pf-pie-btn" data-pie-mode="account">계좌별</button>
+                <button type="button" class="pf-pie-btn" data-pie-mode="category">자산군별</button>
+              </div>
             </div>
           </div>
           <div class="allocation-card">

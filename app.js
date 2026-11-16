@@ -61,6 +61,7 @@ let pfChartInstance = null;
 let pfPieChartInstance = null;
 let pfSeriesMode = "total"; // "total" | "gate" | "toss" | "kis"
 let pfPieMode = "asset"; // "asset" | "account" | "category"
+const pfPieScope = { gateio: true, toss: true, kis: true };
 const PIE_PALETTE = [
   "#C3BDFF",
   "#3182f6",
@@ -1459,27 +1460,31 @@ function buildPortfolioAllocationData() {
   let items = [];
 
   if (pfPieMode === "account") {
-    items = [
-      {
+    if (pfPieScope.gateio) {
+      items.push({
         name: "Gate.io",
         sub: "해외 거래소",
         val: cur === "krw" ? Number(summary.gateio?.total_krw || 0) : Number(summary.gateio?.total_usd || 0),
-      },
-      {
+      });
+    }
+    if (pfPieScope.toss) {
+      items.push({
         name: "토스증권",
         sub: "국내 · 미국 주식",
         val: cur === "krw" ? Number(summary.toss?.total_krw || 0) : Number(summary.toss?.total_usd || 0),
-      },
-      {
+      });
+    }
+    if (pfPieScope.kis) {
+      items.push({
         name: "한국투자증권 ISA",
         sub: "중개형 ISA",
         val: cur === "krw" ? Number(summary.kis?.total_krw || 0) : Number(summary.kis?.total_usd || 0),
-      },
-    ];
+      });
+    }
   } else if (pfPieMode === "category") {
-    const gateItems = Array.isArray(holdings.gateio) ? holdings.gateio : [];
-    const tossItems = Array.isArray(holdings.toss) ? holdings.toss : [];
-    const kisItems = Array.isArray(holdings.kis) ? holdings.kis : [];
+    const gateItems = pfPieScope.gateio && Array.isArray(holdings.gateio) ? holdings.gateio : [];
+    const tossItems = pfPieScope.toss && Array.isArray(holdings.toss) ? holdings.toss : [];
+    const kisItems = pfPieScope.kis && Array.isArray(holdings.kis) ? holdings.kis : [];
 
     const sumBy = (arr, pred) =>
       arr.reduce((acc, row) => (pred(row) ? acc + getAllocationVal(row, cur) : acc), 0);
@@ -1489,9 +1494,12 @@ function buildPortfolioAllocationData() {
     const krStockVal =
       sumBy(tossItems, (r) => r.category === "국내주식") +
       sumBy(kisItems, (r) => String(r.category || "") !== "예수금");
-    const spotEarnVal =
-      sumBy(gateItems, (r) => r.category === "현물") +
-      (cur === "krw" ? Number(summary.gateio?.other_krw || 0) : Number(summary.gateio?.other_usd || 0));
+    const gateOtherVal = pfPieScope.gateio
+      ? cur === "krw"
+        ? Number(summary.gateio?.other_krw || 0)
+        : Number(summary.gateio?.other_usd || 0)
+      : 0;
+    const spotEarnVal = sumBy(gateItems, (r) => r.category === "현물") + gateOtherVal;
     const cashVal =
       sumBy(tossItems, (r) => r.category === "예수금") +
       sumBy(kisItems, (r) => r.category === "예수금");
@@ -1499,15 +1507,15 @@ function buildPortfolioAllocationData() {
     items = [
       { name: "선물 (Gate.io)", sub: "Perpetual Futures", val: futuresVal },
       { name: "미국주식 (토스증권)", sub: "해외 상장 주식 · ETF", val: usStockVal },
-      { name: "국내주식·ETF (토스·한투 ISA)", sub: "국내 상장 ETF · 주식", val: krStockVal },
+      { name: "국내주식·ETF", sub: "국내 상장 ETF · 주식", val: krStockVal },
       { name: "코인 현물·Earn (Gate.io)", sub: "Spot · 금융/Earn", val: spotEarnVal },
       { name: "예수금 (KRW·USD)", sub: "현금성 잔고", val: cashVal },
     ];
   } else {
     const allRows = [
-      ...(Array.isArray(holdings.gateio) ? holdings.gateio : []),
-      ...(Array.isArray(holdings.toss) ? holdings.toss : []),
-      ...(Array.isArray(holdings.kis) ? holdings.kis : []),
+      ...(pfPieScope.gateio && Array.isArray(holdings.gateio) ? holdings.gateio : []),
+      ...(pfPieScope.toss && Array.isArray(holdings.toss) ? holdings.toss : []),
+      ...(pfPieScope.kis && Array.isArray(holdings.kis) ? holdings.kis : []),
     ];
     for (const row of allRows) {
       const val = getAllocationVal(row, cur);
@@ -1519,8 +1527,11 @@ function buildPortfolioAllocationData() {
         });
       }
     }
-    const gateOtherVal =
-      cur === "krw" ? Number(summary.gateio?.other_krw || 0) : Number(summary.gateio?.other_usd || 0);
+    const gateOtherVal = pfPieScope.gateio
+      ? cur === "krw"
+        ? Number(summary.gateio?.other_krw || 0)
+        : Number(summary.gateio?.other_usd || 0)
+      : 0;
     if (gateOtherVal > 0) {
       items.push({
         name: "Gate.io Earn/금융",
@@ -1564,18 +1575,25 @@ function renderPortfolioAllocationPie() {
   const listEl = document.getElementById("portfolio-allocation-list");
   if (!pieCanvasEl || !listEl) return;
 
+  const unlocked = state.portfolioUnlocked;
+  const hasAnyScope = pfPieScope.gateio || pfPieScope.toss || pfPieScope.kis;
   const slices = buildPortfolioAllocationData();
   const cur = state.currency;
 
   if (!slices.length) {
     if (pfPieChartInstance) pfPieChartInstance.clear();
-    pieLockedEl?.classList.add("hidden");
-    listEl.innerHTML = `<div class="empty-state">표시할 자산 비중 데이터가 없습니다.</div>`;
+    if (!unlocked) {
+      pieLockedEl?.classList.remove("hidden");
+    } else {
+      pieLockedEl?.classList.add("hidden");
+    }
+    listEl.innerHTML = `<div class="empty-state">${
+      hasAnyScope ? "표시할 자산 비중 데이터가 없습니다." : "포함할 계좌를 1개 이상 선택해 주세요."
+    }</div>`;
     return;
   }
 
   const total = slices.reduce((acc, s) => acc + s.val, 0);
-  const unlocked = state.portfolioUnlocked;
   listEl.innerHTML = slices
     .map((item, idx) => {
       const color = PIE_PALETTE[idx % PIE_PALETTE.length];
@@ -3191,6 +3209,18 @@ function bindControls() {
       btn.classList.add("active");
       pfScaleMode = btn.dataset.pfScale === "log" ? "log" : "linear";
       renderPortfolioChart();
+    });
+  });
+
+  // Portfolio Allocation Scope Toggle Buttons (Gate.io / 토스증권 / 한국투자증권)
+  document.querySelectorAll(".pf-scope-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.scope;
+      if (!key || !(key in pfPieScope)) return;
+      pfPieScope[key] = !pfPieScope[key];
+      btn.classList.toggle("active", pfPieScope[key]);
+      btn.setAttribute("aria-pressed", pfPieScope[key] ? "true" : "false");
+      renderPortfolioAllocationPie();
     });
   });
 

@@ -708,6 +708,7 @@ body.modal-open {
 .pf-series-group,
 .pf-interval-group,
 .pf-scale-group,
+.pf-scope-group,
 .pf-pie-group,
 .pe-range-group {
   display: inline-flex;
@@ -726,6 +727,7 @@ body.modal-open {
 .pf-series-btn,
 .pf-interval-btn,
 .pf-scale-btn,
+.pf-scope-btn,
 .pf-pie-btn,
 .pe-range-btn {
   appearance: none;
@@ -742,12 +744,32 @@ body.modal-open {
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
+.pf-scope-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pf-scope-btn::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--line-strong);
+  transition: background-color 0.15s ease;
+}
+
+.pf-scope-btn.active::before {
+  background-color: var(--accent);
+}
+
 .sort-btn:hover,
 .range-btn:hover,
 .scale-btn:hover,
 .pf-series-btn:hover,
 .pf-interval-btn:hover,
 .pf-scale-btn:hover,
+.pf-scope-btn:hover,
 .pf-pie-btn:hover,
 .pe-range-btn:hover {
   color: var(--text);
@@ -759,6 +781,7 @@ body.modal-open {
 .pf-series-btn.active,
 .pf-interval-btn.active,
 .pf-scale-btn.active,
+.pf-scope-btn.active,
 .pf-pie-btn.active,
 .pe-range-btn.active {
   background-color: var(--surface);
