@@ -366,7 +366,7 @@ function createChartViewportController(cfg) {
   const updateCallouts = () => {
     const chart = cfg.getChart();
     const n = cfg.getRowsLength();
-    if (!chart || !n) {
+    if (!chart || !n || (cfg.isMasked && cfg.isMasked())) {
       cfg.peakEl.classList.add("hidden");
       cfg.troughEl.classList.add("hidden");
       return;
@@ -887,17 +887,24 @@ function getPortfolioIntervalRows(history, interval) {
 
 function updatePortfolioHoverBar(idx) {
   const barEl = document.getElementById("portfolio-hover-bar");
+  const unlocked = state.portfolioUnlocked;
+  if (!unlocked) {
+    barEl.innerHTML = `
+      <span class="ohlc-date">비공개</span>
+      <span>상단 비밀번호를 입력하면 자산 추이 차트가 표시됩니다.</span>
+    `;
+    return;
+  }
   if (!pfRows.length || idx < 0 || idx >= pfRows.length) {
     barEl.innerHTML = "";
     return;
   }
   const r = pfRows[idx];
   const cur = state.currency;
-  const unlocked = state.portfolioUnlocked;
-  const totalTxt = unlocked ? formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur) : MASKED_TEXT;
-  const gateTxt = unlocked ? formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur) : MASKED_TEXT;
-  const tossTxt = unlocked ? formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur) : MASKED_TEXT;
-  const kisTxt = unlocked ? formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur) : MASKED_TEXT;
+  const totalTxt = formatMoney(cur === "krw" ? r.total_krw : r.total_usd, cur);
+  const gateTxt = formatMoney(cur === "krw" ? r.gate_krw : r.gate_usd, cur);
+  const tossTxt = formatMoney(cur === "krw" ? r.toss_krw : r.toss_usd, cur);
+  const kisTxt = formatMoney(cur === "krw" ? r.kis_krw : r.kis_usd, cur);
   const fx = Number(r.usdkrw || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
   const usdtFx = r.usdt_krw ? Number(r.usdt_krw).toLocaleString("en-US", { maximumFractionDigits: 2 }) : null;
 
@@ -1228,6 +1235,24 @@ function renderPortfolioHistoryLog() {
 function renderPortfolioChart() {
   const canvasEl = document.getElementById("portfolio-echart-canvas");
   const loadingEl = document.getElementById("portfolio-chart-loading");
+  const pointCountEl = document.getElementById("portfolio-point-count");
+
+  if (!state.portfolioUnlocked) {
+    pfRows = [];
+    pfTotalCats = 0;
+    pfPadLeft = 0;
+    if (pfChartInstance) pfChartInstance.clear();
+    document.getElementById("portfolio-peak-callout")?.classList.add("hidden");
+    document.getElementById("portfolio-trough-callout")?.classList.add("hidden");
+    if (pointCountEl) pointCountEl.textContent = "비공개";
+    updatePortfolioHoverBar(-1);
+    if (loadingEl) {
+      loadingEl.textContent = "비공개 · 상단 비밀번호를 입력하면 자산 추이 차트가 표시됩니다.";
+      loadingEl.classList.remove("hidden");
+    }
+    return;
+  }
+
   const data = state.portfolio;
   if (!data || !Array.isArray(data.history)) return;
 
@@ -1239,7 +1264,7 @@ function renderPortfolioChart() {
 
   const rows = getPortfolioIntervalRows(data.history, pfInterval);
   pfRows = rows;
-  document.getElementById("portfolio-point-count").textContent = `${rows.length}개 구간`;
+  if (pointCountEl) pointCountEl.textContent = `${rows.length}개 구간`;
 
   if (!rows.length) {
     loadingEl.textContent = "표시할 자산 추이 데이터가 없습니다.";
@@ -1535,6 +1560,7 @@ function buildPortfolioAllocationData() {
 
 function renderPortfolioAllocationPie() {
   const pieCanvasEl = document.getElementById("portfolio-pie-canvas");
+  const pieLockedEl = document.getElementById("portfolio-pie-locked");
   const listEl = document.getElementById("portfolio-allocation-list");
   if (!pieCanvasEl || !listEl) return;
 
@@ -1543,6 +1569,7 @@ function renderPortfolioAllocationPie() {
 
   if (!slices.length) {
     if (pfPieChartInstance) pfPieChartInstance.clear();
+    pieLockedEl?.classList.add("hidden");
     listEl.innerHTML = `<div class="empty-state">표시할 자산 비중 데이터가 없습니다.</div>`;
     return;
   }
@@ -1570,6 +1597,13 @@ function renderPortfolioAllocationPie() {
       `;
     })
     .join("");
+
+  if (!unlocked) {
+    if (pfPieChartInstance) pfPieChartInstance.clear();
+    pieLockedEl?.classList.remove("hidden");
+    return;
+  }
+  pieLockedEl?.classList.add("hidden");
 
   if (typeof window.echarts === "undefined") return;
   if (!pfPieChartInstance) {
