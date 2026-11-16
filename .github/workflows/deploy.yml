@@ -4,16 +4,13 @@ on:
   push:
     branches: ["main"]
   schedule:
-    # Off-peak staggered KST 06:11 ~ 09:17 slots (after US market close)
-    # Avoiding :00/:30 avoids GitHub Actions queue congestion; once today's
-    # snapshot succeeds, remaining backup slots exit in ~3s.
-    - cron: "11 21 * * *" # 06:11 KST
-    - cron: "29 21 * * *" # 06:29 KST
-    - cron: "47 21 * * *" # 06:47 KST
-    - cron: "13 22 * * *" # 07:13 KST
-    - cron: "43 22 * * *" # 07:43 KST
-    - cron: "17 23 * * *" # 08:17 KST
-    - cron: "17 0 * * *"  # 09:17 KST
+    # Off-peak staggered KST 06:07 ~ 09:41 slots (14 slots in 4 POSIX cron lines)
+    # Keeps >=12m spacing so runs finish cleanly without concurrency queue drops,
+    # avoids :00/:15/:30/:45 spikes, and exits in ~5s once today's snapshot succeeds.
+    - cron: "7,19,32,44,56 21 * * *" # 06:07, 06:19, 06:32, 06:44, 06:56 KST
+    - cron: "8,21,34,47 22 * * *"    # 07:08, 07:21, 07:34, 07:47 KST
+    - cron: "3,22,43 23 * * *"       # 08:03, 08:22, 08:43 KST
+    - cron: "11,41 0 * * *"          # 09:11, 09:41 KST
   workflow_dispatch:
 
 permissions:
