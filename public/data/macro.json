@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-17 01:19:14 UTC",
+  "updated_at": "2026-11-17 01:50:53 UTC",
   "sentiment": {
     "cnn": {
       "score": 31.0,
@@ -3045,8 +3045,8 @@
         "etf_ref": "QQQ",
         "pe": 29.55,
         "forward_pe": 20.66,
-        "etf_pe": 26.68,
-        "etf_forward_pe": 19.94,
+        "etf_pe": 25.86,
+        "etf_forward_pe": 19.21,
         "pe_52w_ago": 33.42,
         "div_yield": 0.59,
         "forward_earnings_yield": 4.84,
@@ -4879,10 +4879,10 @@
       "date": "2026-11-13"
     },
     "dxy": {
-      "value": 103.68,
-      "change": 0.09,
-      "dist_sma200": 3.71,
-      "perf_ytd": 5.54
+      "value": 103.64,
+      "change": 0.06,
+      "dist_sma200": 3.67,
+      "perf_ytd": 5.51
     }
   }
 }
