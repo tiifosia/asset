@@ -1,20 +1,16 @@
 {
-  "updated_at": "2026-11-18 21:06:45 UTC",
+  "updated_at": "2026-11-19 02:29:17 UTC",
   "sentiment": {
     "cnn": {
-      "score": 24.5,
+      "score": 24.6,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
       "previous_close": 25.2,
       "prev_1w": 35.9,
       "prev_1m": 18.2,
       "prev_1y": 8.9,
-      "timestamp": "2026-11-18T20:59:58+00:00",
+      "timestamp": "2026-11-18T23:59:50+00:00",
       "history": [
-        [
-          "2025-11-18",
-          8.9
-        ],
         [
           "2025-11-19",
           7.9
@@ -1013,7 +1009,7 @@
         ],
         [
           "2026-11-18",
-          24.5
+          24.6
         ]
       ],
       "sub_indicators": [
@@ -1024,7 +1020,7 @@
           "score": 4.8,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 7326.95
+          "value": 7323.63
         },
         {
           "id": "stock_price_strength",
@@ -1033,22 +1029,22 @@
           "score": 34.0,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": -4.77
+          "value": -4.78
         },
         {
           "id": "stock_price_breadth",
           "name_ko": "상승 · 하락 거래량 폭",
           "description": "McClellan 거래량 합산 강세 지표",
-          "score": 40.0,
+          "score": 40.2,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": 511.53
+          "value": 514.49
         },
         {
           "id": "put_call_options",
           "name_ko": "풋 / 콜 옵션 비율",
           "description": "5일 평균 풋·콜 옵션 거래 비율",
-          "score": 10.0,
+          "score": 10.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
           "value": 0.88
@@ -1057,16 +1053,16 @@
           "id": "market_volatility_vix",
           "name_ko": "시장 변동성 (VIX)",
           "description": "50일 평균 대비 VIX 변동성 수준",
-          "score": 28.4,
+          "score": 29.1,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": 24.58
+          "value": 24.56
         },
         {
           "id": "junk_bond_demand",
           "name_ko": "정크본드 스프레드",
           "description": "투자적격 대비 하이일드 채권 금리차",
-          "score": 42.0,
+          "score": 41.4,
           "rating": "fear",
           "rating_ko": "공포",
           "value": 1.23
@@ -1083,14 +1079,10 @@
       ]
     },
     "crypto": {
-      "score": 11,
+      "score": 10,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
       "history": [
-        [
-          "2026-10-20",
-          55
-        ],
         [
           "2026-10-21",
           63
@@ -1206,6 +1198,10 @@
         [
           "2026-11-18",
           11
+        ],
+        [
+          "2026-11-19",
+          10
         ]
       ]
     }
@@ -1220,17 +1216,17 @@
         "pe": 23.25,
         "forward_pe": 18.75,
         "etf_pe": 22.45,
-        "etf_forward_pe": 18.0,
+        "etf_forward_pe": 17.95,
         "pe_52w_ago": 25.73,
-        "shiller_cape": 38.76,
-        "pbr": 5.82,
+        "shiller_cape": 38.63,
+        "pbr": 5.8,
         "div_yield": 1.09,
-        "earnings_yield": 3.99,
+        "earnings_yield": 4.01,
         "forward_earnings_yield": 5.33,
         "erp_forward": 0.26,
-        "erp_trailing": -1.08,
+        "erp_trailing": -1.06,
         "world_pe": {
-          "current_pe": 23.88,
+          "current_pe": 23.87,
           "mean_1y": 26.7,
           "z_1y": -2.55,
           "band_1y": "Cheap",
@@ -3008,7 +3004,7 @@
             ],
             [
               "2026-11-01",
-              23.88
+              23.87
             ]
           ]
         },
@@ -3032,19 +3028,24 @@
             "2026-11-18",
             23.25,
             18.75
+          ],
+          [
+            "2026-11-19",
+            23.25,
+            18.75
           ]
         ],
         "technicals": {
-          "close": 7330.4,
-          "change": -0.14,
-          "rsi": 36.8,
-          "sma50": 7648.64,
-          "sma200": 7346.59,
-          "dist_sma50": -4.16,
-          "dist_sma200": -0.22,
-          "perf_1m": -4.83,
-          "perf_ytd": 6.58,
-          "perf_1y": 10.38
+          "close": 7323.63,
+          "change": -0.23,
+          "rsi": 36.6,
+          "sma50": 7648.51,
+          "sma200": 7346.55,
+          "dist_sma50": -4.25,
+          "dist_sma200": -0.31,
+          "perf_1m": -4.92,
+          "perf_ytd": 6.48,
+          "perf_1y": 10.28
         }
       },
       {
@@ -4847,30 +4848,35 @@
             "2026-11-18",
             29.55,
             20.66
+          ],
+          [
+            "2026-11-19",
+            29.55,
+            20.66
           ]
         ],
         "technicals": {
-          "close": 27075.53,
-          "change": 0.27,
-          "rsi": 37.2,
-          "sma50": 29361.97,
-          "sma200": 28062.57,
-          "dist_sma50": -7.79,
-          "dist_sma200": -3.52,
-          "perf_1m": -8.34,
-          "perf_ytd": 6.08,
-          "perf_1y": 9.83
+          "close": 27116.26,
+          "change": 0.42,
+          "rsi": 37.6,
+          "sma50": 29362.78,
+          "sma200": 28062.77,
+          "dist_sma50": -7.65,
+          "dist_sma200": -3.37,
+          "perf_1m": -8.2,
+          "perf_ytd": 6.24,
+          "perf_1y": 10.0
         }
       }
     ]
   },
   "macro": {
     "vix": {
-      "value": 24.7,
-      "change": -2.99,
+      "value": 24.56,
+      "change": -3.53,
       "sma50": 17.82,
       "sma200": 18.56,
-      "rsi": 59.1
+      "rsi": 58.8
     },
     "us10y": {
       "value": 5.07,
@@ -4893,10 +4899,10 @@
       "date": "2026-11-17"
     },
     "dxy": {
-      "value": 103.77,
-      "change": 0.17,
-      "dist_sma200": 3.76,
-      "perf_ytd": 5.64
+      "value": 103.89,
+      "change": 0.07,
+      "dist_sma200": 3.85,
+      "perf_ytd": 5.75
     }
   }
 }
