@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-11-19 02:29:17 UTC",
+  "updated_at": "2026-11-19 21:06:54 UTC",
   "sentiment": {
     "cnn": {
-      "score": 24.6,
+      "score": 19.3,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
-      "previous_close": 25.2,
-      "prev_1w": 35.9,
-      "prev_1m": 18.2,
-      "prev_1y": 8.9,
-      "timestamp": "2026-11-18T23:59:50+00:00",
+      "previous_close": 24.6,
+      "prev_1w": 40.3,
+      "prev_1m": 19.5,
+      "prev_1y": 7.9,
+      "timestamp": "2026-11-19T20:59:59+00:00",
       "history": [
         [
           "2025-11-19",
@@ -1009,7 +1009,11 @@
         ],
         [
           "2026-11-18",
-          24.6
+          29.9
+        ],
+        [
+          "2026-11-19",
+          19.3
         ]
       ],
       "sub_indicators": [
@@ -1017,52 +1021,52 @@
           "id": "market_momentum_sp500",
           "name_ko": "S&P 500 모멘텀",
           "description": "125일 이동평균 대비 주가 위치",
-          "score": 4.8,
+          "score": 1.4,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 7323.63
+          "value": 7194.36
         },
         {
           "id": "stock_price_strength",
           "name_ko": "52주 신고 · 신저 비율",
           "description": "NYSE 52주 신고가 vs 신저가 비중",
-          "score": 34.0,
+          "score": 31.2,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": -4.78
+          "value": -5.49
         },
         {
           "id": "stock_price_breadth",
           "name_ko": "상승 · 하락 거래량 폭",
           "description": "McClellan 거래량 합산 강세 지표",
-          "score": 40.2,
+          "score": 30.8,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": 514.49
+          "value": 434.05
         },
         {
           "id": "put_call_options",
           "name_ko": "풋 / 콜 옵션 비율",
           "description": "5일 평균 풋·콜 옵션 거래 비율",
-          "score": 10.2,
+          "score": 7.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 0.88
+          "value": 0.9
         },
         {
           "id": "market_volatility_vix",
           "name_ko": "시장 변동성 (VIX)",
           "description": "50일 평균 대비 VIX 변동성 수준",
-          "score": 29.1,
-          "rating": "fear",
-          "rating_ko": "공포",
-          "value": 24.56
+          "score": 12.7,
+          "rating": "extreme fear",
+          "rating_ko": "극단적 공포",
+          "value": 28.52
         },
         {
           "id": "junk_bond_demand",
           "name_ko": "정크본드 스프레드",
           "description": "투자적격 대비 하이일드 채권 금리차",
-          "score": 41.4,
+          "score": 41.2,
           "rating": "fear",
           "rating_ko": "공포",
           "value": 1.23
@@ -1071,10 +1075,10 @@
           "id": "safe_haven_demand",
           "name_ko": "안전자산 선호도",
           "description": "최근 20일 주식 vs 국채 초과 수익률",
-          "score": 12.6,
+          "score": 9.0,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": -3.83
+          "value": -5.51
         }
       ]
     },
@@ -1215,23 +1219,23 @@
         "etf_ref": "SPY",
         "pe": 23.25,
         "forward_pe": 18.75,
-        "etf_pe": 22.45,
-        "etf_forward_pe": 17.95,
+        "etf_pe": 22.24,
+        "etf_forward_pe": 17.78,
         "pe_52w_ago": 25.73,
         "shiller_cape": 38.63,
         "pbr": 5.8,
         "div_yield": 1.09,
         "earnings_yield": 4.01,
         "forward_earnings_yield": 5.33,
-        "erp_forward": 0.26,
-        "erp_trailing": -1.06,
+        "erp_forward": 0.29,
+        "erp_trailing": -1.03,
         "world_pe": {
-          "current_pe": 23.87,
+          "current_pe": 23.42,
           "mean_1y": 26.7,
-          "z_1y": -2.55,
+          "z_1y": -2.96,
           "band_1y": "Cheap",
           "mean_5y": 23.7,
-          "z_5y": 0.05,
+          "z_5y": -0.09,
           "band_5y": "Fair",
           "history": [
             [
@@ -3004,7 +3008,7 @@
             ],
             [
               "2026-11-01",
-              23.87
+              23.42
             ]
           ]
         },
@@ -3036,16 +3040,16 @@
           ]
         ],
         "technicals": {
-          "close": 7323.63,
-          "change": -0.23,
-          "rsi": 36.6,
-          "sma50": 7648.51,
-          "sma200": 7346.55,
-          "dist_sma50": -4.25,
-          "dist_sma200": -0.31,
-          "perf_1m": -4.92,
-          "perf_ytd": 6.48,
-          "perf_1y": 10.28
+          "close": 7188.54,
+          "change": -1.84,
+          "rsi": 31.8,
+          "sma50": 7640.44,
+          "sma200": 7348.08,
+          "dist_sma50": -5.91,
+          "dist_sma200": -2.17,
+          "perf_1m": -6.39,
+          "perf_ytd": 4.51,
+          "perf_1y": 8.49
         }
       },
       {
@@ -3055,19 +3059,19 @@
         "etf_ref": "QQQ",
         "pe": 29.55,
         "forward_pe": 20.66,
-        "etf_pe": 25.34,
-        "etf_forward_pe": 18.92,
+        "etf_pe": 25.27,
+        "etf_forward_pe": 18.82,
         "pe_52w_ago": 33.42,
         "div_yield": 0.59,
         "forward_earnings_yield": 4.84,
-        "erp_forward": -0.23,
+        "erp_forward": -0.2,
         "world_pe": {
-          "current_pe": 28.59,
+          "current_pe": 27.98,
           "mean_1y": 32.14,
-          "z_1y": -2.3,
+          "z_1y": -2.7,
           "band_1y": "Cheap",
           "mean_5y": 30.43,
-          "z_5y": -0.61,
+          "z_5y": -0.82,
           "band_5y": "Fair",
           "history": [
             [
@@ -4824,7 +4828,7 @@
             ],
             [
               "2026-11-01",
-              28.59
+              27.98
             ]
           ]
         },
@@ -4856,53 +4860,53 @@
           ]
         ],
         "technicals": {
-          "close": 27116.26,
-          "change": 0.42,
-          "rsi": 37.6,
-          "sma50": 29362.78,
-          "sma200": 28062.77,
-          "dist_sma50": -7.65,
-          "dist_sma200": -3.37,
-          "perf_1m": -8.2,
-          "perf_ytd": 6.24,
-          "perf_1y": 10.0
+          "close": 26602.3,
+          "change": -1.9,
+          "rsi": 34.3,
+          "sma50": 29312.76,
+          "sma200": 28071.33,
+          "dist_sma50": -9.25,
+          "dist_sma200": -5.23,
+          "perf_1m": -9.5,
+          "perf_ytd": 4.22,
+          "perf_1y": 8.5
         }
       }
     ]
   },
   "macro": {
     "vix": {
-      "value": 24.56,
-      "change": -3.53,
-      "sma50": 17.82,
-      "sma200": 18.56,
-      "rsi": 58.8
+      "value": 27.99,
+      "change": 13.97,
+      "sma50": 18.03,
+      "sma200": 18.6,
+      "rsi": 63.6
     },
     "us10y": {
-      "value": 5.07,
+      "value": 5.04,
       "delta": -0.03,
-      "date": "2026-11-18"
+      "date": "2026-11-19"
     },
     "us2y": {
-      "value": 4.8,
-      "delta": 0.0,
-      "date": "2026-11-18"
+      "value": 4.76,
+      "delta": -0.04,
+      "date": "2026-11-19"
     },
     "spread_10y2y": {
-      "value": 0.27,
-      "delta": -0.03,
-      "date": "2026-11-18"
+      "value": 0.28,
+      "delta": 0.01,
+      "date": "2026-11-19"
     },
     "hy_spread": {
-      "value": 3.43,
-      "delta": 0.09,
-      "date": "2026-11-17"
+      "value": 3.47,
+      "delta": 0.04,
+      "date": "2026-11-18"
     },
     "dxy": {
-      "value": 103.89,
-      "change": 0.07,
-      "dist_sma200": 3.85,
-      "perf_ytd": 5.75
+      "value": 103.91,
+      "change": 0.09,
+      "dist_sma200": 3.87,
+      "perf_ytd": 5.78
     }
   }
 }
