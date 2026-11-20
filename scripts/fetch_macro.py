@@ -463,17 +463,19 @@ def fetch_all_macro() -> dict[str, Any]:
     wsj_rut = wsj.get("RUT") or {}
     wsj_dji = wsj.get("DJI") or {}
 
-    spx_pe = wsj_spx.get("pe") or multpl.get("pe") or spy_sa.get("pe")
-    spx_fwd_pe = wsj_spx.get("forward_pe") or spy_sa.get("forward_pe")
-    spx_div = wsj_spx.get("div_yield") or multpl.get("div_yield") or spy_sa.get("div_yield")
+    # Prefer daily-updating sources (WorldPERatio for Trailing PER, StockAnalysis SPY/QQQ for Forward PER);
+    # WSJ Market Data P/Es table updates weekly (Friday close) so keep it only as fallback.
+    spx_pe = world_sp.get("current_pe") or multpl.get("pe") or spy_sa.get("pe") or wsj_spx.get("pe")
+    spx_fwd_pe = spy_sa.get("forward_pe") or wsj_spx.get("forward_pe")
+    spx_div = multpl.get("div_yield") or spy_sa.get("div_yield") or wsj_spx.get("div_yield")
     spx_fwd_ey = round(100.0 / spx_fwd_pe, 2) if spx_fwd_pe else None
     spx_erp_fwd = round(spx_fwd_ey - us10y_val, 2) if (spx_fwd_ey is not None and us10y_val is not None) else None
-    spx_ey = multpl.get("earnings_yield") or (round(100.0 / spx_pe, 2) if spx_pe else None)
+    spx_ey = round(100.0 / spx_pe, 2) if spx_pe else multpl.get("earnings_yield")
     spx_erp_trailing = round(spx_ey - us10y_val, 2) if (spx_ey is not None and us10y_val is not None) else None
 
-    ndx_pe = wsj_ndx.get("pe") or qqq_sa.get("pe")
-    ndx_fwd_pe = wsj_ndx.get("forward_pe") or qqq_sa.get("forward_pe")
-    ndx_div = wsj_ndx.get("div_yield") or qqq_sa.get("div_yield")
+    ndx_pe = world_ndx.get("current_pe") or qqq_sa.get("pe") or wsj_ndx.get("pe")
+    ndx_fwd_pe = qqq_sa.get("forward_pe") or wsj_ndx.get("forward_pe")
+    ndx_div = qqq_sa.get("div_yield") or wsj_ndx.get("div_yield")
     ndx_fwd_ey = round(100.0 / ndx_fwd_pe, 2) if ndx_fwd_pe else None
     ndx_erp_fwd = round(ndx_fwd_ey - us10y_val, 2) if (ndx_fwd_ey is not None and us10y_val is not None) else None
 

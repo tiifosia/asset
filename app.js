@@ -2888,7 +2888,7 @@ function renderIndexDashboard() {
           <div id="index-pe-chart-${escapeHtml(idx.id)}" class="index-pe-chart-stage" aria-label="${escapeHtml(
         idx.name
       )} PER 차트"></div>
-          <p class="index-chart-note">PER: WorldPERatio 월별 장기 추이 + 일별 누적 · 선행 PER: WSJ 현재 기준선 및 매일 일별 누적</p>
+          <p class="index-chart-note">PER: WorldPERatio 월별 장기 추이 + 일별 누적 · 선행 PER: StockAnalysis (SPY/QQQ) 매일 일별 누적</p>
         </div>
       </article>`;
     })
