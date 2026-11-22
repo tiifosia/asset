@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22 03:42:50 UTC",
+  "updated_at": "2026-11-22 21:06:33 UTC",
   "benchmarks": [
     {
       "id": "SP500",
@@ -44,11 +44,11 @@
       "name": "Bitcoin",
       "name_ko": "비트코인",
       "history_file": "BTC.json",
-      "current_price": 59069.32,
+      "current_price": 60937.35,
       "ath_price": 124752.53,
       "ath_date": "2025-10-06",
-      "current_drawdown": -52.65,
-      "current_dd_abs": 52.65,
+      "current_drawdown": -51.15,
+      "current_dd_abs": 51.15,
       "max_drawdown": -83.4,
       "max_dd_abs": 83.4,
       "mdd_peak_date": "2017-12-16",
