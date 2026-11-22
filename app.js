@@ -1136,20 +1136,41 @@ function renderPortfolioHoldings() {
   const data = state.portfolio;
   if (!data) return;
 
+  const gateHoldings = [...(Array.isArray(data.holdings?.gateio) ? data.holdings.gateio : [])];
+  const gateOtherUsd = Number(data.summary?.gateio?.other_usd || 0);
+  if (gateOtherUsd >= 0.01 && !gateHoldings.some((h) => h.symbol === "EARN")) {
+    gateHoldings.push({
+      exchange: "Gate.io",
+      category: "Earn · 금융",
+      symbol: "EARN",
+      name: "Gate.io Earn/금융",
+      quantity: gateOtherUsd,
+      price_usd: 1,
+      value_usd: gateOtherUsd,
+      value_krw: Number(data.summary?.gateio?.other_krw || 0),
+      pnl_usd: null,
+      pnl_pct: null,
+    });
+  }
+
   renderHoldingsPanel(
     "gate-provider-badge",
     "gate-holdings-list",
     data.providers?.gateio,
-    data.holdings?.gateio,
+    gateHoldings,
     "표시할 Gate.io 보유 자산 또는 포지션이 없습니다.",
     (item, cur, unlocked) =>
-      item.pnl_usd != null
+      item.symbol === "EARN"
         ? unlocked
-          ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
-          : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
-        : unlocked
-          ? `단가 ${formatMoney(item.price_usd, "usd")}`
-          : `단가 ${MASKED_TEXT}`
+          ? "금융 · Earn 예치 잔고"
+          : MASKED_TEXT
+        : item.pnl_usd != null
+          ? unlocked
+            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+            : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
+          : unlocked
+            ? `단가 ${formatMoney(item.price_usd, "usd")}`
+            : `단가 ${MASKED_TEXT}`
   );
 
   const stockSubFormatter = (item, cur, unlocked) =>

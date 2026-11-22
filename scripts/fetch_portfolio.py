@@ -222,13 +222,13 @@ def fetch_gateio_readonly(
 ) -> dict[str, Any]:
     """Fetch combined Spot & Futures balances and positions strictly read-only."""
     total_payload = _gate_get("/wallet/total_balance", "currency=USDT", api_key, api_secret, proxies)
-    total_usd = _to_float((total_payload.get("total") or {}).get("amount"), 0.0)
+    wallet_total_usd = _to_float((total_payload.get("total") or {}).get("amount"), 0.0)
     details = total_payload.get("details") or {}
     spot_usd = _to_float((details.get("spot") or {}).get("amount"), 0.0)
-    futures_usd = _to_float((details.get("futures") or {}).get("amount"), 0.0)
-    delivery_usd = _to_float((details.get("delivery") or {}).get("amount"), 0.0)
+    futures_wallet_usd = _to_float((details.get("futures") or {}).get("amount"), 0.0)
+    delivery_wallet_usd = _to_float((details.get("delivery") or {}).get("amount"), 0.0)
     margin_usd = _to_float((details.get("cross_margin") or details.get("margin") or {}).get("amount"), 0.0)
-    other_usd = max(0.0, total_usd - spot_usd - (futures_usd + delivery_usd))
+    other_usd = max(0.0, wallet_total_usd - spot_usd - (futures_wallet_usd + delivery_wallet_usd))
     details_breakdown = {
         str(k): round(_to_float((v or {}).get("amount"), 0.0), 2)
         for k, v in details.items()
@@ -288,7 +288,9 @@ def fetch_gateio_readonly(
             margin = _to_float(pos.get("margin") or pos.get("initial_margin"), 0.0)
             notional = _to_float(pos.get("value"), abs(size) * mark_price)
             unrealized_pnl_usd += upnl
-            pnl_pct = (upnl / margin * 100.0) if margin > 0 else None
+            base_margin = margin if margin > 0 else notional
+            pos_equity_usd = max(0.0, base_margin + upnl)
+            pnl_pct = (upnl / base_margin * 100.0) if base_margin > 0 else None
 
             holdings.append(
                 {
@@ -299,8 +301,10 @@ def fetch_gateio_readonly(
                     "quantity": abs(size),
                     "price_usd": round(mark_price, 6),
                     "entry_price_usd": round(entry_price, 6),
-                    "value_usd": round(margin if margin > 0 else notional, 2),
-                    "value_krw": round((margin if margin > 0 else notional) * usdkrw),
+                    "value_usd": round(pos_equity_usd, 2),
+                    "value_krw": round(pos_equity_usd * usdkrw),
+                    "margin_usd": round(base_margin, 2),
+                    "margin_krw": round(base_margin * usdkrw),
                     "notional_usd": round(notional, 2),
                     "pnl_usd": round(upnl, 2),
                     "pnl_krw": round(upnl * usdkrw),
@@ -309,22 +313,27 @@ def fetch_gateio_readonly(
             )
     except Exception as exc:
         print(f"[warn] Gate.io futures positions fetch failed: {exc}")
-        if (futures_usd + delivery_usd) > 0:
+        if (futures_wallet_usd + delivery_wallet_usd) > 0:
             unrealized_pnl_usd = _to_float((prev_gate or {}).get("unrealized_pnl_usd"), 0.0)
             if prev_gate_holdings:
                 holdings.extend(h for h in prev_gate_holdings if "선물" in str(h.get("category") or ""))
+
+    net_futures_usd = max(0.0, (futures_wallet_usd + delivery_wallet_usd) + unrealized_pnl_usd)
+    net_total_usd = max(0.0, wallet_total_usd + unrealized_pnl_usd)
 
     # Sort holdings: Futures positions first, then descending by USD value
     holdings.sort(key=lambda h: (0 if "선물" in h["category"] else 1, -_to_float(h.get("value_usd"), 0.0)))
 
     return {
         "usdt_krw": round(usdkrw, 2),
-        "total_usd": round(total_usd, 2),
-        "total_krw": round(total_usd * usdkrw),
+        "total_usd": round(net_total_usd, 2),
+        "total_krw": round(net_total_usd * usdkrw),
+        "wallet_total_usd": round(wallet_total_usd, 2),
         "spot_usd": round(spot_usd, 2),
         "spot_krw": round(spot_usd * usdkrw),
-        "futures_usd": round(futures_usd + delivery_usd, 2),
-        "futures_krw": round((futures_usd + delivery_usd) * usdkrw),
+        "futures_usd": round(net_futures_usd, 2),
+        "futures_krw": round(net_futures_usd * usdkrw),
+        "wallet_futures_usd": round(futures_wallet_usd + delivery_wallet_usd, 2),
         "margin_usd": round(margin_usd, 2),
         "other_usd": round(other_usd, 2),
         "other_krw": round(other_usd * usdkrw),
