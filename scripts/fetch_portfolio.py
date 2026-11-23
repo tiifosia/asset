@@ -237,10 +237,14 @@ def fetch_gateio_readonly(
 
     holdings: list[dict[str, Any]] = []
     spot_prices = _fetch_gate_spot_prices(proxies)
+    btc_price_usd = spot_prices.get("BTC") or spot_prices.get("GTBTC") or 0.0
+    earn_merged_in_holdings = False
 
-    # 1) Spot balances (GET /api/v4/spot/accounts)
+    # 1) Spot balances (GET /api/v4/spot/accounts), merging GTBTC & Earn/금융 into BTC
     try:
         spot_accounts = _gate_get("/spot/accounts", "", api_key, api_secret, proxies)
+        btc_qty = 0.0
+        btc_val_usd = 0.0
         for item in spot_accounts or []:
             currency = str(item.get("currency", "")).upper()
             avail = _to_float(item.get("available"), 0.0)
@@ -251,6 +255,10 @@ def fetch_gateio_readonly(
             price_usd = spot_prices.get(currency, 0.0)
             val_usd = qty * price_usd
             if val_usd < 0.01 and price_usd > 0:
+                continue
+            if currency in ("BTC", "GTBTC"):
+                btc_qty += qty
+                btc_val_usd += val_usd
                 continue
             holdings.append(
                 {
@@ -266,10 +274,32 @@ def fetch_gateio_readonly(
                     "pnl_pct": None,
                 }
             )
+        if other_usd >= 0.01:
+            btc_val_usd += other_usd
+            if btc_price_usd > 0:
+                btc_qty += other_usd / btc_price_usd
+            earn_merged_in_holdings = True
+        if btc_val_usd >= 0.01 or btc_qty > 0:
+            eff_btc_price = btc_price_usd if btc_price_usd > 0 else (btc_val_usd / btc_qty if btc_qty > 0 else 0.0)
+            holdings.append(
+                {
+                    "exchange": "Gate.io",
+                    "category": "현물",
+                    "symbol": "BTC",
+                    "name": "BTC",
+                    "quantity": round(btc_qty, 8),
+                    "price_usd": round(eff_btc_price, 6),
+                    "value_usd": round(btc_val_usd, 2),
+                    "value_krw": round(btc_val_usd * usdkrw),
+                    "pnl_usd": None,
+                    "pnl_pct": None,
+                }
+            )
     except Exception as exc:
         print(f"[warn] Gate.io spot accounts fetch failed: {exc}")
         if spot_usd > 0 and prev_gate_holdings:
-            holdings.extend(h for h in prev_gate_holdings if h.get("category") == "현물")
+            holdings.extend(h for h in prev_gate_holdings if str(h.get("category") or "").startswith("현물"))
+            earn_merged_in_holdings = bool((prev_gate or {}).get("earn_merged_in_holdings", False))
 
     # 2) USDT Perpetual Futures positions (GET /api/v4/futures/usdt/positions)
     unrealized_pnl_usd = 0.0
@@ -337,6 +367,7 @@ def fetch_gateio_readonly(
         "margin_usd": round(margin_usd, 2),
         "other_usd": round(other_usd, 2),
         "other_krw": round(other_usd * usdkrw),
+        "earn_merged_in_holdings": earn_merged_in_holdings,
         "details_breakdown": details_breakdown,
         "unrealized_pnl_usd": round(unrealized_pnl_usd, 2),
         "unrealized_pnl_krw": round(unrealized_pnl_usd * usdkrw),

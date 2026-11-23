@@ -55,7 +55,8 @@
         "spot": 610.84
       },
       "unrealized_pnl_usd": 0.0,
-      "unrealized_pnl_krw": 0
+      "unrealized_pnl_krw": 0,
+      "earn_merged_in_holdings": true
     },
     "toss": {
       "total_krw": 4908472,
@@ -83,24 +84,12 @@
       {
         "exchange": "Gate.io",
         "category": "현물",
-        "symbol": "GTBTC",
-        "name": "GTBTC (Spot)",
-        "quantity": 0.00995823,
-        "price_usd": 61295.0,
-        "value_usd": 610.39,
-        "value_krw": 833182,
-        "pnl_usd": null,
-        "pnl_pct": null
-      },
-      {
-        "exchange": "Gate.io",
-        "category": "현물",
         "symbol": "BTC",
-        "name": "BTC (Spot)",
-        "quantity": 7.41e-06,
+        "name": "BTC",
+        "quantity": 0.02760066,
         "price_usd": 61045.0,
-        "value_usd": 0.45,
-        "value_krw": 617,
+        "value_usd": 1687.37,
+        "value_krw": 2303260,
         "pnl_usd": null,
         "pnl_pct": null
       }

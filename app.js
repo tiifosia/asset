@@ -1132,26 +1132,81 @@ function renderHoldingsPanel(badgeId, listId, providerStatus, items, emptyMessag
     .join("");
 }
 
+function getNormalizedGateHoldings(data) {
+  const raw = Array.isArray(data?.holdings?.gateio) ? data.holdings.gateio : [];
+  const gateSummary = data?.summary?.gateio || {};
+  const earnMerged = Boolean(gateSummary.earn_merged_in_holdings);
+  const out = [];
+  let btcRow = null;
+
+  for (const item of raw) {
+    if (item && (item.symbol === "BTC" || item.symbol === "GTBTC")) {
+      const qty = Number(item.quantity || 0);
+      const valUsd = Number(item.value_usd || 0);
+      const valKrw = Number(item.value_krw || 0);
+      const priceUsd = item.symbol === "BTC" ? Number(item.price_usd || 0) : 0;
+      if (!btcRow) {
+        btcRow = {
+          ...item,
+          category: "현물",
+          symbol: "BTC",
+          name: "BTC",
+          quantity: qty,
+          price_usd: priceUsd || Number(item.price_usd || 0),
+          value_usd: valUsd,
+          value_krw: valKrw,
+        };
+      } else {
+        btcRow.quantity += qty;
+        btcRow.value_usd += valUsd;
+        btcRow.value_krw += valKrw;
+        if (priceUsd > 0) btcRow.price_usd = priceUsd;
+      }
+    } else if (item) {
+      out.push(item);
+    }
+  }
+
+  const gateOtherUsd = earnMerged ? 0 : Number(gateSummary.other_usd || 0);
+  const gateOtherKrw = earnMerged ? 0 : Number(gateSummary.other_krw || 0);
+  if (gateOtherUsd >= 0.01) {
+    const refPrice = btcRow?.price_usd || 0;
+    const extraQty = refPrice > 0 ? gateOtherUsd / refPrice : 0;
+    if (!btcRow) {
+      btcRow = {
+        exchange: "Gate.io",
+        category: "현물",
+        symbol: "BTC",
+        name: "BTC",
+        quantity: extraQty,
+        price_usd: refPrice,
+        value_usd: gateOtherUsd,
+        value_krw: gateOtherKrw,
+        pnl_usd: null,
+        pnl_pct: null,
+      };
+    } else {
+      btcRow.quantity += extraQty;
+      btcRow.value_usd += gateOtherUsd;
+      btcRow.value_krw += gateOtherKrw;
+    }
+  }
+
+  if (btcRow) out.push(btcRow);
+  out.sort((a, b) => {
+    const aFut = String(a?.category || "").includes("선물") ? 0 : 1;
+    const bFut = String(b?.category || "").includes("선물") ? 0 : 1;
+    if (aFut !== bFut) return aFut - bFut;
+    return Number(b?.value_usd || 0) - Number(a?.value_usd || 0);
+  });
+  return out;
+}
+
 function renderPortfolioHoldings() {
   const data = state.portfolio;
   if (!data) return;
 
-  const gateHoldings = [...(Array.isArray(data.holdings?.gateio) ? data.holdings.gateio : [])];
-  const gateOtherUsd = Number(data.summary?.gateio?.other_usd || 0);
-  if (gateOtherUsd >= 0.01 && !gateHoldings.some((h) => h.symbol === "EARN")) {
-    gateHoldings.push({
-      exchange: "Gate.io",
-      category: "Earn · 금융",
-      symbol: "EARN",
-      name: "Gate.io Earn/금융",
-      quantity: gateOtherUsd,
-      price_usd: 1,
-      value_usd: gateOtherUsd,
-      value_krw: Number(data.summary?.gateio?.other_krw || 0),
-      pnl_usd: null,
-      pnl_pct: null,
-    });
-  }
+  const gateHoldings = getNormalizedGateHoldings(data);
 
   renderHoldingsPanel(
     "gate-provider-badge",
@@ -1160,17 +1215,13 @@ function renderPortfolioHoldings() {
     gateHoldings,
     "표시할 Gate.io 보유 자산 또는 포지션이 없습니다.",
     (item, cur, unlocked) =>
-      item.symbol === "EARN"
+      item.pnl_usd != null
         ? unlocked
-          ? "금융 · Earn 예치 잔고"
-          : MASKED_TEXT
-        : item.pnl_usd != null
-          ? unlocked
-            ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
-            : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
-          : unlocked
-            ? `단가 ${formatMoney(item.price_usd, "usd")}`
-            : `단가 ${MASKED_TEXT}`
+          ? `손익 ${formatSignedMoney(cur === "krw" ? item.pnl_krw : item.pnl_usd, cur)} (${formatSignedPct(item.pnl_pct || 0)})`
+          : `손익 ${MASKED_TEXT} (${MASKED_TEXT})`
+        : unlocked
+          ? `단가 ${formatMoney(item.price_usd, "usd")}`
+          : `단가 ${MASKED_TEXT}`
   );
 
   const stockSubFormatter = (item, cur, unlocked) =>
@@ -1503,7 +1554,7 @@ function buildPortfolioAllocationData() {
       });
     }
   } else if (pfPieMode === "category") {
-    const gateItems = pfPieScope.gateio && Array.isArray(holdings.gateio) ? holdings.gateio : [];
+    const gateItems = pfPieScope.gateio ? getNormalizedGateHoldings(data) : [];
     const tossItems = pfPieScope.toss && Array.isArray(holdings.toss) ? holdings.toss : [];
     const kisItems = pfPieScope.kis && Array.isArray(holdings.kis) ? holdings.kis : [];
 
@@ -1515,12 +1566,7 @@ function buildPortfolioAllocationData() {
     const krStockVal =
       sumBy(tossItems, (r) => r.category === "국내주식") +
       sumBy(kisItems, (r) => String(r.category || "") !== "예수금");
-    const gateOtherVal = pfPieScope.gateio
-      ? cur === "krw"
-        ? Number(summary.gateio?.other_krw || 0)
-        : Number(summary.gateio?.other_usd || 0)
-      : 0;
-    const spotEarnVal = sumBy(gateItems, (r) => r.category === "현물") + gateOtherVal;
+    const spotEarnVal = sumBy(gateItems, (r) => String(r.category || "").startsWith("현물"));
     const cashVal =
       sumBy(tossItems, (r) => r.category === "예수금") +
       sumBy(kisItems, (r) => r.category === "예수금");
@@ -1534,7 +1580,7 @@ function buildPortfolioAllocationData() {
     ];
   } else {
     const allRows = [
-      ...(pfPieScope.gateio && Array.isArray(holdings.gateio) ? holdings.gateio : []),
+      ...(pfPieScope.gateio ? getNormalizedGateHoldings(data) : []),
       ...(pfPieScope.toss && Array.isArray(holdings.toss) ? holdings.toss : []),
       ...(pfPieScope.kis && Array.isArray(holdings.kis) ? holdings.kis : []),
     ];
@@ -1547,18 +1593,6 @@ function buildPortfolioAllocationData() {
           val,
         });
       }
-    }
-    const gateOtherVal = pfPieScope.gateio
-      ? cur === "krw"
-        ? Number(summary.gateio?.other_krw || 0)
-        : Number(summary.gateio?.other_usd || 0)
-      : 0;
-    if (gateOtherVal > 0) {
-      items.push({
-        name: "Gate.io Earn/금융",
-        sub: "Gate.io · 기타",
-        val: gateOtherVal,
-      });
     }
 
     const totalRaw = items.reduce((acc, it) => acc + it.val, 0);
