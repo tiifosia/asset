@@ -1,8 +1,6 @@
 name: Update MDD Data & Deploy to GitHub Pages
 
 on:
-  push:
-    branches: ["main"]
   schedule:
     # Single-time POSIX cron entries (no comma lists) from 06:07 to 10:47 KST
     # Keeps >=12m spacing, avoids :00/:15/:30/:45 spikes, and exits in ~5s once synced.
@@ -25,19 +23,15 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  actions: write
 
 concurrency:
-  group: "pages"
+  group: "daily-data-sync"
   cancel-in-progress: false
 
 jobs:
   update-and-deploy:
     runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -176,6 +170,7 @@ jobs:
           exit 1
 
       - name: Commit updated data
+        id: commit_data
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && steps.freshness.outputs.skip != 'true')
         run: |
           git config user.name "github-actions[bot]"
@@ -185,6 +180,7 @@ jobs:
             git commit -m "chore(data): update daily portfolio and MDD data"
             for attempt in 1 2 3; do
               if git pull --rebase -X theirs origin main && git push origin HEAD:main; then
+                echo "pushed=true" >> "$GITHUB_OUTPUT"
                 exit 0
               fi
               git rebase --abort || true
@@ -192,29 +188,15 @@ jobs:
             done
             exit 1
           fi
+          echo "pushed=false" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare static site bundle
-        if: steps.freshness.outputs.skip != 'true'
+      - name: Trigger Pages deploy for new data commit
+        if: steps.freshness.outputs.skip != 'true' && steps.commit_data.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p _site/public
-          cp index.html styles.css app.js _site/
-          cp -R public/data _site/public/
-          touch _site/.nojekyll
-
-      - name: Setup Pages
-        if: steps.freshness.outputs.skip != 'true'
-        uses: actions/configure-pages@v5
-
-      - name: Upload Pages artifact
-        if: steps.freshness.outputs.skip != 'true'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./_site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        if: steps.freshness.outputs.skip != 'true'
-        uses: actions/deploy-pages@v4
+          sleep 2
+          gh workflow run pages-deploy.yml --ref main
 
       - name: Fail if any data fetch step failed
         if: |
