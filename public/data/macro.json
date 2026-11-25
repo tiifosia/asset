@@ -1,20 +1,16 @@
 {
-  "updated_at": "2026-11-24 21:06:44 UTC",
+  "updated_at": "2026-11-25 21:06:49 UTC",
   "sentiment": {
     "cnn": {
-      "score": 16.9,
+      "score": 14.8,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
-      "previous_close": 17.0,
-      "prev_1w": 26.0,
+      "previous_close": 17.4,
+      "prev_1w": 29.9,
       "prev_1m": 16.7,
-      "prev_1y": 13.7,
-      "timestamp": "2026-11-24T20:59:59+00:00",
+      "prev_1y": 15.0,
+      "timestamp": "2026-11-25T20:59:59+00:00",
       "history": [
-        [
-          "2025-11-24",
-          13.7
-        ],
         [
           "2025-11-25",
           15.0
@@ -1013,7 +1009,11 @@
         ],
         [
           "2026-11-24",
-          16.9
+          11.0
+        ],
+        [
+          "2026-11-25",
+          14.8
         ]
       ],
       "sub_indicators": [
@@ -1021,76 +1021,72 @@
           "id": "market_momentum_sp500",
           "name_ko": "S&P 500 모멘텀",
           "description": "125일 이동평균 대비 주가 위치",
-          "score": 3.0,
+          "score": 2.8,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 7205.95
+          "value": 7182.3
         },
         {
           "id": "stock_price_strength",
           "name_ko": "52주 신고 · 신저 비율",
           "description": "NYSE 52주 신고가 vs 신저가 비중",
-          "score": 28.4,
+          "score": 27.2,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": -6.41
+          "value": -6.58
         },
         {
           "id": "stock_price_breadth",
           "name_ko": "상승 · 하락 거래량 폭",
           "description": "McClellan 거래량 합산 강세 지표",
-          "score": 16.2,
+          "score": 17.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 253.94
+          "value": 269.56
         },
         {
           "id": "put_call_options",
           "name_ko": "풋 / 콜 옵션 비율",
           "description": "5일 평균 풋·콜 옵션 거래 비율",
-          "score": 8.8,
+          "score": 6.8,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 0.9
+          "value": 0.92
         },
         {
           "id": "market_volatility_vix",
           "name_ko": "시장 변동성 (VIX)",
           "description": "50일 평균 대비 VIX 변동성 수준",
-          "score": 41.0,
+          "score": 34.8,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": 26.68
+          "value": 28.07
         },
         {
           "id": "junk_bond_demand",
           "name_ko": "정크본드 스프레드",
           "description": "투자적격 대비 하이일드 채권 금리차",
-          "score": 17.6,
+          "score": 13.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 1.28
+          "value": 1.29
         },
         {
           "id": "safe_haven_demand",
           "name_ko": "안전자산 선호도",
           "description": "최근 20일 주식 vs 국채 초과 수익률",
-          "score": 4.4,
+          "score": 5.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": -7.79
+          "value": -7.74
         }
       ]
     },
     "crypto": {
-      "score": 11,
+      "score": 13,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
       "history": [
-        [
-          "2026-10-26",
-          50
-        ],
         [
           "2026-10-27",
           48
@@ -1206,6 +1202,10 @@
         [
           "2026-11-24",
           11
+        ],
+        [
+          "2026-11-25",
+          13
         ]
       ]
     }
@@ -1217,25 +1217,25 @@
         "name": "S&P 500",
         "ticker": "SPX",
         "etf_ref": "SPY",
-        "pe": 23.48,
-        "forward_pe": 17.85,
-        "etf_pe": 22.15,
-        "etf_forward_pe": 17.85,
+        "pe": 23.44,
+        "forward_pe": 17.28,
+        "etf_pe": 21.72,
+        "etf_forward_pe": 17.28,
         "pe_52w_ago": 24.25,
         "shiller_cape": null,
         "pbr": null,
         "div_yield": 1.06,
-        "earnings_yield": 4.26,
-        "forward_earnings_yield": 5.6,
-        "erp_forward": 0.69,
-        "erp_trailing": -0.65,
+        "earnings_yield": 4.27,
+        "forward_earnings_yield": 5.79,
+        "erp_forward": 0.88,
+        "erp_trailing": -0.64,
         "world_pe": {
-          "current_pe": 23.48,
+          "current_pe": 23.44,
           "mean_1y": 26.7,
-          "z_1y": -2.91,
+          "z_1y": -2.94,
           "band_1y": "Cheap",
           "mean_5y": 23.7,
-          "z_5y": -0.07,
+          "z_5y": -0.08,
           "band_5y": "Fair",
           "history": [
             [
@@ -3008,7 +3008,7 @@
             ],
             [
               "2026-11-01",
-              23.48
+              23.44
             ]
           ]
         },
@@ -3062,19 +3062,24 @@
             "2026-11-24",
             23.48,
             17.85
+          ],
+          [
+            "2026-11-25",
+            23.44,
+            17.28
           ]
         ],
         "technicals": {
-          "close": 7195.62,
-          "change": -0.57,
+          "close": 7195.68,
+          "change": -0.08,
           "rsi": 40.1,
-          "sma50": 7609.8,
-          "sma200": 7351.26,
-          "dist_sma50": -5.44,
-          "dist_sma200": -2.12,
-          "perf_1m": -5.78,
+          "sma50": 7602.78,
+          "sma200": 7352.56,
+          "dist_sma50": -5.35,
+          "dist_sma200": -2.13,
+          "perf_1m": -5.81,
           "perf_ytd": 4.62,
-          "perf_1y": 8.42
+          "perf_1y": 7.45
         }
       },
       {
@@ -3082,21 +3087,21 @@
         "name": "NASDAQ 100",
         "ticker": "NDX",
         "etf_ref": "QQQ",
-        "pe": 27.66,
-        "forward_pe": 19.26,
-        "etf_pe": 25.44,
-        "etf_forward_pe": 19.26,
+        "pe": 27.49,
+        "forward_pe": 17.95,
+        "etf_pe": 24.38,
+        "etf_forward_pe": 17.95,
         "pe_52w_ago": 32.12,
-        "div_yield": 0.49,
-        "forward_earnings_yield": 5.19,
-        "erp_forward": 0.28,
+        "div_yield": 0.51,
+        "forward_earnings_yield": 5.57,
+        "erp_forward": 0.66,
         "world_pe": {
-          "current_pe": 27.66,
+          "current_pe": 27.49,
           "mean_1y": 32.14,
-          "z_1y": -2.91,
+          "z_1y": -3.02,
           "band_1y": "Cheap",
           "mean_5y": 30.43,
-          "z_5y": -0.92,
+          "z_5y": -0.98,
           "band_5y": "Fair",
           "history": [
             [
@@ -4853,7 +4858,7 @@
             ],
             [
               "2026-11-01",
-              27.66
+              27.49
             ]
           ]
         },
@@ -4907,30 +4912,35 @@
             "2026-11-24",
             27.66,
             19.26
+          ],
+          [
+            "2026-11-25",
+            27.49,
+            17.95
           ]
         ],
         "technicals": {
-          "close": 26225.48,
-          "change": -1.95,
-          "rsi": 39.3,
-          "sma50": 29122.4,
-          "sma200": 28086.44,
-          "dist_sma50": -9.95,
-          "dist_sma200": -6.63,
-          "perf_1m": -9.09,
-          "perf_ytd": 2.75,
-          "perf_1y": 7.21
+          "close": 26038.35,
+          "change": -0.67,
+          "rsi": 38.3,
+          "sma50": 29064.04,
+          "sma200": 28090.94,
+          "dist_sma50": -10.41,
+          "dist_sma200": -7.31,
+          "perf_1m": -10.37,
+          "perf_ytd": 2.01,
+          "perf_1y": 5.04
         }
       }
     ]
   },
   "macro": {
     "vix": {
-      "value": 26.42,
-      "change": -0.75,
-      "sma50": 18.81,
-      "sma200": 18.76,
-      "rsi": 55.6
+      "value": 27.83,
+      "change": 5.58,
+      "sma50": 19.01,
+      "sma200": 18.81,
+      "rsi": 57.2
     },
     "us10y": {
       "value": 4.91,
@@ -4948,15 +4958,15 @@
       "date": "2026-11-24"
     },
     "hy_spread": {
-      "value": 3.63,
-      "delta": -0.13,
-      "date": "2026-11-23"
+      "value": 3.72,
+      "delta": 0.09,
+      "date": "2026-11-24"
     },
     "dxy": {
-      "value": 103.83,
-      "change": -0.47,
-      "dist_sma200": 3.67,
-      "perf_ytd": 5.7
+      "value": 103.7,
+      "change": -0.14,
+      "dist_sma200": 3.51,
+      "perf_ytd": 5.56
     }
   }
 }
