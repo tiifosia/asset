@@ -1,20 +1,16 @@
 {
-  "updated_at": "2026-11-26 21:06:36 UTC",
+  "updated_at": "2026-11-27 21:06:37 UTC",
   "sentiment": {
     "cnn": {
-      "score": 15.0,
+      "score": 24.9,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
-      "previous_close": 15.2,
-      "prev_1w": 15.9,
-      "prev_1m": 29.8,
+      "previous_close": 15.6,
+      "prev_1w": 18.6,
+      "prev_1m": 32.9,
       "prev_1y": 17.7,
-      "timestamp": "2026-11-26T01:59:59+00:00",
+      "timestamp": "2026-11-27T20:48:02+00:00",
       "history": [
-        [
-          "2025-11-26",
-          17.7
-        ],
         [
           "2025-11-28",
           21.8
@@ -1009,11 +1005,15 @@
         ],
         [
           "2026-11-25",
-          15.6
+          20.9
         ],
         [
           "2026-11-26",
-          15.0
+          21.3
+        ],
+        [
+          "2026-11-27",
+          24.9
         ]
       ],
       "sub_indicators": [
@@ -1021,76 +1021,72 @@
           "id": "market_momentum_sp500",
           "name_ko": "S&P 500 모멘텀",
           "description": "125일 이동평균 대비 주가 위치",
-          "score": 2.8,
+          "score": 8.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 7182.78
+          "value": 7297.49
         },
         {
           "id": "stock_price_strength",
           "name_ko": "52주 신고 · 신저 비율",
           "description": "NYSE 52주 신고가 vs 신저가 비중",
-          "score": 25.6,
+          "score": 28.8,
           "rating": "fear",
           "rating_ko": "공포",
-          "value": -6.85
+          "value": -6.69
         },
         {
           "id": "stock_price_breadth",
           "name_ko": "상승 · 하락 거래량 폭",
           "description": "McClellan 거래량 합산 강세 지표",
-          "score": 21.4,
-          "rating": "extreme fear",
-          "rating_ko": "극단적 공포",
-          "value": 307.09
+          "score": 29.6,
+          "rating": "fear",
+          "rating_ko": "공포",
+          "value": 377.87
         },
         {
           "id": "put_call_options",
           "name_ko": "풋 / 콜 옵션 비율",
           "description": "5일 평균 풋·콜 옵션 거래 비율",
-          "score": 7.0,
+          "score": 19.0,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 0.92
+          "value": 0.86
         },
         {
           "id": "market_volatility_vix",
           "name_ko": "시장 변동성 (VIX)",
           "description": "50일 평균 대비 VIX 변동성 수준",
-          "score": 34.2,
-          "rating": "fear",
-          "rating_ko": "공포",
-          "value": 28.29
+          "score": 50.0,
+          "rating": "neutral",
+          "rating_ko": "중립",
+          "value": 23.81
         },
         {
           "id": "junk_bond_demand",
           "name_ko": "정크본드 스프레드",
           "description": "투자적격 대비 하이일드 채권 금리차",
-          "score": 13.2,
+          "score": 19.2,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": 1.29
+          "value": 1.27
         },
         {
           "id": "safe_haven_demand",
           "name_ko": "안전자산 선호도",
           "description": "최근 20일 주식 vs 국채 초과 수익률",
-          "score": 5.2,
+          "score": 19.4,
           "rating": "extreme fear",
           "rating_ko": "극단적 공포",
-          "value": -7.74
+          "value": -3.39
         }
       ]
     },
     "crypto": {
-      "score": 11,
+      "score": 12,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
       "history": [
-        [
-          "2026-10-28",
-          51
-        ],
         [
           "2026-10-29",
           51
@@ -1206,6 +1202,10 @@
         [
           "2026-11-26",
           11
+        ],
+        [
+          "2026-11-27",
+          12
         ]
       ]
     }
@@ -1217,25 +1217,25 @@
         "name": "S&P 500",
         "ticker": "SPX",
         "etf_ref": "SPY",
-        "pe": 23.43,
-        "forward_pe": 17.65,
-        "etf_pe": 21.99,
-        "etf_forward_pe": 17.65,
-        "pe_52w_ago": 24.25,
+        "pe": 23.81,
+        "forward_pe": 17.93,
+        "etf_pe": 22.29,
+        "etf_forward_pe": 17.93,
+        "pe_52w_ago": 25.25,
         "shiller_cape": null,
         "pbr": null,
-        "div_yield": 1.06,
-        "earnings_yield": 4.27,
-        "forward_earnings_yield": 5.67,
-        "erp_forward": 0.82,
-        "erp_trailing": -0.58,
+        "div_yield": 1.04,
+        "earnings_yield": 4.2,
+        "forward_earnings_yield": 5.58,
+        "erp_forward": 0.64,
+        "erp_trailing": -0.74,
         "world_pe": {
-          "current_pe": 23.43,
+          "current_pe": 23.81,
           "mean_1y": 26.7,
-          "z_1y": -2.95,
+          "z_1y": -2.61,
           "band_1y": "Cheap",
           "mean_5y": 23.7,
-          "z_5y": -0.08,
+          "z_5y": 0.03,
           "band_5y": "Fair",
           "history": [
             [
@@ -3008,7 +3008,7 @@
             ],
             [
               "2026-11-01",
-              23.43
+              23.81
             ]
           ]
         },
@@ -3072,19 +3072,24 @@
             "2026-11-26",
             23.43,
             17.65
+          ],
+          [
+            "2026-11-27",
+            23.81,
+            17.93
           ]
         ],
         "technicals": {
-          "close": 7182.78,
-          "change": -0.25,
-          "rsi": 39.7,
-          "sma50": 7602.53,
-          "sma200": 7352.49,
-          "dist_sma50": -5.52,
-          "dist_sma200": -2.31,
-          "perf_1m": -5.98,
-          "perf_ytd": 4.43,
-          "perf_1y": 7.25
+          "close": 7297.49,
+          "change": 1.6,
+          "rsi": 44.9,
+          "sma50": 7595.72,
+          "sma200": 7354.27,
+          "dist_sma50": -3.93,
+          "dist_sma200": -0.77,
+          "perf_1m": -5.66,
+          "perf_ytd": 6.1,
+          "perf_1y": 7.42
         }
       },
       {
@@ -3092,21 +3097,21 @@
         "name": "NASDAQ 100",
         "ticker": "NDX",
         "etf_ref": "QQQ",
-        "pe": 27.48,
-        "forward_pe": 17.64,
-        "etf_pe": 24.04,
-        "etf_forward_pe": 17.64,
-        "pe_52w_ago": 32.12,
-        "div_yield": 0.49,
-        "forward_earnings_yield": 5.67,
-        "erp_forward": 0.82,
+        "pe": 28.22,
+        "forward_pe": 18.24,
+        "etf_pe": 24.43,
+        "etf_forward_pe": 18.24,
+        "pe_52w_ago": 33.37,
+        "div_yield": 0.48,
+        "forward_earnings_yield": 5.48,
+        "erp_forward": 0.54,
         "world_pe": {
-          "current_pe": 27.48,
+          "current_pe": 28.22,
           "mean_1y": 32.14,
-          "z_1y": -3.02,
+          "z_1y": -2.54,
           "band_1y": "Cheap",
           "mean_5y": 30.43,
-          "z_5y": -0.98,
+          "z_5y": -0.74,
           "band_5y": "Fair",
           "history": [
             [
@@ -4863,7 +4868,7 @@
             ],
             [
               "2026-11-01",
-              27.48
+              28.22
             ]
           ]
         },
@@ -4927,56 +4932,61 @@
             "2026-11-26",
             27.48,
             17.64
+          ],
+          [
+            "2026-11-27",
+            28.22,
+            18.24
           ]
         ],
         "technicals": {
-          "close": 26046.9,
-          "change": -0.64,
-          "rsi": 38.4,
-          "sma50": 29064.21,
-          "sma200": 28090.98,
-          "dist_sma50": -10.38,
-          "dist_sma200": -7.28,
-          "perf_1m": -10.34,
-          "perf_ytd": 2.05,
-          "perf_1y": 5.07
+          "close": 26726.39,
+          "change": 2.61,
+          "rsi": 43.7,
+          "sma50": 29009.8,
+          "sma200": 28098.61,
+          "dist_sma50": -7.87,
+          "dist_sma200": -4.88,
+          "perf_1m": -10.11,
+          "perf_ytd": 4.71,
+          "perf_1y": 6.19
         }
       }
     ]
   },
   "macro": {
     "vix": {
-      "value": 28.29,
-      "change": 7.32,
-      "sma50": 19.02,
-      "sma200": 18.82,
-      "rsi": 57.8
+      "value": 23.81,
+      "change": -15.84,
+      "sma50": 19.19,
+      "sma200": 18.85,
+      "rsi": 51.3
     },
     "us10y": {
-      "value": 4.85,
-      "delta": -0.06,
-      "date": "2026-11-25"
+      "value": 4.94,
+      "delta": 0.09,
+      "date": "2026-11-27"
     },
     "us2y": {
-      "value": 4.61,
-      "delta": -0.02,
-      "date": "2026-11-25"
+      "value": 4.69,
+      "delta": 0.08,
+      "date": "2026-11-27"
     },
     "spread_10y2y": {
-      "value": 0.24,
-      "delta": -0.04,
-      "date": "2026-11-25"
+      "value": 0.25,
+      "delta": 0.01,
+      "date": "2026-11-27"
     },
     "hy_spread": {
-      "value": 3.72,
-      "delta": 0.09,
-      "date": "2026-11-24"
+      "value": 3.77,
+      "delta": 0.0,
+      "date": "2026-11-26"
     },
     "dxy": {
-      "value": 103.78,
-      "change": 0.08,
-      "dist_sma200": 3.56,
-      "perf_ytd": 5.64
+      "value": 104.04,
+      "change": 0.25,
+      "dist_sma200": 3.79,
+      "perf_ytd": 5.91
     }
   }
 }
