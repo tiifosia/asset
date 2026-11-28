@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-27 21:06:37 UTC",
+  "updated_at": "2026-11-28 21:06:40 UTC",
   "sentiment": {
     "cnn": {
       "score": 24.9,
@@ -9,7 +9,7 @@
       "prev_1w": 18.6,
       "prev_1m": 32.9,
       "prev_1y": 17.7,
-      "timestamp": "2026-11-27T20:48:02+00:00",
+      "timestamp": "2026-11-27T23:59:59+00:00",
       "history": [
         [
           "2025-11-28",
@@ -1083,14 +1083,10 @@
       ]
     },
     "crypto": {
-      "score": 12,
+      "score": 10,
       "rating": "extreme fear",
       "rating_ko": "극단적 공포",
       "history": [
-        [
-          "2026-10-29",
-          51
-        ],
         [
           "2026-10-30",
           30
@@ -1206,6 +1202,10 @@
         [
           "2026-11-27",
           12
+        ],
+        [
+          "2026-11-28",
+          10
         ]
       ]
     }
@@ -1218,16 +1218,16 @@
         "ticker": "SPX",
         "etf_ref": "SPY",
         "pe": 23.81,
-        "forward_pe": 17.93,
-        "etf_pe": 22.29,
-        "etf_forward_pe": 17.93,
+        "forward_pe": 18.05,
+        "etf_pe": 22.4,
+        "etf_forward_pe": 18.05,
         "pe_52w_ago": 25.25,
         "shiller_cape": null,
         "pbr": null,
         "div_yield": 1.04,
         "earnings_yield": 4.2,
-        "forward_earnings_yield": 5.58,
-        "erp_forward": 0.64,
+        "forward_earnings_yield": 5.54,
+        "erp_forward": 0.6,
         "erp_trailing": -0.74,
         "world_pe": {
           "current_pe": 23.81,
@@ -3077,6 +3077,11 @@
             "2026-11-27",
             23.81,
             17.93
+          ],
+          [
+            "2026-11-28",
+            23.81,
+            18.05
           ]
         ],
         "technicals": {
@@ -3098,13 +3103,13 @@
         "ticker": "NDX",
         "etf_ref": "QQQ",
         "pe": 28.22,
-        "forward_pe": 18.24,
-        "etf_pe": 24.43,
-        "etf_forward_pe": 18.24,
+        "forward_pe": 18.86,
+        "etf_pe": 25.11,
+        "etf_forward_pe": 18.86,
         "pe_52w_ago": 33.37,
-        "div_yield": 0.48,
-        "forward_earnings_yield": 5.48,
-        "erp_forward": 0.54,
+        "div_yield": 0.47,
+        "forward_earnings_yield": 5.3,
+        "erp_forward": 0.36,
         "world_pe": {
           "current_pe": 28.22,
           "mean_1y": 32.14,
@@ -4937,6 +4942,11 @@
             "2026-11-27",
             28.22,
             18.24
+          ],
+          [
+            "2026-11-28",
+            28.22,
+            18.86
           ]
         ],
         "technicals": {
@@ -4983,10 +4993,10 @@
       "date": "2026-11-26"
     },
     "dxy": {
-      "value": 104.04,
+      "value": 104.03,
       "change": 0.25,
-      "dist_sma200": 3.79,
-      "perf_ytd": 5.91
+      "dist_sma200": 3.78,
+      "perf_ytd": 5.9
     }
   }
 }
